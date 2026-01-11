@@ -345,7 +345,8 @@ class Game(ABC, DataClassJSONMixin):
 
         # Get rankings from the result
         rankings = self.get_rankings_for_rating(result)
-        if not rankings:
+        if not rankings or len(rankings) < 2:
+            # Need at least 2 teams/players to update ratings
             return
 
         # Update ratings
@@ -390,6 +391,11 @@ class Game(ABC, DataClassJSONMixin):
             if user:
                 lines = self.format_end_screen(result, user.locale)
                 items = [MenuItem(text=line, id="score_line") for line in lines]
+                # Add Leave button at the end
+                items.append(MenuItem(
+                    text="Congratulations you did great!",
+                    id="leave_game"
+                ))
                 user.show_menu("game_over", items, multiletter=False)
 
     def show_game_end_menu(self, score_lines: list[str]) -> None:
@@ -1221,6 +1227,11 @@ class Game(ABC, DataClassJSONMixin):
                         if resolved.enabled:
                             self.execute_action(player, action_id, context=context)
                             executed_any = True
+                        elif resolved.disabled_reason:
+                            # Speak the disabled reason to the player
+                            user = self.get_user(player)
+                            if user:
+                                user.speak_l(resolved.disabled_reason)
 
             # Don't rebuild if action is waiting for input, status box is open, or actions menu is open
             if (

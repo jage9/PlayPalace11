@@ -120,6 +120,22 @@ leaderboard-rating-entry = { $rank }. { $player }：{ $rating } 评分（{ $mu }
 leaderboard-player-rating = 您的评分：{ $rating }（{ $mu } ± { $sigma }）
 leaderboard-no-player-rating = 您还没有这个游戏的评分。
 
+# 我的统计菜单
+my-stats = 我的统计
+my-stats-select-game = 选择游戏查看您的统计
+my-stats-no-data = 您还没有玩过这个游戏。
+my-stats-header = { $game } - 您的统计
+my-stats-wins = 胜利：{ $value }
+my-stats-losses = 失败：{ $value }
+my-stats-winrate = 胜率：{ $value }%
+my-stats-games-played = 游戏场次：{ $value }
+my-stats-total-score = 总分：{ $value }
+my-stats-high-score = 最高分：{ $value }
+my-stats-rating = 技能评分：{ $value }（{ $mu } ± { $sigma }）
+my-stats-no-rating = 暂无技能评分
+my-stats-avg-per-turn = 平均每回合得分：{ $value }
+my-stats-best-turn = 单回合最高分：{ $value }
+
 # 预测系统
 predict-outcomes = 预测结果
 predict-header = 预测结果（按技能评分）

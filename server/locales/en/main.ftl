@@ -181,6 +181,22 @@ leaderboard-rating-entry = { $rank }. { $player }: { $rating } rating ({ $mu } �
 leaderboard-player-rating = Your rating: { $rating } ({ $mu } ± { $sigma })
 leaderboard-no-player-rating = You don't have a rating for this game yet.
 
+# My Stats menu
+my-stats = My Stats
+my-stats-select-game = Select a game to view your stats
+my-stats-no-data = You haven't played this game yet.
+my-stats-header = { $game } - Your Stats
+my-stats-wins = Wins: { $value }
+my-stats-losses = Losses: { $value }
+my-stats-winrate = Win rate: { $value }%
+my-stats-games-played = Games played: { $value }
+my-stats-total-score = Total score: { $value }
+my-stats-high-score = High score: { $value }
+my-stats-rating = Skill rating: { $value } ({ $mu } ± { $sigma })
+my-stats-no-rating = No skill rating yet
+my-stats-avg-per-turn = Avg points per turn: { $value }
+my-stats-best-turn = Best single turn: { $value }
+
 # Prediction system
 predict-outcomes = Predict outcomes
 predict-header = Predicted Outcomes (by skill rating)

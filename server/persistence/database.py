@@ -15,6 +15,7 @@ class UserRecord:
     id: int
     username: str
     password_hash: str
+    uuid: str  # Persistent unique identifier for stats tracking
     locale: str = "en"
     preferences_json: str = "{}"
 
@@ -65,18 +66,11 @@ class Database:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL,
+                uuid TEXT NOT NULL,
                 locale TEXT DEFAULT 'en',
                 preferences_json TEXT DEFAULT '{}'
             )
         """)
-
-        # Migration: Add preferences_json column if it doesn't exist
-        cursor.execute("PRAGMA table_info(users)")
-        columns = [row[1] for row in cursor.fetchall()]
-        if "preferences_json" not in columns:
-            cursor.execute(
-                "ALTER TABLE users ADD COLUMN preferences_json TEXT DEFAULT '{}'"
-            )
 
         # Tables table (game tables)
         cursor.execute("""
@@ -157,7 +151,7 @@ class Database:
         """Get a user by username."""
         cursor = self._conn.cursor()
         cursor.execute(
-            "SELECT id, username, password_hash, locale, preferences_json FROM users WHERE username = ?",
+            "SELECT id, username, password_hash, uuid, locale, preferences_json FROM users WHERE username = ?",
             (username,),
         )
         row = cursor.fetchone()
@@ -166,6 +160,7 @@ class Database:
                 id=row["id"],
                 username=row["username"],
                 password_hash=row["password_hash"],
+                uuid=row["uuid"],
                 locale=row["locale"] or "en",
                 preferences_json=row["preferences_json"] or "{}",
             )
@@ -174,17 +169,20 @@ class Database:
     def create_user(
         self, username: str, password_hash: str, locale: str = "en"
     ) -> UserRecord:
-        """Create a new user."""
+        """Create a new user with a generated UUID."""
+        import uuid as uuid_module
+        user_uuid = str(uuid_module.uuid4())
         cursor = self._conn.cursor()
         cursor.execute(
-            "INSERT INTO users (username, password_hash, locale) VALUES (?, ?, ?)",
-            (username, password_hash, locale),
+            "INSERT INTO users (username, password_hash, uuid, locale) VALUES (?, ?, ?, ?)",
+            (username, password_hash, user_uuid, locale),
         )
         self._conn.commit()
         return UserRecord(
             id=cursor.lastrowid,
             username=username,
             password_hash=password_hash,
+            uuid=user_uuid,
             locale=locale,
         )
 

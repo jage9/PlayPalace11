@@ -127,6 +127,22 @@ leaderboard-rating-entry = { $rank }. { $player }: { $rating } classificação (
 leaderboard-player-rating = Sua classificação: { $rating } ({ $mu } ± { $sigma })
 leaderboard-no-player-rating = Você ainda não tem classificação neste jogo.
 
+# Menu Minhas Estatísticas
+my-stats = Minhas Estatísticas
+my-stats-select-game = Selecione um jogo para ver suas estatísticas
+my-stats-no-data = Você ainda não jogou este jogo.
+my-stats-header = { $game } - Suas Estatísticas
+my-stats-wins = Vitórias: { $value }
+my-stats-losses = Derrotas: { $value }
+my-stats-winrate = Taxa de vitórias: { $value }%
+my-stats-games-played = Jogos disputados: { $value }
+my-stats-total-score = Pontuação total: { $value }
+my-stats-high-score = Maior pontuação: { $value }
+my-stats-rating = Classificação de habilidade: { $value } ({ $mu } ± { $sigma })
+my-stats-no-rating = Ainda sem classificação de habilidade
+my-stats-avg-per-turn = Média de pontos por turno: { $value }
+my-stats-best-turn = Melhor turno: { $value }
+
 # Sistema de previsão
 predict-outcomes = Prever resultados
 predict-header = Resultados Previstos (por classificação de habilidade)

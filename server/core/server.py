@@ -220,9 +220,10 @@ class Server:
         client.username = username
         client.authenticated = True
 
-        # Create network user with preferences
+        # Create network user with preferences and persistent UUID
         user_record = self._auth.get_user(username)
         locale = user_record.locale if user_record else "en"
+        user_uuid = user_record.uuid if user_record else None
         preferences = UserPreferences()
         if user_record and user_record.preferences_json:
             try:
@@ -230,7 +231,7 @@ class Server:
                 preferences = UserPreferences.from_dict(prefs_data)
             except (json.JSONDecodeError, KeyError):
                 pass  # Use defaults on error
-        user = NetworkUser(username, locale, client, preferences=preferences)
+        user = NetworkUser(username, locale, client, uuid=user_uuid, preferences=preferences)
         self._users[username] = user
 
         # Send success response
@@ -257,7 +258,7 @@ class Server:
 
             # Attach user to table and game
             table.attach_user(username, user)
-            player = game.get_player_by_name(username)
+            player = game.get_player_by_id(user.uuid)
             if player:
                 game.attach_user(player.id, user)
 
@@ -316,6 +317,9 @@ class Server:
             ),
             MenuItem(
                 text=Localization.get(user.locale, "leaderboards"), id="leaderboards"
+            ),
+            MenuItem(
+                text=Localization.get(user.locale, "my-stats"), id="my_stats"
             ),
             MenuItem(text=Localization.get(user.locale, "options"), id="options"),
             MenuItem(text=Localization.get(user.locale, "logout"), id="logout"),
@@ -554,11 +558,12 @@ class Server:
         # Check if user is in a table - delegate all events to game
         table = self._tables.find_user_table(username)
         if table and table.game:
-            player = table.game.get_player_by_name(username)
+            player = table.game.get_player_by_id(user.uuid)
             if player:
                 table.game.handle_event(player, packet)
-                # Check if player left the game
-                if not table.game.get_player_by_name(username):
+                # Check if player left the game (user replaced by bot or removed)
+                game_user = table.game._users.get(user.uuid)
+                if game_user is not user:
                     table.remove_member(username)
                     self._show_main_menu(user)
             return
@@ -590,6 +595,10 @@ class Server:
             await self._handle_leaderboard_types_selection(user, selection_id, state)
         elif current_menu == "game_leaderboard":
             await self._handle_game_leaderboard_selection(user, selection_id, state)
+        elif current_menu == "my_stats_menu":
+            await self._handle_my_stats_selection(user, selection_id, state)
+        elif current_menu == "my_game_stats":
+            await self._handle_my_game_stats_selection(user, selection_id, state)
 
     async def _handle_main_menu_selection(
         self, user: NetworkUser, selection_id: str
@@ -601,6 +610,8 @@ class Server:
             self._show_saved_tables_menu(user)
         elif selection_id == "leaderboards":
             self._show_leaderboards_menu(user)
+        elif selection_id == "my_stats":
+            self._show_my_stats_menu(user)
         elif selection_id == "options":
             self._show_options_menu(user)
         elif selection_id == "logout":
@@ -1607,6 +1618,283 @@ class Server:
             self._show_leaderboard_types_menu(user, game_type)
         # Other selections (entries, header) are informational only
 
+    # =========================================================================
+    # My Stats menu
+    # =========================================================================
+
+    def _show_my_stats_menu(self, user: NetworkUser) -> None:
+        """Show game selection menu for personal stats."""
+        categories = GameRegistry.get_by_category()
+        items = []
+
+        # Add all games from all categories
+        for category_key in sorted(categories.keys()):
+            for game_class in categories[category_key]:
+                game_name = Localization.get(user.locale, game_class.get_name_key())
+                items.append(
+                    MenuItem(text=game_name, id=f"stats_{game_class.get_type()}")
+                )
+
+        items.append(MenuItem(text=Localization.get(user.locale, "back"), id="back"))
+
+        user.show_menu(
+            "my_stats_menu",
+            items,
+            multiletter=True,
+            escape_behavior=EscapeBehavior.SELECT_LAST,
+        )
+        self._user_states[user.username] = {"menu": "my_stats_menu"}
+
+    def _show_my_game_stats(self, user: NetworkUser, game_type: str) -> None:
+        """Show personal stats for a specific game."""
+        from ..game_utils.stats_helpers import RatingHelper
+
+        game_class = get_game_class(game_type)
+        if not game_class:
+            user.speak_l("game-type-not-found")
+            return
+
+        game_name = Localization.get(user.locale, game_class.get_name_key())
+        game_results = self._get_game_results(game_type)
+
+        # Calculate player's personal stats
+        wins = 0
+        losses = 0
+        total_score = 0
+        high_score = 0
+        games_played = 0
+
+        for result in game_results:
+            winner_name = result.custom_data.get("winner_name")
+            final_scores = result.custom_data.get("final_scores", {})
+            final_light = result.custom_data.get("final_light", {})
+
+            for p in result.player_results:
+                if p.player_id == user.uuid:
+                    games_played += 1
+                    if winner_name == p.player_name:
+                        wins += 1
+                    else:
+                        losses += 1
+
+                    # Get score from final_scores or final_light (for Light Turret)
+                    score = final_scores.get(p.player_name, 0)
+                    if not score:
+                        score = final_light.get(p.player_name, 0)
+                    total_score += score
+                    if score > high_score:
+                        high_score = score
+
+        items = []
+
+        if games_played == 0:
+            items.append(
+                MenuItem(
+                    text=Localization.get(user.locale, "my-stats-no-data"),
+                    id="no_data",
+                )
+            )
+        else:
+            # Basic stats
+            winrate = round((wins / games_played * 100) if games_played > 0 else 0)
+
+            items.append(
+                MenuItem(
+                    text=Localization.get(user.locale, "my-stats-games-played", value=games_played),
+                    id="games_played",
+                )
+            )
+            items.append(
+                MenuItem(
+                    text=Localization.get(user.locale, "my-stats-wins", value=wins),
+                    id="wins",
+                )
+            )
+            items.append(
+                MenuItem(
+                    text=Localization.get(user.locale, "my-stats-losses", value=losses),
+                    id="losses",
+                )
+            )
+            items.append(
+                MenuItem(
+                    text=Localization.get(user.locale, "my-stats-winrate", value=winrate),
+                    id="winrate",
+                )
+            )
+
+            # Score stats (if applicable)
+            if total_score > 0:
+                items.append(
+                    MenuItem(
+                        text=Localization.get(user.locale, "my-stats-total-score", value=total_score),
+                        id="total_score",
+                    )
+                )
+                items.append(
+                    MenuItem(
+                        text=Localization.get(user.locale, "my-stats-high-score", value=high_score),
+                        id="high_score",
+                    )
+                )
+
+            # Skill rating
+            rating_helper = RatingHelper(self._db, game_type)
+            rating = rating_helper.get_rating(user.uuid)
+            if rating.mu != 25.0 or rating.sigma != 25.0 / 3:  # Non-default rating
+                items.append(
+                    MenuItem(
+                        text=Localization.get(
+                            user.locale,
+                            "my-stats-rating",
+                            value=round(rating.ordinal),
+                            mu=round(rating.mu, 1),
+                            sigma=round(rating.sigma, 1),
+                        ),
+                        id="rating",
+                    )
+                )
+            else:
+                items.append(
+                    MenuItem(
+                        text=Localization.get(user.locale, "my-stats-no-rating"),
+                        id="no_rating",
+                    )
+                )
+
+            # Game-specific stats from custom leaderboard configs
+            self._add_custom_stats(user, game_class, game_results, items)
+
+        items.append(MenuItem(text=Localization.get(user.locale, "back"), id="back"))
+
+        user.show_menu(
+            "my_game_stats",
+            items,
+            multiletter=True,
+            escape_behavior=EscapeBehavior.SELECT_LAST,
+        )
+        self._user_states[user.username] = {
+            "menu": "my_game_stats",
+            "game_type": game_type,
+            "game_name": game_name,
+        }
+
+    def _add_custom_stats(
+        self,
+        user: NetworkUser,
+        game_class,
+        game_results: list,
+        items: list,
+    ) -> None:
+        """Add game-specific custom stats from leaderboard configs."""
+        for config in game_class.get_leaderboard_types():
+            lb_id = config["id"]
+            path = config.get("path")
+            numerator_path = config.get("numerator")
+            denominator_path = config.get("denominator")
+            aggregate = config.get("aggregate", "sum")
+            decimals = config.get("decimals", 0)
+
+            # Extract values for this player from all game results
+            values = []
+            num_values = []
+            denom_values = []
+
+            for result in game_results:
+                # Check if player participated in this game
+                player_name = None
+                for p in result.player_results:
+                    if p.player_id == user.uuid:
+                        player_name = p.player_name
+                        break
+
+                if not player_name:
+                    continue
+
+                custom_data = result.custom_data
+
+                if path:
+                    # Simple path extraction
+                    resolved_path = path.replace("{player_name}", player_name)
+                    resolved_path = resolved_path.replace("{player_id}", user.uuid)
+                    value = self._extract_path_value(custom_data, resolved_path)
+                    if value is not None:
+                        values.append(value)
+                elif numerator_path and denominator_path:
+                    # Ratio calculation
+                    num_path = numerator_path.replace("{player_name}", player_name)
+                    denom_path = denominator_path.replace("{player_name}", player_name)
+                    num_val = self._extract_path_value(custom_data, num_path)
+                    denom_val = self._extract_path_value(custom_data, denom_path)
+                    if num_val is not None and denom_val is not None:
+                        num_values.append(num_val)
+                        denom_values.append(denom_val)
+
+            # Calculate aggregated value
+            final_value = None
+            if values:
+                if aggregate == "sum":
+                    final_value = sum(values)
+                elif aggregate == "max":
+                    final_value = max(values)
+                elif aggregate == "avg":
+                    final_value = sum(values) / len(values)
+            elif num_values and denom_values:
+                total_num = sum(num_values)
+                total_denom = sum(denom_values)
+                if total_denom > 0:
+                    final_value = total_num / total_denom
+
+            if final_value is not None:
+                # Format the value
+                if decimals > 0:
+                    formatted_value = f"{final_value:.{decimals}f}"
+                else:
+                    formatted_value = str(round(final_value))
+
+                # Get localization key
+                loc_key = f"my-stats-{lb_id.replace('_', '-')}"
+                # Try game-specific key first, fall back to generic
+                text = Localization.get(user.locale, loc_key, value=formatted_value)
+                if text == loc_key:
+                    # Key not found, use leaderboard type name
+                    type_key = f"leaderboard-type-{lb_id.replace('_', '-')}"
+                    type_name = Localization.get(user.locale, type_key)
+                    text = f"{type_name}: {formatted_value}"
+
+                items.append(MenuItem(text=text, id=f"custom_{lb_id}"))
+
+    def _extract_path_value(self, data: dict, path: str) -> float | None:
+        """Extract a value from nested dict using dot notation path."""
+        parts = path.split(".")
+        current = data
+        for part in parts:
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            else:
+                return None
+        if isinstance(current, (int, float)):
+            return float(current)
+        return None
+
+    async def _handle_my_stats_selection(
+        self, user: NetworkUser, selection_id: str, state: dict
+    ) -> None:
+        """Handle my stats game selection."""
+        if selection_id == "back":
+            self._show_main_menu(user)
+        elif selection_id.startswith("stats_"):
+            game_type = selection_id[6:]  # Remove "stats_" prefix
+            self._show_my_game_stats(user, game_type)
+
+    async def _handle_my_game_stats_selection(
+        self, user: NetworkUser, selection_id: str, state: dict
+    ) -> None:
+        """Handle my game stats menu selection."""
+        if selection_id == "back":
+            self._show_my_stats_menu(user)
+        # Other selections (stats entries) are informational only
+
     def on_table_destroy(self, table) -> None:
         """Handle table destruction. Called by TableManager."""
         if not table.game:
@@ -1684,12 +1972,13 @@ class Server:
 
         user = self._users.get(username)
         table = self._tables.find_user_table(username)
-        if table and table.game:
-            player = table.game.get_player_by_name(username)
+        if table and table.game and user:
+            player = table.game.get_player_by_id(user.uuid)
             if player:
                 table.game.handle_event(player, packet)
-                # Check if player left the game
-                if user and not table.game.get_player_by_name(username):
+                # Check if player left the game (user replaced by bot or removed)
+                game_user = table.game._users.get(user.uuid)
+                if game_user is not user:
                     table.remove_member(username)
                     self._show_main_menu(user)
 
@@ -1701,12 +1990,13 @@ class Server:
 
         user = self._users.get(username)
         table = self._tables.find_user_table(username)
-        if table and table.game:
-            player = table.game.get_player_by_name(username)
+        if table and table.game and user:
+            player = table.game.get_player_by_id(user.uuid)
             if player:
                 table.game.handle_event(player, packet)
-                # Check if player left the game
-                if user and not table.game.get_player_by_name(username):
+                # Check if player left the game (user replaced by bot or removed)
+                game_user = table.game._users.get(user.uuid)
+                if game_user is not user:
                     table.remove_member(username)
                     self._show_main_menu(user)
 

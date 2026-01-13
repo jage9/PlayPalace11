@@ -135,6 +135,12 @@ class PiratesGame(Game):
         super().rebuild_runtime_state()
         # Skills are now on each player, no need to rebuild here
 
+        # Fix dict keys that became strings after JSON deserialization
+        if self.gem_positions:
+            self.gem_positions = {int(k): v for k, v in self.gem_positions.items()}
+        if self.charted_tiles:
+            self.charted_tiles = {int(k): v for k, v in self.charted_tiles.items()}
+
     def create_player(
         self, player_id: str, name: str, is_bot: bool = False
     ) -> PiratesPlayer:

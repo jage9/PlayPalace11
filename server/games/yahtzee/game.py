@@ -358,7 +358,7 @@ class YahtzeeGame(Game, DiceGameMixin):
             return Visibility.HIDDEN
         return Visibility.VISIBLE
 
-    def _get_roll_label(self, player: Player) -> str:
+    def _get_roll_label(self, player: Player, action_id: str) -> str:
         """Get dynamic label for roll action."""
         user = self.get_user(player)
         locale = user.locale if user else "en"
@@ -968,7 +968,7 @@ def _make_score_hidden(cat: str):
 
 def _make_score_label(cat: str):
     """Create a get_label method for a scoring category."""
-    def method(self, player: Player) -> str:
+    def method(self, player: Player, action_id: str) -> str:
         user = self.get_user(player)
         locale = user.locale if user else "en"
         cat_name = Localization.get(locale, CATEGORY_NAMES[cat])

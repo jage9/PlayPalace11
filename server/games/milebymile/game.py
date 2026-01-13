@@ -422,17 +422,9 @@ class MileByMileGame(Game):
                 turn_set._order.remove(action_id)
 
         # Add actions for cards in hand
-        is_playing = self.status == "playing"
-        is_between_races = self._round_timer.is_active
-
-        # Get locale for this player
-        user = self.get_user(player)
-        locale = user.locale if user else "en"
-
         for i, card in enumerate(player.hand, 1):
             action_id = f"card_slot_{i}"
             playable = self._can_play_card(player, card)
-            label = self._get_localized_card_name(card, locale)
 
             # Check if hazard with multiple targets needs menu
             input_request = None
@@ -446,13 +438,15 @@ class MileByMileGame(Game):
                     )
 
             # Always show cards in menu, but enable/disable based on state
+            # Use dynamic label to ensure locale changes are reflected
             turn_set.add(
                 Action(
                     id=action_id,
-                    label=label,
+                    label="",  # Fallback, dynamic label used instead
                     handler="_action_play_card",
                     is_enabled="_is_card_action_enabled",
                     is_hidden="_is_card_action_hidden",
+                    get_label="_get_card_slot_label",
                     input_request=input_request,
                 )
             )
@@ -520,6 +514,22 @@ class MileByMileGame(Game):
         if self.status != "playing":
             return Visibility.HIDDEN
         return Visibility.VISIBLE
+
+    def _get_card_slot_label(self, player: Player, action_id: str) -> str:
+        """Get dynamic label for a card slot action."""
+        if not isinstance(player, MileByMilePlayer):
+            return ""
+        # Extract slot number from action_id (e.g., "card_slot_1" -> 0)
+        try:
+            slot = int(action_id.split("_")[-1]) - 1
+        except (ValueError, IndexError):
+            return ""
+        if slot < 0 or slot >= len(player.hand):
+            return ""
+        card = player.hand[slot]
+        user = self.get_user(player)
+        locale = user.locale if user else "en"
+        return self._get_localized_card_name(card, locale)
 
     def _update_turn_actions(self, player: MileByMilePlayer) -> None:
         """Update dynamic card actions for a player."""

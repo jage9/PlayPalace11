@@ -60,7 +60,7 @@ class Action(DataClassJSONMixin):
       Returns None if enabled, or a localization key (disabled reason) if disabled.
     - is_hidden: (self, player) -> Visibility
       Returns Visibility.VISIBLE or Visibility.HIDDEN.
-    - get_label: (self, player) -> str
+    - get_label: (self, player, action_id) -> str
       Returns the dynamic label string.
     """
 
@@ -149,7 +149,7 @@ class ActionSet(DataClassJSONMixin):
         if action.get_label:
             method = getattr(game, action.get_label, None)
             if method:
-                label = method(player)
+                label = method(player, action.id)
 
         return ResolvedAction(
             action=action,

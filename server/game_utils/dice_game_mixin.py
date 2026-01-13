@@ -170,19 +170,19 @@ class DiceGameMixin:
     def _is_toggle_die_4_hidden(self, player: Player) -> Visibility:
         return self._is_dice_toggle_hidden(player, 4)
 
-    def _get_toggle_die_0_label(self, player: Player) -> str:
+    def _get_toggle_die_0_label(self, player: Player, action_id: str) -> str:
         return self._get_dice_toggle_label(player, 0)
 
-    def _get_toggle_die_1_label(self, player: Player) -> str:
+    def _get_toggle_die_1_label(self, player: Player, action_id: str) -> str:
         return self._get_dice_toggle_label(player, 1)
 
-    def _get_toggle_die_2_label(self, player: Player) -> str:
+    def _get_toggle_die_2_label(self, player: Player, action_id: str) -> str:
         return self._get_dice_toggle_label(player, 2)
 
-    def _get_toggle_die_3_label(self, player: Player) -> str:
+    def _get_toggle_die_3_label(self, player: Player, action_id: str) -> str:
         return self._get_dice_toggle_label(player, 3)
 
-    def _get_toggle_die_4_label(self, player: Player) -> str:
+    def _get_toggle_die_4_label(self, player: Player, action_id: str) -> str:
         return self._get_dice_toggle_label(player, 4)
 
     # Default implementations - games should override these

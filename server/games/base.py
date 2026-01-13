@@ -1330,7 +1330,7 @@ class Game(ABC, DataClassJSONMixin):
         """Toggle spectator is always hidden (F5/keybind only)."""
         return Visibility.HIDDEN
 
-    def _get_toggle_spectator_label(self, player: Player) -> str:
+    def _get_toggle_spectator_label(self, player: Player, action_id: str) -> str:
         """Get dynamic label for toggle_spectator action."""
         user = self.get_user(player)
         locale = user.locale if user else "en"

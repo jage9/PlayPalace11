@@ -360,14 +360,35 @@ class ScopaGame(Game):
             return Visibility.HIDDEN
         return Visibility.VISIBLE
 
+    def _get_card_label(self, player: Player, action_id: str) -> str:
+        """Get dynamic label for a card action."""
+        if not isinstance(player, ScopaPlayer):
+            return ""
+        # Extract card ID from action_id (e.g., "play_card_42" -> 42)
+        try:
+            card_id = int(action_id.split("_")[-1])
+        except (ValueError, IndexError):
+            return ""
+        # Find card in player's hand
+        card = next((c for c in player.hand if c.id == card_id), None)
+        if not card:
+            return ""
+        user = self.get_user(player)
+        locale = user.locale if user else "en"
+        name = card_name(card, locale)
+        if self.options.show_capture_hints:
+            hint = get_capture_hint(
+                self.table_cards, card, self.options.escoba_rules, locale
+            )
+            name += hint
+        return name
+
     def _update_card_actions(self, player: ScopaPlayer) -> None:
         """Update card actions for a player (called when rebuilding menus)."""
         turn_set = self.get_action_set(player, "turn")
         if not turn_set:
             return
 
-        user = self.get_user(player)
-        locale = user.locale if user else "en"
         is_playing = self.status == "playing"
         is_spectator = player.is_spectator
         is_current = self.current_player == player
@@ -376,21 +397,17 @@ class ScopaGame(Game):
         turn_set.remove_by_prefix("play_card_")
 
         # Add card actions for current player
+        # Use dynamic label to ensure locale changes are reflected
         if is_playing and is_current and not is_spectator:
             for card in sort_cards(player.hand, by_suit=False):
-                name = card_name(card, locale)
-                if self.options.show_capture_hints:
-                    hint = get_capture_hint(
-                        self.table_cards, card, self.options.escoba_rules, locale
-                    )
-                    name += hint
                 turn_set.add(
                     Action(
                         id=f"play_card_{card.id}",
-                        label=name,
+                        label="",  # Fallback, dynamic label used instead
                         handler="_action_play_card",
                         is_enabled="_is_card_action_enabled",
                         is_hidden="_is_card_action_hidden",
+                        get_label="_get_card_label",
                     )
                 )
 

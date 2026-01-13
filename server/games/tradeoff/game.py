@@ -216,15 +216,15 @@ class TradeoffGame(Game):
     def _is_toggle_trade_4_hidden(self, player: Player) -> Visibility:
         return self._is_toggle_trade_hidden(player, 4)
 
-    def _get_toggle_trade_0_label(self, player: Player) -> str:
+    def _get_toggle_trade_0_label(self, player: Player, action_id: str) -> str:
         return self._get_toggle_trade_label(player, 0)
-    def _get_toggle_trade_1_label(self, player: Player) -> str:
+    def _get_toggle_trade_1_label(self, player: Player, action_id: str) -> str:
         return self._get_toggle_trade_label(player, 1)
-    def _get_toggle_trade_2_label(self, player: Player) -> str:
+    def _get_toggle_trade_2_label(self, player: Player, action_id: str) -> str:
         return self._get_toggle_trade_label(player, 2)
-    def _get_toggle_trade_3_label(self, player: Player) -> str:
+    def _get_toggle_trade_3_label(self, player: Player, action_id: str) -> str:
         return self._get_toggle_trade_label(player, 3)
-    def _get_toggle_trade_4_label(self, player: Player) -> str:
+    def _get_toggle_trade_4_label(self, player: Player, action_id: str) -> str:
         return self._get_toggle_trade_label(player, 4)
 
     # Confirm trades
@@ -256,7 +256,7 @@ class TradeoffGame(Game):
             return Visibility.HIDDEN
         return Visibility.VISIBLE
 
-    def _get_confirm_trades_label(self, player: Player) -> str:
+    def _get_confirm_trades_label(self, player: Player, action_id: str) -> str:
         """Get label for confirm trades action."""
         tp: TradeoffPlayer = player  # type: ignore
         user = self.get_user(player)
@@ -345,17 +345,17 @@ class TradeoffGame(Game):
     def _is_take_6_hidden(self, player: Player) -> Visibility:
         return self._is_take_hidden(player, 6)
 
-    def _get_take_1_label(self, player: Player) -> str:
+    def _get_take_1_label(self, player: Player, action_id: str) -> str:
         return self._get_take_label(player, 1)
-    def _get_take_2_label(self, player: Player) -> str:
+    def _get_take_2_label(self, player: Player, action_id: str) -> str:
         return self._get_take_label(player, 2)
-    def _get_take_3_label(self, player: Player) -> str:
+    def _get_take_3_label(self, player: Player, action_id: str) -> str:
         return self._get_take_label(player, 3)
-    def _get_take_4_label(self, player: Player) -> str:
+    def _get_take_4_label(self, player: Player, action_id: str) -> str:
         return self._get_take_label(player, 4)
-    def _get_take_5_label(self, player: Player) -> str:
+    def _get_take_5_label(self, player: Player, action_id: str) -> str:
         return self._get_take_label(player, 5)
-    def _get_take_6_label(self, player: Player) -> str:
+    def _get_take_6_label(self, player: Player, action_id: str) -> str:
         return self._get_take_label(player, 6)
 
     # Dice key actions (hidden keybind-only)

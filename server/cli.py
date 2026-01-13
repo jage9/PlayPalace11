@@ -275,11 +275,6 @@ class GameSimulator:
         self.game.turn_index = saved_turn_index
         self.game.rebuild_runtime_state()
 
-        # Action sets are now serialized (pure data), so just sync states
-        self.game.update_all_lobby_actions()
-        if hasattr(self.game, "update_all_turn_actions"):
-            self.game.update_all_turn_actions()
-
     def run(self) -> dict[str, Any]:
         """Run the simulation to completion. Returns results dict."""
         if not self.game or not self.spectator:

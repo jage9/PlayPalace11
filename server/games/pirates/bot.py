@@ -313,14 +313,16 @@ def _decide_movement_toward(
     else:
         # Already at position, move randomly
         direction = random.choice(["left", "right"])
+        return _get_best_move_action(game, player, direction)
 
-    return _get_best_move_action(game, player, direction)
+    return _get_best_move_action(game, player, direction, target_pos)
 
 
 def _get_best_move_action(
     game: "PiratesGame",
     player: "PiratesPlayer",
-    direction: str
+    direction: str,
+    target_pos: int | None = None
 ) -> BotDecision:
     """Get the best available move action for the given direction."""
     # Determine how many tiles we can move based on level
@@ -331,8 +333,13 @@ def _get_best_move_action(
     else:
         max_tiles = 1
 
-    # Prefer larger moves to get to gems faster
-    if max_tiles == 3:
+    # If we have a target, don't overshoot it
+    if target_pos is not None:
+        distance = abs(player.position - target_pos)
+        max_tiles = min(max_tiles, distance)
+
+    # Select appropriate move action
+    if max_tiles >= 3:
         action = f"move_3_{direction}"
     elif max_tiles == 2:
         action = f"move_2_{direction}"

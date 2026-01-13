@@ -170,7 +170,7 @@ class PigGame(Game):
             return Visibility.HIDDEN
         return Visibility.VISIBLE
 
-    def _get_bank_label(self, player: Player) -> str:
+    def _get_bank_label(self, player: Player, action_id: str) -> str:
         """Get dynamic label for bank action showing current points."""
         pig_player: PigPlayer = player  # type: ignore
         user = self.get_user(player)

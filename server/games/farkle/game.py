@@ -545,7 +545,7 @@ class FarkleGame(Game):
             return Visibility.HIDDEN
         return Visibility.VISIBLE
 
-    def _get_roll_label(self, player: Player) -> str:
+    def _get_roll_label(self, player: Player, action_id: str) -> str:
         """Get dynamic label for roll action."""
         user = self.get_user(player)
         locale = user.locale if user else "en"
@@ -585,7 +585,7 @@ class FarkleGame(Game):
             return Visibility.HIDDEN
         return Visibility.VISIBLE
 
-    def _get_bank_label(self, player: Player) -> str:
+    def _get_bank_label(self, player: Player, action_id: str) -> str:
         """Get dynamic label for bank action."""
         user = self.get_user(player)
         locale = user.locale if user else "en"

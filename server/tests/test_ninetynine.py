@@ -480,7 +480,6 @@ class TestNinetyNinePersistence:
                 game._users = saved_users
                 game._keybinds = saved_keybinds
                 game.rebuild_runtime_state()
-                game.update_all_turn_actions()
 
             game.on_tick()
 

@@ -101,8 +101,6 @@ class TestPigGameActions:
         self.game.on_start()
         # Reset to first player
         self.game.reset_turn_order()
-        # Update action availability
-        self.game.update_all_turn_actions()
 
     def test_roll_not_one(self):
         """Test rolling when result is not 1."""
@@ -143,8 +141,6 @@ class TestPigGameActions:
         self.player1.round_score = 20
         # Set initial score via TeamManager
         self.game._team_manager.add_to_team_score("Alice", 10)
-        # Update actions to enable bank after setting round_score
-        self.game.update_turn_actions(self.player1)
         old_player = self.game.current_player
         self.game.execute_action(self.player1, "bank")
 
@@ -155,9 +151,8 @@ class TestPigGameActions:
     def test_bank_hidden_when_no_points(self):
         """Test that bank action is hidden from menu when round score is 0."""
         self.player1.round_score = 0
-        self.game.update_turn_actions(self.player1)
         visible_actions = self.game.get_all_visible_actions(self.player1)
-        visible_ids = [a.id for a in visible_actions]
+        visible_ids = [a.action.id for a in visible_actions]
 
         assert "roll" in visible_ids
         assert "bank" not in visible_ids
@@ -166,16 +161,14 @@ class TestPigGameActions:
         """Test that bank is hidden from menu when below min_bank_points."""
         self.game.options.min_bank_points = 10
         self.player1.round_score = 5
-        self.game.update_turn_actions(self.player1)
         visible_actions = self.game.get_all_visible_actions(self.player1)
-        visible_ids = [a.id for a in visible_actions]
+        visible_ids = [a.action.id for a in visible_actions]
 
         assert "bank" not in visible_ids
 
         self.player1.round_score = 10
-        self.game.update_turn_actions(self.player1)
         visible_actions = self.game.get_all_visible_actions(self.player1)
-        visible_ids = [a.id for a in visible_actions]
+        visible_ids = [a.action.id for a in visible_actions]
 
         assert "bank" in visible_ids
 
@@ -193,14 +186,11 @@ class TestPigGameActions:
 
     def test_requires_turn(self):
         """Test that turn-required actions are only available on your turn."""
-        # Player 1's turn - update actions to reflect current state
-        self.game.update_all_turn_actions()
-
         p1_actions = self.game.get_all_enabled_actions(self.player1)
         p2_actions = self.game.get_all_enabled_actions(self.player2)
 
-        p1_ids = [a.id for a in p1_actions]
-        p2_ids = [a.id for a in p2_actions]
+        p1_ids = [a.action.id for a in p1_actions]
+        p2_ids = [a.action.id for a in p2_actions]
 
         assert "roll" in p1_ids
         assert "roll" not in p2_ids
@@ -246,7 +236,6 @@ class TestPigPlayTest:
                     user = game.get_user(player)
                     if user:
                         game.setup_player_actions(player)
-                game.update_all_turn_actions()
 
             # Tick
             game.on_tick()
@@ -283,7 +272,6 @@ class TestPigPlayTest:
                 # Reinitialize actions for all players after reload
                 for player in game.players:
                     game.setup_player_actions(player)
-                game.update_all_turn_actions()
 
             game.on_tick()
 
@@ -318,7 +306,6 @@ class TestPigPlayTest:
                 # Reinitialize actions for all players after reload
                 for player in game.players:
                     game.setup_player_actions(player)
-                game.update_all_turn_actions()
 
             # If it's the human's turn and they have >= 10 points, bank
             current = game.current_player
@@ -445,7 +432,6 @@ class TestPigPersistence:
         # Reinitialize actions for all players after reload
         for player in game.players:
             game.setup_player_actions(player)
-        game.update_all_turn_actions()
 
         # Actions should still work
         actions = game.get_all_enabled_actions(game.players[0])

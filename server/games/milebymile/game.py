@@ -871,7 +871,7 @@ class MileByMileGame(Game):
             return []
 
         # Get the pending action to find which card slot
-        action_id = self._pending_actions.get(player.name)
+        action_id = self._pending_actions.get(player.id)
         if not action_id:
             return []
 
@@ -907,7 +907,7 @@ class MileByMileGame(Game):
         if not isinstance(player, MileByMilePlayer):
             return None
 
-        action_id = self._pending_actions.get(player.name)
+        action_id = self._pending_actions.get(player.id)
         if not action_id:
             return None
 

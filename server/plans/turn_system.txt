@@ -21,34 +21,35 @@ turns: list
 turn_timer
 final_scores: dict # Key is player id, value is player score
 
-add_turn(self, player_id: set= set()) -> GameTurn | None:
+def add_turn(self, player_id: set= set()) -> GameTurn | None:
 use turn_timer to get ticks for this turn
-turn = GameTurn(len(turns), self.cycle_count, player_ids)
+turn = GameTurn(len(turns), self.cycle_count, self.turn_timer.ticks, player_ids)
 self.turns.append(turn)
 return turn
 
-get_turns_in_cycles(self, min_cycle: int, max_cycle: int) -> list[GameTurn]:
+def get_turns_in_cycles(self, min_cycle: int, max_cycle: int) -> list[GameTurn]:
 Returns a list of GameTurn objects in one or more cycles. By default, gets the turns for the last cycle.
 filtered_turns=[]
-[filtered_turns.append(t) for t in self.turns if t.cycle in range(min_cycle, max_cycle+1)]
+[filtered_turns.append(turn) for turn in self.turns if turn.cycle in range(min_cycle, max_cycle+1)]
 return filtered_turns
 
-get_turns_for_player(self, player_id: int, min_turn: int, max_turn: int) -> list[GameTurn]:
+def get_turns_for_player(self, player_id: int, min_turn: int, max_turn: int) -> list[GameTurn]:
 Returns the GameTurn objects a player took during one or more turns. By default get the last played turn
 Turns in this context refers to when they played, not absolute turn indexes.
-get the list of turns the player has played, then filter based on that
+get the list of turns this player has played, then filter based on that
 played_turns=[]
-[played_turns.append(t) for t in self.turns if player_id in t.players]
+[played_turns.append(turn) for turn in self.turns if player_id in turn.players]
 return played_turns[min_turns:max_turns]
 
-get_ticks_in_turns(self, turns: list[GameTurn]= None) -> int:
+def get_ticks_in_turns(self, turns: list[GameTurn]= None) -> int:
 Returns the number of accumulative ticks in the selected turns
 if turns is None: turns = self.turns
 return sum([t.ticks for t in turns])
 
-record_scores(self, players: list):
+def record_scores(self, players: list) -> dict:
 stop and reset turn_timer
 self.final_scores.update({p.id: p.score for p in players})
+return self.final_scores
 
 TurnTracker dataclass:
 rounds: list[GameRound]
@@ -59,47 +60,47 @@ end_cycle_func: callable = None
 start_turn_func: callable = None
 end_turn_func: callable = None
 
-on_round_start(self, *args, **kwargs):
+def on_round_start(self, *args, **kwargs):
 round = GameRound()
 self.rounds.append(round)
 if self.start_round_func: self.start_round_func(*args, **kwargs)
 
-on_round_end(self, *args, **kwargs):
+def on_round_end(self, *args, **kwargs):
 round.report_scores(self.players)
 if self.end_round_func: self.end_round_func(*args, **kwargs)
 If using a RoundTransition timer, use it here
 
-on_turn_cycle_start(self, *args, **kwargs):
+def on_turn_cycle_start(self, *args, **kwargs):
 round = self.rounds[-1]
 round.cycle_count+=1
 if self.start_cycle_func: self.start_cycle_func(*args, **kwargs)
 
-on_turn_cycle_end(self, *args, **kwargs):
+def on_turn_cycle_end(self, *args, **kwargs):
 round = self.rounds[-1]
 if self.end_cycle_func: self.end_cycle_func(*args, **kwargs)
 if round.max_turn_cycles >0 and round.cycle_count >= round.max_turn_cycles:
 self.on_round_end(self.players)
 
-on_turn_start(self, *args, **kwargs):
+def on_turn_start(self, *args, **kwargs):
 round = self.rounds[-1]
 if self.start_turn_func: self.start_turn_func(*args, **kwargs)
 start round.turn_timer
 
-on_turn_end(self, , *args, **kwargs):
+def on_turn_end(self, , *args, **kwargs):
 round = self.rounds[-1]
 stop and reset round.turn_timer
 find a way to determine the correct player ids from self.players
 round.add_turn(player_ids)
 if self.end_turn_func: self.end_turn_func(*args, **kwargs)
 
-get_total_turns(self) -> int:
+def get_total_turns(self) -> int:
 Returns the total number of turns throughout all rounds
 return sum([len(round.turns) for round in self.rounds])
 
-get_cycle_count(self) -> int:
+def get_total_cycles(self) -> int:
 Returns the total number of turn cycles throughout all rounds
 return sum([round.cycle_count for round in self.rounds])
 
-get_total_ticks(self) -> int:
+def get_total_ticks(self) -> int:
 Returns the total number of ticks throughout all rounds
 return sum([round.get_ticks_in_turns() for round in self.rounds])

@@ -72,8 +72,8 @@ def get_valid_war_goals(
     if not defender.tribe_state:
         return goals
 
-    # Conquest - can always try to take a city (if defender has any)
-    if defender.tribe_state.cities > 0:
+    # Conquest - only available from Day 3 onwards (prevents early game rush)
+    if defender.tribe_state.cities > 0 and game.current_day >= 3:
         goals.append(WarGoal.CONQUEST)
 
     # Plunder - can always try to steal cards (if defender has any)
@@ -517,10 +517,10 @@ def apply_war_outcome(game: AgeOfHeroesGame) -> None:
 
     if war.goal == WarGoal.CONQUEST:
         # Take cities based on army strength (Pascal: wgsConquest)
-        # 4+ armies: 2 cities, 2-3 armies: 1 city
-        if attacker_strength >= 4:
+        # 3+ armies: 2 cities, 1+ armies: 1 city
+        if attacker_strength >= 3:
             cities_to_take = 2
-        elif attacker_strength >= 2:
+        elif attacker_strength >= 1:
             cities_to_take = 1
         else:
             cities_to_take = 0

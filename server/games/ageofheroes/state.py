@@ -44,6 +44,7 @@ class PlaySubPhase(str, Enum):
     WAR_PREPARE = "war_prepare"  # Both sides selecting armies (bot handling)
     WAR_BATTLE = "war_battle"  # Dice rolling combat
     DISCARD_EXCESS = "discard_excess"  # Discard to max hand size
+    DISASTER_TARGET = "disaster_target"  # Selecting target for disaster card (Earthquake/Eruption)
 
 
 class ActionType(str, Enum):

@@ -45,10 +45,14 @@ def process_player_events(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> N
             events_to_process.append((i, card, "population_growth"))
 
         elif card.subtype == EventType.EARTHQUAKE:
-            events_to_process.append((i, card, "earthquake"))
+            # In round 1, auto-discard. In round 2+, keep in hand to be played manually
+            if not effects_active:
+                events_to_process.append((i, card, "earthquake"))
 
         elif card.subtype == EventType.ERUPTION:
-            events_to_process.append((i, card, "eruption"))
+            # In round 1, auto-discard. In round 2+, keep in hand to be played manually
+            if not effects_active:
+                events_to_process.append((i, card, "eruption"))
 
         elif card.subtype == EventType.HUNGER:
             if effects_active:
@@ -266,6 +270,74 @@ def check_drawn_card_event(
         if card in player.hand:
             player.hand.remove(card)
             game.discard_pile.append(card)
+
+
+def apply_earthquake_effect(game: AgeOfHeroesGame, source_player: AgeOfHeroesPlayer, target_player: AgeOfHeroesPlayer) -> None:
+    """Apply Earthquake effect: Target player's armies are disabled for one turn.
+
+    Armies become 'earthquaked' and cannot be used until next turn.
+    Can be blocked by Fortune card.
+    """
+    if not target_player.tribe_state:
+        return
+
+    game.broadcast_personal_l(
+        target_player,
+        "ageofheroes-earthquake-strikes-you",
+        "ageofheroes-earthquake-strikes",
+        attacker=source_player.name,
+    )
+    game.play_sound("game_ageofheroes/disaster.ogg")
+
+    # Check for Fortune block
+    if player_has_card(game, target_player, EventType.FORTUNE):
+        discard_player_card(game, target_player, EventType.FORTUNE)
+        return
+
+    # Disable all available armies (mark them as earthquaked)
+    available_armies = target_player.tribe_state.get_available_armies()
+    if available_armies > 0:
+        target_player.tribe_state.earthquaked_armies = available_armies
+
+        user = game.get_user(target_player)
+        if user:
+            user.speak_l("ageofheroes-armies-disabled", count=available_armies)
+
+
+def apply_eruption_effect(game: AgeOfHeroesGame, source_player: AgeOfHeroesPlayer, target_player: AgeOfHeroesPlayer) -> None:
+    """Apply Eruption effect: Target player loses one city.
+
+    Can be blocked by Fortune or Olympics card.
+    """
+    if not target_player.tribe_state:
+        return
+
+    game.broadcast_personal_l(
+        target_player,
+        "ageofheroes-eruption-strikes-you",
+        "ageofheroes-eruption-strikes",
+        attacker=source_player.name,
+    )
+    game.play_sound("game_ageofheroes/disaster.ogg")
+
+    # Check for Fortune block
+    if player_has_card(game, target_player, EventType.FORTUNE):
+        discard_player_card(game, target_player, EventType.FORTUNE)
+        return
+
+    # Check for Olympics block
+    if player_has_card(game, target_player, EventType.OLYMPICS):
+        discard_player_card(game, target_player, EventType.OLYMPICS)
+        return
+
+    # Destroy one city
+    if target_player.tribe_state.cities > 0:
+        target_player.tribe_state.cities -= 1
+        game.city_supply += 1  # Return to supply
+
+        user = game.get_user(target_player)
+        if user:
+            user.speak_l("ageofheroes-city-destroyed")
 
 
 def _broadcast_discard(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer, card: Card) -> None:

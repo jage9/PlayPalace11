@@ -123,6 +123,7 @@ class AgeOfHeroesPlayer(Player):
 
     # Construction state
     pending_road_targets: list[tuple[int, str]] = field(default_factory=list)  # Available neighbors for road
+    declined_road_targets: list[int] = field(default_factory=list)  # Targets that declined during this construction action
 
     # War state
     pending_war_targets: list[tuple[int, "AgeOfHeroesPlayer"]] = field(default_factory=list)  # Available war targets
@@ -132,6 +133,11 @@ class AgeOfHeroesPlayer(Player):
     pending_war_generals: int = 0  # Generals to commit
     pending_war_heroes_as_armies: int = 0  # Heroes to use as armies
     pending_war_heroes_as_generals: int = 0  # Heroes to use as generals
+
+    # Disaster card state (Earthquake/Eruption targeting)
+    pending_disaster_targets: list[tuple[int, "AgeOfHeroesPlayer"]] = field(default_factory=list)  # Available disaster targets
+    pending_disaster_card_index: int = -1  # Index of disaster card being played (-1 = none)
+    pending_disaster_type: str = ""  # Type of disaster (earthquake/eruption)
 
 
 @dataclass
@@ -561,6 +567,51 @@ class AgeOfHeroesGame(Game):
                     get_label="_get_discard_card_label",
                 )
             )
+
+        # Disaster card actions (Earthquake/Eruption) - one per potential card in hand
+        for i in range(10):  # Max potential hand size
+            action_set.add(
+                Action(
+                    id=f"play_earthquake_{i}",
+                    label="",
+                    handler="_action_play_disaster_card",
+                    is_enabled="_is_disaster_card_enabled",
+                    is_hidden="_is_disaster_card_hidden",
+                    get_label="_get_disaster_card_label",
+                )
+            )
+            action_set.add(
+                Action(
+                    id=f"play_eruption_{i}",
+                    label="",
+                    handler="_action_play_disaster_card",
+                    is_enabled="_is_disaster_card_enabled",
+                    is_hidden="_is_disaster_card_hidden",
+                    get_label="_get_disaster_card_label",
+                )
+            )
+
+        # Disaster target selection actions (one per potential player)
+        for i in range(6):  # Max 6 players
+            action_set.add(
+                Action(
+                    id=f"disaster_target_{i}",
+                    label="",
+                    handler="_action_select_disaster_target",
+                    is_enabled="_is_disaster_target_enabled",
+                    is_hidden="_is_disaster_target_hidden",
+                    get_label="_get_disaster_target_label",
+                )
+            )
+        action_set.add(
+            Action(
+                id="cancel_disaster",
+                label="Cancel",
+                handler="_action_cancel_disaster",
+                is_enabled="_is_disaster_menu_enabled",
+                is_hidden="_is_disaster_menu_hidden",
+            )
+        )
 
         # Status actions (keybind only)
         action_set.add(
@@ -1410,6 +1461,153 @@ class AgeOfHeroesGame(Game):
         locale = user.locale if user else "en"
         return get_card_name(card, locale)
 
+    def _is_disaster_card_enabled(self, player: Player) -> str | None:
+        """Disaster cards enabled during select action phase in round 2+."""
+        if self.status != "playing":
+            return "ageofheroes-game-not-started"
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return "Invalid player"
+        if self.current_player != player:
+            return "Not your turn"
+        if self.sub_phase != PlaySubPhase.SELECT_ACTION:
+            return "Wrong phase"
+        if self.current_day <= 1:
+            return "Disasters only playable from day 2 onward"
+        return None
+
+    def _is_disaster_card_hidden(self, player: Player, action_id: str) -> Visibility:
+        """Disaster card actions hidden if not correct card or wrong phase."""
+        if self.sub_phase != PlaySubPhase.SELECT_ACTION:
+            return Visibility.HIDDEN
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return Visibility.HIDDEN
+        if self.current_player != player:
+            return Visibility.HIDDEN
+        if self.current_day <= 1:
+            return Visibility.HIDDEN
+
+        # Extract disaster type and card index from action_id
+        try:
+            if action_id.startswith("play_earthquake_"):
+                disaster_type = EventType.EARTHQUAKE
+                card_index = int(action_id.replace("play_earthquake_", ""))
+            elif action_id.startswith("play_eruption_"):
+                disaster_type = EventType.ERUPTION
+                card_index = int(action_id.replace("play_eruption_", ""))
+            else:
+                return Visibility.HIDDEN
+        except ValueError:
+            return Visibility.HIDDEN
+
+        # Hide if card index out of range
+        if card_index >= len(player.hand):
+            return Visibility.HIDDEN
+
+        # Hide if card at index is not the correct disaster type
+        card = player.hand[card_index]
+        if card.card_type != CardType.EVENT or card.subtype != disaster_type:
+            return Visibility.HIDDEN
+
+        return Visibility.VISIBLE
+
+    def _get_disaster_card_label(self, player: Player, action_id: str) -> str:
+        """Get label for disaster card action - 'Play [card name]'."""
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return ""
+
+        # Extract card index from action_id
+        try:
+            if action_id.startswith("play_earthquake_"):
+                card_index = int(action_id.replace("play_earthquake_", ""))
+            elif action_id.startswith("play_eruption_"):
+                card_index = int(action_id.replace("play_eruption_", ""))
+            else:
+                return ""
+        except ValueError:
+            return ""
+
+        if card_index >= len(player.hand):
+            return ""
+
+        card = player.hand[card_index]
+        user = self.get_user(player)
+        locale = user.locale if user else "en"
+        card_name = get_card_name(card, locale)
+        play_text = Localization.get(locale, "ageofheroes-play")
+        return f"{play_text} {card_name}"
+
+    def _is_disaster_target_enabled(self, player: Player) -> str | None:
+        """Disaster target selection enabled during disaster target phase."""
+        if self.status != "playing":
+            return "ageofheroes-game-not-started"
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return "Invalid player"
+        if self.current_player != player:
+            return "Not your turn"
+        if self.sub_phase != PlaySubPhase.DISASTER_TARGET:
+            return "Wrong phase"
+        return None
+
+    def _is_disaster_target_hidden(self, player: Player, action_id: str) -> Visibility:
+        """Disaster target actions hidden if not in disaster target phase or out of range."""
+        if self.sub_phase != PlaySubPhase.DISASTER_TARGET:
+            return Visibility.HIDDEN
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return Visibility.HIDDEN
+        if self.current_player != player:
+            return Visibility.HIDDEN
+
+        # Extract target index from action_id
+        try:
+            target_index = int(action_id.replace("disaster_target_", ""))
+        except ValueError:
+            return Visibility.HIDDEN
+
+        # Hide if target index out of range
+        if target_index >= len(player.pending_disaster_targets):
+            return Visibility.HIDDEN
+
+        return Visibility.VISIBLE
+
+    def _get_disaster_target_label(self, player: Player, action_id: str) -> str:
+        """Get label for disaster target action - target player name."""
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return ""
+
+        # Extract target index from action_id
+        try:
+            target_index = int(action_id.replace("disaster_target_", ""))
+        except ValueError:
+            return ""
+
+        if target_index >= len(player.pending_disaster_targets):
+            return ""
+
+        _, target = player.pending_disaster_targets[target_index]
+        return target.name
+
+    def _is_disaster_menu_enabled(self, player: Player) -> str | None:
+        """Disaster menu actions enabled during disaster target phase."""
+        if self.status != "playing":
+            return "ageofheroes-game-not-started"
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return "Invalid player"
+        if self.current_player != player:
+            return "Not your turn"
+        if self.sub_phase != PlaySubPhase.DISASTER_TARGET:
+            return "Wrong phase"
+        return None
+
+    def _is_disaster_menu_hidden(self, player: Player, action_id: str) -> Visibility:
+        """Disaster menu actions hidden if not in disaster target phase."""
+        if self.sub_phase != PlaySubPhase.DISASTER_TARGET:
+            return Visibility.HIDDEN
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return Visibility.HIDDEN
+        if self.current_player != player:
+            return Visibility.HIDDEN
+        return Visibility.VISIBLE
+
     # ==========================================================================
     # Action Handlers
     # ==========================================================================
@@ -2092,8 +2290,9 @@ class AgeOfHeroesGame(Game):
         self.road_supply -= 1
         build_road(self, builder, player_index, direction)
 
-        # Clear pending targets and request
+        # Clear pending targets, declined targets, and request
         builder.pending_road_targets = []
+        builder.declined_road_targets = []
         self.road_request_from = -1
         self.road_request_to = -1
 
@@ -2153,8 +2352,9 @@ class AgeOfHeroesGame(Game):
         if builder_user:
             builder_user.speak_l("ageofheroes-road-request-denied", denier=player.name)
 
-        # Clear pending targets and request
+        # Track that this target declined so bot won't ask them again during this construction action
         if isinstance(builder, AgeOfHeroesPlayer):
+            builder.declined_road_targets.append(player_index)
             builder.pending_road_targets = []
         self.road_request_from = -1
         self.road_request_to = -1
@@ -2669,6 +2869,145 @@ class AgeOfHeroesGame(Game):
             # Done discarding, end turn
             self._end_turn()
 
+    def _action_play_disaster_card(self, player: Player, action_id: str) -> None:
+        """Handle playing a disaster card (Earthquake/Eruption) - show target selection."""
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return
+
+        if self.sub_phase != PlaySubPhase.SELECT_ACTION:
+            return
+
+        if self.current_player != player:
+            return
+
+        if self.current_day <= 1:
+            return
+
+        # Extract disaster type and card index from action_id
+        try:
+            if action_id.startswith("play_earthquake_"):
+                disaster_type = EventType.EARTHQUAKE
+                card_index = int(action_id.replace("play_earthquake_", ""))
+            elif action_id.startswith("play_eruption_"):
+                disaster_type = EventType.ERUPTION
+                card_index = int(action_id.replace("play_eruption_", ""))
+            else:
+                return
+        except ValueError:
+            return
+
+        if card_index >= len(player.hand):
+            return
+
+        # Verify card is correct type
+        card = player.hand[card_index]
+        if card.card_type != CardType.EVENT or card.subtype != disaster_type:
+            return
+
+        # Get valid targets (all other active players)
+        active_players = self.get_active_players()
+        targets = []
+        for i, p in enumerate(active_players):
+            if p != player and isinstance(p, AgeOfHeroesPlayer) and p.tribe_state:
+                targets.append((i, p))
+
+        if not targets:
+            user = self.get_user(player)
+            if user:
+                user.speak_l("ageofheroes-no-targets")
+            return
+
+        # For bots, auto-select best target and execute
+        if player.is_bot:
+            bot_ai.bot_play_disaster_on_target(self, player, disaster_type)
+            return
+
+        # For humans, store disaster state and enter target selection phase
+        player.pending_disaster_targets = targets
+        player.pending_disaster_card_index = card_index
+        player.pending_disaster_type = disaster_type
+        self.sub_phase = PlaySubPhase.DISASTER_TARGET
+
+        user = self.get_user(player)
+        if user:
+            card_name = get_card_name(card, user.locale)
+            user.speak_l("ageofheroes-select-disaster-target", card=card_name)
+
+        self.rebuild_all_menus()
+
+    def _action_select_disaster_target(self, player: Player, action_id: str) -> None:
+        """Handle selecting a target for disaster card."""
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return
+
+        if self.sub_phase != PlaySubPhase.DISASTER_TARGET:
+            return
+
+        if self.current_player != player:
+            return
+
+        # Extract target index from action_id
+        try:
+            target_list_index = int(action_id.replace("disaster_target_", ""))
+        except ValueError:
+            return
+
+        if target_list_index >= len(player.pending_disaster_targets):
+            return
+
+        target_player_index, target = player.pending_disaster_targets[target_list_index]
+
+        # Verify card still exists
+        card_index = player.pending_disaster_card_index
+        if card_index < 0 or card_index >= len(player.hand):
+            return
+
+        card = player.hand[card_index]
+        disaster_type = player.pending_disaster_type
+
+        # Apply the disaster effect
+        from .events import apply_earthquake_effect, apply_eruption_effect
+
+        if disaster_type == EventType.EARTHQUAKE:
+            # Remove card and apply effect
+            player.hand.pop(card_index)
+            self.discard_pile.append(card)
+            apply_earthquake_effect(self, player, target)
+        elif disaster_type == EventType.ERUPTION:
+            # Remove card and apply effect
+            player.hand.pop(card_index)
+            self.discard_pile.append(card)
+            apply_eruption_effect(self, player, target)
+
+        # Clear disaster state
+        player.pending_disaster_targets = []
+        player.pending_disaster_card_index = -1
+        player.pending_disaster_type = ""
+
+        # Return to action selection
+        self.sub_phase = PlaySubPhase.SELECT_ACTION
+        self.rebuild_all_menus()
+
+    def _action_cancel_disaster(self, player: Player, action_id: str) -> None:
+        """Handle canceling disaster card play."""
+        if not isinstance(player, AgeOfHeroesPlayer):
+            return
+
+        if self.sub_phase != PlaySubPhase.DISASTER_TARGET:
+            return
+
+        if self.current_player != player:
+            return
+
+        # Clear disaster state
+        player.pending_disaster_targets = []
+        player.pending_disaster_card_index = -1
+        player.pending_disaster_type = ""
+
+        # Return to action selection
+        self.sub_phase = PlaySubPhase.SELECT_ACTION
+        self.rebuild_all_menus()
+
     def _start_play_phase(self) -> None:
         """Start the main play phase."""
         self.phase = GamePhase.PLAY
@@ -2857,6 +3196,8 @@ class AgeOfHeroesGame(Game):
     def _end_action(self, player: AgeOfHeroesPlayer) -> None:
         """End the current action and check for hand overflow."""
         player.current_action = None
+        # Clear declined road targets when action ends
+        player.declined_road_targets = []
 
         # Check hand size
         if len(player.hand) > MAX_HAND_SIZE:
@@ -2872,6 +3213,9 @@ class AgeOfHeroesGame(Game):
             # For bots, auto-discard
             if player.is_bot:
                 bot_ai.bot_execute_discard_excess(self, player)
+            else:
+                # Rebuild menus to show discard options
+                self.rebuild_all_menus()
             return
 
         self._end_turn()

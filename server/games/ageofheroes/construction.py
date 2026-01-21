@@ -138,7 +138,11 @@ def has_road_target(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> bool:
 def get_road_targets(
     game: AgeOfHeroesGame, player: AgeOfHeroesPlayer
 ) -> list[tuple[int, str]]:
-    """Get list of valid road targets (player_index, direction)."""
+    """Get list of valid road targets (player_index, direction).
+
+    Excludes targets that have declined during this construction action.
+    In 2-player games, left and right neighbors are the same, so only one is returned.
+    """
     if not player.tribe_state:
         return []
 
@@ -155,6 +159,7 @@ def get_road_targets(
             and hasattr(left_player, "tribe_state")
             and left_player.tribe_state
             and not left_player.tribe_state.road_right
+            and left_index not in player.declined_road_targets
         ):
             targets.append((left_index, "left"))
 
@@ -162,11 +167,15 @@ def get_road_targets(
     if not player.tribe_state.road_right:
         right_index = (player_index + 1) % len(active_players)
         right_player = active_players[right_index]
+        # Skip if this is the same player as left neighbor (2-player game)
+        # and we already added them
         if (
             right_player != player
             and hasattr(right_player, "tribe_state")
             and right_player.tribe_state
             and not right_player.tribe_state.road_left
+            and right_index not in player.declined_road_targets
+            and not any(target[0] == right_index for target in targets)
         ):
             targets.append((right_index, "right"))
 

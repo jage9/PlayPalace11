@@ -49,6 +49,7 @@ ageofheroes-action-tax-collection = Tax Collection
 ageofheroes-action-construction = Construction
 ageofheroes-action-war = War
 ageofheroes-action-do-nothing = Do Nothing
+ageofheroes-play = Play
 
 # War goals
 ageofheroes-war-conquest = Conquest
@@ -101,10 +102,24 @@ ageofheroes-eruption-you = An eruption destroys one of your cities.
 ageofheroes-hunger-strikes = The grain is a lie.
 ageofheroes-lose-card-hunger = You lose { $card }.
 ageofheroes-barbarians-pillage = Barbarians attack { $player }'s resources.
+ageofheroes-barbarians-attack = { $attacker } plays Barbarians against { $player }.
 ageofheroes-barbarians-attack-you = Barbarians pillage your resources.
 ageofheroes-lose-card-barbarians = You lose { $card }.
 ageofheroes-block-with-card = { $player } blocks the disaster using { $card }.
 ageofheroes-block-with-card-you = You block the disaster using { $card }.
+
+# Targeted disaster cards (Earthquake/Eruption)
+ageofheroes-select-disaster-target = Select a target for { $card }.
+ageofheroes-no-targets = No valid targets available.
+ageofheroes-earthquake-strikes-you = { $attacker } plays Earthquake against you! Your armies are disabled.
+ageofheroes-earthquake-strikes = { $attacker } plays Earthquake against { $player }.
+ageofheroes-armies-disabled = { $count } { $count ->
+    [one] army is
+    *[other] armies are
+} disabled for one turn.
+ageofheroes-eruption-strikes-you = { $attacker } plays Eruption against you! One of your cities is destroyed.
+ageofheroes-eruption-strikes = { $attacker } plays Eruption against { $player }.
+ageofheroes-city-destroyed = A city is destroyed by the eruption!
 
 # Fair phase
 ageofheroes-fair-start = The day dawns at the marketplace.

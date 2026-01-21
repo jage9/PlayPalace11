@@ -103,6 +103,7 @@ def bot_select_action(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> str:
         return f"action_{ActionType.DO_NOTHING.value}"
 
     # Priority-based decision making:
+    # 0. Play disaster cards if beneficial
     # 1. Build city if close to victory (4 cities) and can afford it
     # 2. Build city if possible (victory path)
     # 3. Collect special resources (monument victory)
@@ -111,6 +112,12 @@ def bot_select_action(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> str:
     # 6. Build other structures
     # 7. Tax collection for cards
     # 8. Do nothing
+
+    # Check for disaster cards to play (only in round 2+)
+    if game.current_day > 1:
+        disaster_action = bot_should_play_disaster(game, player)
+        if disaster_action:
+            return disaster_action
 
     cities = player.tribe_state.cities
     armies = player.tribe_state.get_available_armies()
@@ -702,6 +709,190 @@ def bot_execute_discard_excess(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer)
         player.hand.pop(worst_index)
     player.pending_discard = 0
     game._end_turn()
+
+
+def bot_should_play_disaster(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> str | None:
+    """Check if bot should play a disaster card. Returns action_id or None."""
+    if not player.tribe_state:
+        return None
+
+    # Find disaster cards in hand
+    earthquake_indices = []
+    eruption_indices = []
+    for i, card in enumerate(player.hand):
+        if card.card_type == CardType.EVENT:
+            if card.subtype == EventType.EARTHQUAKE:
+                earthquake_indices.append(i)
+            elif card.subtype == EventType.ERUPTION:
+                eruption_indices.append(i)
+
+    if not earthquake_indices and not eruption_indices:
+        return None
+
+    # Get all other players as potential targets
+    active_players = game.get_active_players()
+    targets = []
+    for i, p in enumerate(active_players):
+        if p != player and hasattr(p, 'tribe_state') and p.tribe_state:
+            targets.append((i, p))
+
+    if not targets:
+        return None
+
+    # Score each target for each disaster type
+    best_score = -999
+    best_action = None
+
+    # Evaluate Earthquake (disable armies)
+    for card_index in earthquake_indices:
+        for target_idx, target in targets:
+            score = _score_earthquake_target(player.tribe_state, target)
+            if score > best_score:
+                best_score = score
+                best_action = f"play_earthquake_{card_index}"
+
+    # Evaluate Eruption (destroy city)
+    for card_index in eruption_indices:
+        for target_idx, target in targets:
+            score = _score_eruption_target(player.tribe_state, target)
+            if score > best_score:
+                best_score = score
+                best_action = f"play_eruption_{card_index}"
+
+    # Play if score is positive (beneficial) or even neutral if no better options
+    # Slight bias: play disaster cards opportunistically (threshold of -5)
+    if best_score > -5:
+        return best_action
+
+    return None
+
+
+def _score_earthquake_target(our_state: "TribeState" | None, target: AgeOfHeroesPlayer) -> int:
+    """Score a target for Earthquake. Higher = better target."""
+    if not target.tribe_state or not our_state:
+        return -999
+
+    target_armies = target.tribe_state.get_available_armies()
+
+    # Don't waste on targets with no armies
+    if target_armies == 0:
+        return -999
+
+    score = 0
+
+    # High value: Target with many armies (disrupt their plans)
+    score += target_armies * 10
+
+    # Higher value if target is close to victory
+    if target.tribe_state.cities >= 4:
+        score += 30  # They might attack us or win soon
+    if target.tribe_state.monument_progress >= 4:
+        score += 20
+
+    # Lower value if they have few cities (less threatening)
+    if target.tribe_state.cities <= 1:
+        score -= 10
+
+    return score
+
+
+def _score_eruption_target(our_state: "TribeState" | None, target: AgeOfHeroesPlayer) -> int:
+    """Score a target for Eruption. Higher = better target."""
+    if not target.tribe_state or not our_state:
+        return -999
+
+    target_cities = target.tribe_state.cities
+
+    # Don't waste on targets with no cities
+    if target_cities == 0:
+        return -999
+
+    score = 0
+
+    # Very high value: Target close to city victory
+    if target_cities >= 4:
+        score += 100  # Stop them from winning!
+    elif target_cities >= 3:
+        score += 50
+
+    # Moderate value: Weaken a strong opponent
+    if target_cities >= 2:
+        score += 20
+
+    # Small value: Any city destruction is somewhat useful
+    score += 10
+
+    return score
+
+
+def bot_play_disaster_on_target(
+    game: AgeOfHeroesGame, player: AgeOfHeroesPlayer, disaster_type: str
+) -> None:
+    """Bot plays a disaster card against the best target.
+
+    Called after bot selects a disaster action via bot_should_play_disaster.
+    """
+    from .events import apply_earthquake_effect, apply_eruption_effect
+
+    if not player.tribe_state:
+        game._end_action(player)
+        return
+
+    # Find the disaster card in hand
+    card_index = -1
+    for i, card in enumerate(player.hand):
+        if card.card_type == CardType.EVENT and card.subtype == disaster_type:
+            card_index = i
+            break
+
+    if card_index == -1:
+        game._end_action(player)
+        return
+
+    # Get all other players as potential targets
+    active_players = game.get_active_players()
+    targets = []
+    for i, p in enumerate(active_players):
+        if p != player and hasattr(p, 'tribe_state') and p.tribe_state:
+            targets.append((i, p))
+
+    if not targets:
+        game._end_action(player)
+        return
+
+    # Select best target based on disaster type
+    best_target = None
+    best_score = -999
+
+    if disaster_type == EventType.EARTHQUAKE:
+        for target_idx, target in targets:
+            score = _score_earthquake_target(player.tribe_state, target)
+            if score > best_score:
+                best_score = score
+                best_target = target
+    elif disaster_type == EventType.ERUPTION:
+        for target_idx, target in targets:
+            score = _score_eruption_target(player.tribe_state, target)
+            if score > best_score:
+                best_score = score
+                best_target = target
+
+    if not best_target or best_score <= 0:
+        game._end_action(player)
+        return
+
+    # Remove card and apply effect
+    card = player.hand.pop(card_index)
+    game.discard_pile.append(card)
+
+    if disaster_type == EventType.EARTHQUAKE:
+        apply_earthquake_effect(game, player, best_target)
+    elif disaster_type == EventType.ERUPTION:
+        apply_eruption_effect(game, player, best_target)
+
+    # Return to action selection so bot can continue its turn
+    game.sub_phase = PlaySubPhase.SELECT_ACTION
+    game.rebuild_all_menus()
 
 
 def bot_do_select_action(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> str:

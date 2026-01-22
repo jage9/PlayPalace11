@@ -559,6 +559,9 @@ class HoldemGame(Game):
         active_ids = [p.id for p in self.get_active_players() if p.chips > 0 and not p.folded]
         order = [p.id for p in self.get_active_players() if p.id in active_ids]
         self.betting = PokerBettingRound(order=order, max_raises=self.options.max_raises or None)
+        if not order:
+            self._showdown()
+            return
         if preflop:
             # Initialize with posted blinds
             sb_idx, bb_idx = self.table_state.get_blind_indices(order)
@@ -709,6 +712,9 @@ class HoldemGame(Game):
             return
         to_call = self.betting.amount_to_call(p.id)
         min_raise = max(self.betting.last_raise_size, 1)
+        if amount > p.chips:
+            self.broadcast_personal_l(p, "poker-raise-too-large", "poker-raise-too-large")
+            return
         if amount < min_raise:
             self.broadcast_l("poker-raise-too-small", amount=min_raise)
             return
@@ -722,6 +728,10 @@ class HoldemGame(Game):
             total = min(total, limit)
         if total > p.chips:
             total = p.chips
+        if total < to_call + min_raise:
+            # Treat short stack as an all-in call
+            self._action_call(p, "call")
+            return
         p.chips -= total
         if p.chips == 0:
             p.all_in = True

@@ -54,6 +54,7 @@ poker-reveal-second = Reveal second hole card
 
 poker-raise-cap-reached = Raise cap reached for this round.
 poker-raise-too-small = Minimum raise is { $amount } chips.
+poker-raise-too-large = You cannot raise more than your chip stack.
 
 poker-log-empty = No actions yet.
 poker-log-fold = { $player } folded

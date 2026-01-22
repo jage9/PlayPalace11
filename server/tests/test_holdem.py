@@ -47,3 +47,40 @@ def test_holdem_bot_game_completes():
             break
         game.on_tick()
     assert game.status == "finished"
+
+
+def test_holdem_raise_too_large_rejected():
+    game = HoldemGame()
+    user1 = MockUser("Alice")
+    user2 = MockUser("Bob")
+    game.add_player("Alice", user1)
+    game.add_player("Bob", user2)
+    game.on_start()
+    player = game.current_player
+    assert player is not None
+    player.chips = 5
+    pot_before = game.pot_manager.total_pot()
+    bet_before = game.betting.bets.get(player.id, 0) if game.betting else 0
+    game._action_raise(player, "10", "raise")
+    assert game.pot_manager.total_pot() == pot_before
+    assert game.betting.bets.get(player.id, 0) == bet_before
+
+
+def test_holdem_short_stack_raise_becomes_call():
+    game = HoldemGame()
+    user1 = MockUser("Alice")
+    user2 = MockUser("Bob")
+    game.add_player("Alice", user1)
+    game.add_player("Bob", user2)
+    game.on_start()
+    player = game.current_player
+    assert player is not None
+    player.chips = 5
+    if game.betting:
+        game.betting.current_bet = 10
+        game.betting.bets[player.id] = 0
+    pot_before = game.pot_manager.total_pot()
+    game._action_raise(player, "1", "raise")
+    assert game.pot_manager.total_pot() == pot_before + 5
+    if game.betting:
+        assert game.betting.current_bet == 10

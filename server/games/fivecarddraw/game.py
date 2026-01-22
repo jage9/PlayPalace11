@@ -390,14 +390,14 @@ class FiveCardDrawGame(Game):
     def _start_betting_round(self, start_index: int) -> None:
         self.current_bet_round += 1
         active_ids = [p.id for p in self.get_active_players() if p.chips > 0 and not p.folded]
-        if not active_ids:
-            self._end_game(None)
-            return
         order = [p.id for p in self.get_active_players() if p.id in active_ids]
         self.betting = PokerBettingRound(
             order=order, max_raises=self.options.max_raises or None
         )
         self.betting.reset()
+        if not order:
+            self._showdown()
+            return
         if start_index < 0:
             # default: left of button
             start_index = (self.table_state.button_index + 1) % len(order)
@@ -565,6 +565,9 @@ class FiveCardDrawGame(Game):
             self.broadcast_l("poker-raise-cap-reached")
             return
         min_raise = max(self.betting.last_raise_size, 1)
+        if amount > p.chips:
+            self.broadcast_personal_l(p, "poker-raise-too-large", "poker-raise-too-large")
+            return
         if amount < min_raise:
             self.broadcast_l("poker-raise-too-small", amount=min_raise)
             return
@@ -572,6 +575,10 @@ class FiveCardDrawGame(Game):
         total = to_call + amount
         if total > p.chips:
             total = p.chips
+        if total < to_call + min_raise:
+            # Treat short stack as an all-in call
+            self._action_call(p, "call")
+            return
         p.chips -= total
         if p.chips == 0:
             p.all_in = True

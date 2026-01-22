@@ -841,7 +841,11 @@ class FiveCardDrawGame(Game):
     # Helpers
     # ==========================================================================
     def _active_betting_ids(self) -> set[str]:
-        return {p.id for p in self.get_active_players() if isinstance(p, FiveCardDrawPlayer) and not p.folded and p.chips >= 0}
+        return {
+            p.id
+            for p in self.get_active_players()
+            if isinstance(p, FiveCardDrawPlayer) and not p.folded and (p.chips > 0 or p.all_in)
+        }
 
     def _all_in_ids(self) -> set[str]:
         return {p.id for p in self.get_active_players() if isinstance(p, FiveCardDrawPlayer) and p.all_in}

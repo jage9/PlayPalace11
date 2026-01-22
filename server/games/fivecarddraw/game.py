@@ -645,11 +645,9 @@ class FiveCardDrawGame(Game):
         to_call = self.betting.amount_to_call(p.id)
         min_raise = max(self.betting.last_raise_size, 1)
         pay = amount
-        if self.options.raise_mode != "no_limit":
+        if self.betting and self.betting.max_raises == 1:
             pot_total = self.pot_manager.total_pot()
             cap = pot_total + to_call * 2
-            if self.options.raise_mode == "double_pot":
-                cap = pot_total * 2 + to_call * 2
             pay = min(pay, cap)
         p.chips -= pay
         p.all_in = p.chips == 0

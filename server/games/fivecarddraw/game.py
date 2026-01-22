@@ -179,18 +179,18 @@ class FiveCardDrawGame(Game):
 
         action_set.add(
             Action(
-                id="fold",
-                label=Localization.get(locale, "poker-fold"),
-                handler="_action_fold",
+                id="call",
+                label=Localization.get(locale, "poker-call"),
+                handler="_action_call",
                 is_enabled="_is_turn_action_enabled",
                 is_hidden="_is_turn_action_hidden",
             )
         )
         action_set.add(
             Action(
-                id="call",
-                label=Localization.get(locale, "poker-call"),
-                handler="_action_call",
+                id="fold",
+                label=Localization.get(locale, "poker-fold"),
+                handler="_action_fold",
                 is_enabled="_is_turn_action_enabled",
                 is_hidden="_is_turn_action_hidden",
             )

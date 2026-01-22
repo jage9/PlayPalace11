@@ -18,6 +18,7 @@ def test_draw_options_defaults():
     game = FiveCardDrawGame()
     assert game.options.starting_chips == 20000
     assert game.options.ante == 100
+    assert game.options.raise_mode == "no_limit"
 
 
 def test_draw_serialization_round_trip():

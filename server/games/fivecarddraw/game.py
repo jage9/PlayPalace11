@@ -33,6 +33,13 @@ TURN_TIMER_LABELS = {
     "0": "poker-timer-unlimited",
 }
 
+RAISE_MODES = ["no_limit", "pot_limit", "double_pot"]
+RAISE_MODE_LABELS = {
+    "no_limit": "poker-raise-no-limit",
+    "pot_limit": "poker-raise-pot-limit",
+    "double_pot": "poker-raise-double-pot",
+}
+
 
 @dataclass
 class FiveCardDrawPlayer(Player):
@@ -76,6 +83,16 @@ class FiveCardDrawOptions(GameOptions):
             label="draw-set-turn-timer",
             prompt="draw-select-turn-timer",
             change_msg="draw-option-changed-turn-timer",
+        )
+    )
+    raise_mode: str = option_field(
+        MenuOption(
+            choices=RAISE_MODES,
+            choice_labels=RAISE_MODE_LABELS,
+            default="no_limit",
+            label="draw-set-raise-mode",
+            prompt="draw-select-raise-mode",
+            change_msg="draw-option-changed-raise-mode",
         )
     )
     max_raises: int = option_field(
@@ -334,6 +351,7 @@ class FiveCardDrawGame(Game):
         self.define_keybind("m", "Minimum raise", ["check_min_raise"], include_spectators=True)
         self.define_keybind("l", "Action log", ["check_log"], include_spectators=True)
         self.define_keybind("T", "Turn timer", ["check_turn_timer"], include_spectators=True)
+        self.define_keybind("v", "Raise mode", ["check_raise_mode"], include_spectators=True)
         for i in range(1, 6):
             self.define_keybind(str(i), f"Read card {i}", [f"speak_card_{i}"], include_spectators=False)
 
@@ -604,6 +622,12 @@ class FiveCardDrawGame(Game):
             return
         to_call = self.betting.amount_to_call(p.id)
         total = to_call + amount
+        if self.options.raise_mode != "no_limit":
+            pot_total = self.pot_manager.total_pot()
+            limit = pot_total + to_call * 2
+            if self.options.raise_mode == "double_pot":
+                limit = pot_total * 2 + to_call * 2
+            total = min(total, limit)
         if total > p.chips:
             total = p.chips
         if total < to_call + min_raise:
@@ -645,9 +669,11 @@ class FiveCardDrawGame(Game):
         to_call = self.betting.amount_to_call(p.id)
         min_raise = max(self.betting.last_raise_size, 1)
         pay = amount
-        if self.betting and self.betting.max_raises == 1:
+        if self.options.raise_mode != "no_limit":
             pot_total = self.pot_manager.total_pot()
             cap = pot_total + to_call * 2
+            if self.options.raise_mode == "double_pot":
+                cap = pot_total * 2 + to_call * 2
             pay = min(pay, cap)
         p.chips -= pay
         p.all_in = p.chips == 0
@@ -905,6 +931,12 @@ class FiveCardDrawGame(Game):
             user.speak_l("poker-timer-disabled")
         else:
             user.speak_l("poker-timer-remaining", seconds=remaining)
+
+    def _action_check_raise_mode(self, player: Player, action_id: str) -> None:
+        user = self.get_user(player)
+        if not user:
+            return
+        user.speak_l(RAISE_MODE_LABELS.get(self.options.raise_mode, "poker-raise-no-limit"))
 
     def _action_check_dealer(self, player: Player, action_id: str) -> None:
         user = self.get_user(player)

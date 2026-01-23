@@ -61,6 +61,7 @@ class Server:
         if locales_dir is None:
             locales_dir = _DEFAULT_LOCALES_DIR
         Localization.init(Path(locales_dir))
+        Localization.preload_bundles()
 
     async def start(self) -> None:
         """Start the server."""
@@ -318,18 +319,6 @@ class Server:
                 "text": "Username already taken. Please choose a different username."
             })
 
-    # Available languages
-    LANGUAGES = {
-        "en": "English",
-        "pt": "Português",
-        "zh": "中文",
-    }
-    LANGUAGES_ENGLISH = {
-        "en": "English",
-        "pt": "Portuguese",
-        "zh": "Chinese",
-    }
-
     async def _send_game_list(self, client: ClientConnection) -> None:
         """Send the list of available games to the client."""
         games = []
@@ -344,8 +333,7 @@ class Server:
         await client.send(
             {
                 "type": "update_options_lists",
-                "games": games,
-                "languages": self.LANGUAGES,
+                "games": games
             }
         )
 
@@ -463,7 +451,8 @@ class Server:
 
     def _show_options_menu(self, user: NetworkUser) -> None:
         """Show options menu."""
-        current_lang = self.LANGUAGES.get(user.locale, "English")
+        languages = Localization.get_available_languages(user.locale, fallback= user.locale)
+        current_lang = languages.get(user.locale, user.locale)
         prefs = user.preferences
 
         # Turn sound option
@@ -520,13 +509,17 @@ class Server:
 
     def _show_language_menu(self, user: NetworkUser) -> None:
         """Show language selection menu."""
+        # Get languages in their native names and in user's locale for comparison
+        languages = Localization.get_available_languages(fallback = user.locale)
+        localized_languages = Localization.get_available_languages(user.locale, fallback= user.locale)
+
         items = []
-        for lang_code, lang_name in self.LANGUAGES.items():
+        for lang_code, lang_name in languages.items():
             prefix = "* " if lang_code == user.locale else ""
-            english_name = self.LANGUAGES_ENGLISH.get(lang_code, lang_name)
-            # Add English name in parentheses if different from native name
-            if english_name != lang_name:
-                display = f"{prefix}{lang_name} ({english_name})"
+            localized_name = localized_languages.get(lang_code, lang_name)
+            # Show localized name first, then native name in parentheses if different
+            if localized_name != lang_name:
+                display = f"{prefix}{localized_name} ({lang_name})"
             else:
                 display = f"{prefix}{lang_name}"
             items.append(MenuItem(text=display, id=f"lang_{lang_code}"))
@@ -725,10 +718,11 @@ class Server:
         """Handle language selection."""
         if selection_id.startswith("lang_"):
             lang_code = selection_id[5:]  # Remove "lang_" prefix
-            if lang_code in self.LANGUAGES:
+            languages = Localization.get_available_languages(fallback= user.locale)
+            if lang_code in languages:
                 user.set_locale(lang_code)
                 self._db.update_user_locale(user.username, lang_code)
-                user.speak_l("language-changed", language=self.LANGUAGES[lang_code])
+                user.speak_l("language-changed", language=languages[lang_code])
                 self._show_options_menu(user)
                 return
         # Back or invalid
@@ -2017,7 +2011,7 @@ class Server:
 
         convo = packet.get("convo", "table")
         message = packet.get("message", "")
-        language = packet.get("language", "English")
+        language = packet.get("language", "Other")
 
         if convo == "table":
             table = self._tables.find_user_table(username)

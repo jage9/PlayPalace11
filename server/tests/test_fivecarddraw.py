@@ -7,7 +7,8 @@ from server.users.bot import Bot
 
 def test_draw_game_creation():
     game = FiveCardDrawGame()
-    assert game.get_name() == "game-name-fivecarddraw"
+    assert game.get_name() == "Five Card Draw"
+    assert game.get_name_key() == "game-name-fivecarddraw"
     assert game.get_type() == "fivecarddraw"
     assert game.get_category() == "category-poker"
     assert game.get_min_players() == 2

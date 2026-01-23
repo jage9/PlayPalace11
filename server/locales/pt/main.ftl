@@ -174,3 +174,6 @@ predict-entry-2p = { $rank }. { $player } (classificação: { $rating }, { $prob
 predict-unavailable = Previsões de classificação não estão disponíveis.
 predict-need-players = Necessário pelo menos 2 jogadores humanos para previsões.
 action-need-more-humans = Necessário mais jogadores humanos.
+confirm-leave-game = Tem certeza de que deseja sair da mesa?
+confirm-yes = Sim
+confirm-no = Não

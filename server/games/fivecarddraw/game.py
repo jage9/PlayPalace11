@@ -132,7 +132,7 @@ class FiveCardDrawGame(Game):
 
     @classmethod
     def get_name(cls) -> str:
-        return "game-name-fivecarddraw"
+        return "Five Card Draw"
 
     @classmethod
     def get_type(cls) -> str:
@@ -988,10 +988,7 @@ class FiveCardDrawGame(Game):
         player = self.current_player
         if not isinstance(player, FiveCardDrawPlayer):
             return
-        if self.betting and self.betting.amount_to_call(player.id) > 0:
-            self._action_fold(player, "fold")
-        else:
-            self._action_call(player, "call")
+        self._action_fold(player, "fold")
 
     def _play_draw_sounds(self, count: int) -> None:
         delay_ticks = 0

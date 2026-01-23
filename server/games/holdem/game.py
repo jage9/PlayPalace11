@@ -182,7 +182,7 @@ class HoldemGame(Game):
 
     @classmethod
     def get_name(cls) -> str:
-        return "game-name-holdem"
+        return "Texas Hold'em"
 
     @classmethod
     def get_type(cls) -> str:
@@ -1251,10 +1251,7 @@ class HoldemGame(Game):
         player = self.current_player
         if not isinstance(player, HoldemPlayer):
             return
-        if self.betting and self.betting.amount_to_call(player.id) > 0:
-            self._action_fold(player, "fold")
-        else:
-            self._action_call(player, "call")
+        self._action_fold(player, "fold")
 
     def _sync_team_scores(self) -> None:
         for team in self._team_manager.teams:

@@ -129,6 +129,24 @@ class LobbyActionsMixin:
         self.rebuild_all_menus()
 
     def _action_leave_game(self, player: "Player", action_id: str) -> None:
+        """Prompt for confirmation before leaving the game."""
+        user = self.get_user(player)
+        if not user:
+            return
+        self._pending_actions[player.id] = "leave_game_confirm"
+        user.speak_l("confirm-leave-game")
+        items = [
+            MenuItem(text=Localization.get(user.locale, "confirm-no"), id="no"),
+            MenuItem(text=Localization.get(user.locale, "confirm-yes"), id="yes"),
+        ]
+        user.show_menu(
+            "leave_game_confirm",
+            items,
+            multiletter=False,
+            escape_behavior=EscapeBehavior.SELECT_LAST,
+        )
+
+    def _perform_leave_game(self, player: "Player") -> None:
         """Leave the game."""
         if self.status == "playing" and not player.is_bot:
             # Mid-game: replace human with bot instead of removing
@@ -151,7 +169,7 @@ class LobbyActionsMixin:
                 return
 
             # Rebuild menus for remaining players
-            self.rebuild_all_menus()
+                self.rebuild_all_menus()
             return
 
         # Lobby or bot leaving: fully remove the player

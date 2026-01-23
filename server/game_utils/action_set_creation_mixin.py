@@ -180,7 +180,7 @@ class ActionSetCreationMixin:
             include_spectators=True,
         )
         self.define_keybind(
-            "q",
+            "ctrl+q",
             "Leave table",
             ["leave_game"],
             state=KeybindState.ALWAYS,

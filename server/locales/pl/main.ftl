@@ -213,3 +213,6 @@ predict-entry-2p = { $rank }. { $player } (rating: { $rating }, { $probability }
 predict-unavailable = Prognoza ocen nie jest dostępna.
 predict-need-players = potrzebuje conajmniej 2 luckich graczy do przewidywania
 action-need-more-humans = Potrzeba więcej ludzi
+confirm-leave-game = Czy na pewno chcesz opuścić stół?
+confirm-yes = Tak
+confirm-no = Nie

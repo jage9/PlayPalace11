@@ -7,7 +7,8 @@ from server.users.bot import Bot
 
 def test_holdem_game_creation():
     game = HoldemGame()
-    assert game.get_name() == "game-name-holdem"
+    assert game.get_name() == "Texas Hold'em"
+    assert game.get_name_key() == "game-name-holdem"
     assert game.get_type() == "holdem"
     assert game.get_category() == "category-poker"
     assert game.get_min_players() == 2

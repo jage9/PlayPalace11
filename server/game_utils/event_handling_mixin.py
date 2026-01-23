@@ -97,6 +97,21 @@ class EventHandlingMixin:
                     # Execute the action with the selected input
                     self.execute_action(player, action_id, selection_id)
             self.rebuild_player_menu(player)
+        elif menu_id == "leave_game_confirm":
+            user = self.get_user(player)
+            if user:
+                user.remove_menu("leave_game_confirm")
+            if player.id in self._pending_actions:
+                self._pending_actions.pop(player.id, None)
+            choice = selection_id
+            if not choice:
+                selection = event.get("selection", 1) - 1
+                choice = "yes" if selection == 0 else "no"
+            if choice == "yes":
+                handler = getattr(self, "_perform_leave_game", None)
+                if handler:
+                    handler(player)
+            self.rebuild_player_menu(player)
 
     def _handle_editbox_event(self, player: "Player", event: dict) -> None:
         """Handle an editbox submission event."""

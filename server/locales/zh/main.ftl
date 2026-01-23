@@ -167,3 +167,6 @@ predict-entry-2p = { $rank }. { $player }（评分：{ $rating }，{ $probabilit
 predict-unavailable = 评分预测不可用。
 predict-need-players = 需要至少2名人类玩家才能进行预测。
 action-need-more-humans = 需要更多人类玩家。
+confirm-leave-game = 确定要离开桌子吗？
+confirm-yes = 是
+confirm-no = 否

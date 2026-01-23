@@ -41,7 +41,10 @@ poker-player-all-in = { $player } tất tay với { $amount } chip.
 
 poker-player-wins-pot = { $player } thắng { $amount } chip.
 poker-player-wins-pot-hand = { $player } thắng { $amount } chip với { $cards } ({ $hand }).
+poker-player-wins-side-pot-hand = { $player } thắng gà phụ { $index } trị giá { $amount } chip với { $cards } ({ $hand }).
 poker-players-split-pot = { $players } chia gà { $amount } chip với { $hand }.
+poker-players-split-side-pot = { $players } chia gà phụ { $index } trị giá { $amount } chip với { $hand }.
+poker-player-all-in = { $player } tất tay với { $amount } chip.
 poker-player-wins-game = { $player } thắng trò chơi.
 
 poker-showdown = Ngửa bài.

@@ -51,7 +51,7 @@ round-timer-countdown = Vòng tiếp theo trong { $seconds } giây...
 # Game xúc xắc - giữ/bỏ xúc xắc
 dice-keeping = Giữ { $value }.
 dice-rerolling = Gieo lại { $value }.
-dice-locked = Viên này đã bị khóa, không thể đổi.
+dice-locked = Viên này đã bị khóa và không thể đổi.
 
 # Chia bài (Game bài)
 game-deal-counter = Chia ván { $current }/{ $total }.
@@ -59,7 +59,7 @@ game-you-deal = Bạn chia bài.
 game-player-deals = { $player } chia bài.
 
 # Tên lá bài
-# Cấu trúc: [Tên] [Chất] (ví dụ: Át cơ)
+# Cấu trúc tiếng Việt: [Tên] [Chất] (ví dụ: Át cơ)
 card-name = { $rank } { $suit }
 no-cards = Không có bài
 
@@ -98,7 +98,7 @@ rank-king = Già
 rank-king-plural = Già
 
 # Mô tả tay bài Poker (Thuần Việt)
-poker-high-card-with = Mậu thầu { $high }, kèm { $rest }
+poker-high-card-with = Mậu thầu { $high }, dính { $rest }
 poker-high-card = Mậu thầu { $high }
 poker-pair-with = Đôi { $pair }, kèm { $rest }
 poker-pair = Đôi { $pair }
@@ -107,7 +107,7 @@ poker-two-pair = Thú { $high } và { $low }
 poker-trips-with = Sám { $trips }, kèm { $rest }
 poker-trips = Sám { $trips }
 poker-straight-high = Sảnh { $high }
-poker-flush-high-with = Thùng { $high }, kèm { $rest }
+poker-flush-high-with = Thùng { $high }, dính { $rest }
 poker-full-house = Cù lũ { $trips }, đôi { $pair }
 poker-quads-with = Tứ quý { $quads }, kèm { $kicker }
 poker-quads = Tứ quý { $quads }

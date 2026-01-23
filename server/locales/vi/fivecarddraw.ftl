@@ -23,14 +23,31 @@ draw-enter-max-raises = Nhập số lần tố tối đa (0 là không giới h�
 draw-option-changed-max-raises = Số lần tố tối đa đã đặt là { $count }.
 
 draw-antes-posted = Đã đặt cược đáy: { $amount }.
-draw-betting-round-1 = Vòng cược 1.
-draw-betting-round-2 = Vòng cược 2.
+draw-betting-round-1 = Vòng cược.
+draw-betting-round-2 = Vòng cược.
 draw-begin-draw = Giai đoạn đổi bài.
+draw-not-betting = Bạn không thể cược trong giai đoạn đổi bài.
 
 draw-toggle-discard = Chọn bỏ lá bài thứ { $index }
+draw-card-keep = { $card }
+draw-card-discard = Bỏ { $card }
+draw-card-kept = Giữ { $card }.
+draw-card-discarded = Bỏ { $card }.
 draw-draw-cards = Đổi bài
-draw-you-draw = Bạn đổi { $count } lá.
-draw-player-draws = { $player } đổi { $count } lá.
+draw-draw-cards-count = Đổi { $count } { $count ->
+    [one] lá
+   *[other] lá
+}
+draw-dealt-cards = Bạn được chia { $cards }.
+draw-you-drew-cards = Bạn rút được { $cards }.
+draw-you-draw = Bạn đổi { $count } { $count ->
+    [one] lá
+   *[other] lá
+}.
+draw-player-draws = { $player } đổi { $count } { $count ->
+    [one] lá
+   *[other] lá
+}.
 draw-you-stand-pat = Bạn giữ nguyên bài.
 draw-player-stands-pat = { $player } giữ nguyên bài.
 draw-you-discard-limit = Bạn có thể bỏ tối đa { $count } lá.

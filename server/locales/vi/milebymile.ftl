@@ -2,7 +2,7 @@
 # Lưu ý: Các thông báo chung như bắt đầu vòng, bắt đầu lượt, chế độ đội nằm trong games.ftl
 
 # Tên trò chơi
-game-name-milebymile = Đua Xe Ngàn Dặm (Mile by Mile)
+game-name-milebymile = Đua Xe Ngàn Dặm
 
 # Tùy chọn game
 milebymile-set-distance = Quãng đường đua: { $miles } dặm

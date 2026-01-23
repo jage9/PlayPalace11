@@ -2,7 +2,7 @@
 # Lưu ý: Các thông báo chung như bắt đầu vòng, bắt đầu lượt nằm trong games.ftl
 
 # Tên trò chơi
-game-name-pirates = Cướp Biển Vùng Biển Lạc (Pirates of the Lost Seas)
+game-name-pirates = Cướp Biển Vùng Biển Lạc
 
 # Bắt đầu và thiết lập
 pirates-welcome = Chào mừng đến với Cướp Biển Vùng Biển Lạc! Hãy dong buồm ra khơi, thu thập đá quý và chiến đấu với những tên cướp biển khác!

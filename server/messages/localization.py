@@ -111,6 +111,45 @@ class Localization:
         """
         return format_list(items, style="or", locale=locale)
 
+    @classmethod
+    def get_available_languages(cls, display_language: str = "") -> dict[str, str]:
+        """
+        Get a dictionary of available languages.
+
+        Args:
+            display_language: The locale to use for displaying language names.
+                              If empty, each language name is shown in its own
+                              language (e.g., "English" for en, "中文" for zh).
+
+        Returns:
+            Dictionary mapping language codes to language names.
+        """
+        if cls._locales_dir is None:
+            raise RuntimeError(
+                "Localization not initialized. Call Localization.init() first."
+            )
+
+        result = {}
+
+        # Get list of valid locale directories
+        locales = [
+            locale_dir.name
+            for locale_dir in cls._locales_dir.iterdir()
+            if locale_dir.is_dir()
+        ]
+
+        for locale_code in sorted(locales):
+            message_id = f"language-{locale_code}"
+            if display_language:
+                # Use the display language's bundle for all names
+                name = cls.get(display_language, message_id)
+            else:
+                # Use each locale's own bundle for its name
+                name = cls.get(locale_code, message_id)
+            result[locale_code] = name
+
+        return result
+
 
 def get_message(locale: str, message_id: str, **kwargs) -> str:
     """Convenience function to get a localized message."""

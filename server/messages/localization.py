@@ -24,6 +24,16 @@ class Localization:
         cls._bundles = {}
 
     @classmethod
+    def preload_bundles(cls) -> None:
+        """Pre-load all locale bundles at startup."""
+        if cls._locales_dir is None:
+            return
+
+        for locale_dir in cls._locales_dir.iterdir():
+            if locale_dir.is_dir():
+                cls._get_bundle(locale_dir.name)
+
+    @classmethod
     def _get_bundle(cls, locale: str) -> FluentBundle:
         """Get or create a bundle for a locale."""
         if locale in cls._bundles:
@@ -113,7 +123,7 @@ class Localization:
 
     @classmethod
     def get_available_languages(
-        cls, display_language: str = "", fallback_language: str = "en"
+        cls, display_language: str = "", *, fallback: str = "en"
     ) -> dict[str, str]:
         """
         Get a dictionary of available languages.
@@ -122,7 +132,7 @@ class Localization:
             display_language: The locale to use for displaying language names.
                               If empty, each language name is shown in its own
                               language (e.g., "English" for en, "中文" for zh).
-            fallback_language: The locale to use if a language name is not found
+            fallback: The locale to use if a language name is not found
                              in the display language. Defaults to "en".
 
         Returns:
@@ -152,11 +162,11 @@ class Localization:
                 name = cls.get(locale_code, message_id)
 
             # If translation not found, try fallback locale
-            if name == message_id  and fallback_language != display_language:
-                name = cls.get(fallback_language, message_id)
+            if name == message_id  and fallback != display_language:
+                name = cls.get(fallback, message_id)
 
             # If fallback is not "en" and still not found, try "en"
-            if name == message_id and fallback_language != "en":
+            if name == message_id and fallback != "en":
                 name = cls.get("en", message_id)
 
             result[locale_code] = name

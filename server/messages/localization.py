@@ -112,7 +112,9 @@ class Localization:
         return format_list(items, style="or", locale=locale)
 
     @classmethod
-    def get_available_languages(cls, display_language: str = "") -> dict[str, str]:
+    def get_available_languages(
+        cls, display_language: str = "", fallback_language: str = "en"
+    ) -> dict[str, str]:
         """
         Get a dictionary of available languages.
 
@@ -120,6 +122,8 @@ class Localization:
             display_language: The locale to use for displaying language names.
                               If empty, each language name is shown in its own
                               language (e.g., "English" for en, "中文" for zh).
+            fallback_language: The locale to use if a language name is not found
+                             in the display language. Defaults to "en".
 
         Returns:
             Dictionary mapping language codes to language names.
@@ -146,6 +150,15 @@ class Localization:
             else:
                 # Use each locale's own bundle for its name
                 name = cls.get(locale_code, message_id)
+
+            # If translation not found, try fallback locale
+            if name == message_id  and fallback_language != display_language:
+                name = cls.get(fallback_language, message_id)
+
+            # If fallback is not "en" and still not found, try "en"
+            if name == message_id and fallback_language != "en":
+                name = cls.get("en", message_id)
+
             result[locale_code] = name
 
         return result

@@ -1,4 +1,4 @@
-# Language names presented in this language
+# Language names translated into this language
 language-ar = Arabic
 language-cs = Czech
 language-de = German

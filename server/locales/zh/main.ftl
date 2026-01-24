@@ -15,6 +15,7 @@ tables-menu-title = 可用桌台
 
 # 菜单项目
 play = 开始游戏
+view-active-tables = 查看活跃桌台
 options = 设置
 logout = 退出登录
 back = 返回
@@ -39,7 +40,12 @@ table-left = { $player } 离开了桌台。
 new-host = { $player } 现在是主持人。
 waiting-for-players = 等待玩家中。当前 { $current }/{ $min } 最少，{ $max } 最多。
 game-starting = 游戏开始！
-table-listing = { $host } 的桌台 ({ $count } 位玩家)
+table-listing = { $host } 的桌台 ({ $count } 位用户)
+table-listing-one = { $host } 的桌台 ({ $count } 位用户)
+table-listing-with = { $host } 的桌台 ({ $count } 位用户) 与 { $members }
+table-listing-game = { $game }: { $host } 的桌台 ({ $count } 位用户)
+table-listing-game-one = { $game }: { $host } 的桌台 ({ $count } 位用户)
+table-listing-game-with = { $game }: { $host } 的桌台 ({ $count } 位用户) 与 { $members }
 table-not-exists = 桌台已不存在。
 table-full = 桌台已满。
 player-replaced-by-bot = { $player } 离开，已由机器人替代。

@@ -15,6 +15,7 @@ tables-menu-title = Danh sách Bàn
 
 # Các mục trong menu
 play = Chơi
+view-active-tables = Xem bàn đang hoạt động
 options = Tùy chọn
 logout = Đăng xuất
 back = Quay lại
@@ -45,7 +46,12 @@ table-left = { $player } đã rời bàn.
 new-host = { $player } giờ là chủ bàn.
 waiting-for-players = Đang chờ người chơi. Tối thiểu { $current }/{ $min }, tối đa { $max }.
 game-starting = Trò chơi bắt đầu!
-table-listing = Bàn của { $host } ({ $count } người chơi)
+table-listing = Bàn của { $host } ({ $count } người dùng)
+table-listing-one = Bàn của { $host } ({ $count } người dùng)
+table-listing-with = Bàn của { $host } ({ $count } người dùng) với { $members }
+table-listing-game = { $game }: bàn của { $host } ({ $count } người dùng)
+table-listing-game-one = { $game }: bàn của { $host } ({ $count } người dùng)
+table-listing-game-with = { $game }: bàn của { $host } ({ $count } người dùng) với { $members }
 table-not-exists = Bàn không còn tồn tại.
 table-full = Bàn đã đầy.
 player-replaced-by-bot = { $player } đã thoát và được thay thế bởi Bot.

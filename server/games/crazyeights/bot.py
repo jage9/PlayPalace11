@@ -32,7 +32,9 @@ def _card_priority(game: "CrazyEightsGame", card: Card) -> int:
     return 2
 
 
-def choose_playable_index(game: "CrazyEightsGame", player: "CrazyEightsPlayer") -> int | None:
+def choose_playable_card_id(
+    game: "CrazyEightsGame", player: "CrazyEightsPlayer"
+) -> int | None:
     playable = game.get_playable_indices(player)
     if not playable:
         return None
@@ -47,7 +49,7 @@ def choose_playable_index(game: "CrazyEightsGame", player: "CrazyEightsPlayer") 
             base += 2
         if card.rank == 8 and hand_size > 3:
             base -= 1
-        scored.append((base, random.random(), idx))
+        scored.append((base, random.random(), card.id))
 
     scored.sort(reverse=True)
     return scored[0][2]
@@ -63,16 +65,16 @@ def bot_think(game: "CrazyEightsGame", player: "CrazyEightsPlayer") -> str | Non
         if playable:
             # 80% chance to play, otherwise pass
             if random.random() < 0.8:
-                idx = choose_playable_index(game, player)
-                if idx is not None:
-                    return f"play_card_{idx}"
+                card_id = choose_playable_card_id(game, player)
+                if card_id is not None:
+                    return f"play_card_{card_id}"
         return "pass"
 
     playable = game.get_playable_indices(player)
     if playable:
-        idx = choose_playable_index(game, player)
-        if idx is not None:
-            return f"play_card_{idx}"
+        card_id = choose_playable_card_id(game, player)
+        if card_id is not None:
+            return f"play_card_{card_id}"
     if game._can_draw(player):
         return "draw"
     return "pass"

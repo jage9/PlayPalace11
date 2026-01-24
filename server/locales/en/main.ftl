@@ -15,6 +15,7 @@ tables-menu-title = Available Tables
 
 # Menu items
 play = Play
+view-active-tables = View active tables
 options = Options
 logout = Logout
 back = Back
@@ -46,6 +47,11 @@ new-host = { $player } is now the host.
 waiting-for-players = Waiting for players. { $current }/{ $min } minimum, { $max } maximum.
 game-starting = Game starting!
 table-listing = { $host }'s table ({ $count } players)
+table-listing-one = { $host }'s table ({ $count } player)
+table-listing-with = { $host }'s table ({ $count } players) with { $members }
+table-listing-game = { $game }: { $host }'s table ({ $count } players)
+table-listing-game-one = { $game }: { $host }'s table ({ $count } player)
+table-listing-game-with = { $game }: { $host }'s table ({ $count } players) with { $members }
 table-not-exists = Table no longer exists.
 table-full = Table is full.
 player-replaced-by-bot = { $player } left and was replaced by a bot.

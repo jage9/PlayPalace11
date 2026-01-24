@@ -15,6 +15,7 @@ tables-menu-title = Mesas Disponíveis
 
 # Itens de menu
 play = Jogar
+view-active-tables = Ver mesas ativas
 options = Opções
 logout = Sair
 back = Voltar
@@ -40,6 +41,11 @@ new-host = { $player } agora é o anfitrião.
 waiting-for-players = Aguardando jogadores. { $current }/{ $min } mínimo, { $max } máximo.
 game-starting = O jogo está começando!
 table-listing = Mesa de { $host } ({ $count } jogadores)
+table-listing-one = Mesa de { $host } ({ $count } jogador)
+table-listing-with = Mesa de { $host } ({ $count } jogadores) com { $members }
+table-listing-game = { $game }: mesa de { $host } ({ $count } jogadores)
+table-listing-game-one = { $game }: mesa de { $host } ({ $count } jogador)
+table-listing-game-with = { $game }: mesa de { $host } ({ $count } jogadores) com { $members }
 table-not-exists = A mesa não existe mais.
 table-full = A mesa está cheia.
 player-replaced-by-bot = { $player } saiu e foi substituído por um bot.

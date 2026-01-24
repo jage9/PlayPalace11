@@ -370,6 +370,9 @@ class Server:
         for category_key in sorted(categories.keys()):
             category_name = Localization.get(user.locale, category_key)
             items.append(MenuItem(text=category_name, id=f"category_{category_key}"))
+        items.append(
+            MenuItem(text=Localization.get(user.locale, "view-active-tables"), id="active_tables")
+        )
         items.append(MenuItem(text=Localization.get(user.locale, "back"), id="back"))
 
         user.show_menu(
@@ -416,14 +419,27 @@ class Server:
         ]
 
         for table in tables:
-            player_count = table.player_count
+            member_count = len(table.members)
+            member_names = [
+                member.username
+                for member in table.members
+                if member.username != table.host
+            ]
+            members_str = Localization.format_list_and(user.locale, member_names)
+            if member_count == 1:
+                listing_key = "table-listing-one"
+            elif member_names:
+                listing_key = "table-listing-with"
+            else:
+                listing_key = "table-listing"
             items.append(
                 MenuItem(
                     text=Localization.get(
                         user.locale,
-                        "table-listing",
+                        listing_key,
                         host=table.host,
-                        count=player_count,
+                        count=member_count,
+                        members=members_str,
                     ),
                     id=f"table_{table.table_id}",
                 )
@@ -442,6 +458,52 @@ class Server:
             "game_type": game_type,
             "game_name": game_name,
         }
+
+    def _show_active_tables_menu(self, user: NetworkUser) -> None:
+        """Show available tables across all games."""
+        tables = self._tables.get_waiting_tables()
+        items: list[MenuItem] = []
+        for table in tables:
+            game_class = get_game_class(table.game_type)
+            game_name = (
+                Localization.get(user.locale, game_class.get_name_key())
+                if game_class
+                else table.game_type
+            )
+            member_count = len(table.members)
+            member_names = [
+                member.username
+                for member in table.members
+                if member.username != table.host
+            ]
+            members_str = Localization.format_list_and(user.locale, member_names)
+            if member_count == 1:
+                listing_key = "table-listing-game-one"
+            elif member_names:
+                listing_key = "table-listing-game-with"
+            else:
+                listing_key = "table-listing-game"
+            items.append(
+                MenuItem(
+                    text=Localization.get(
+                        user.locale,
+                        listing_key,
+                        game=game_name,
+                        host=table.host,
+                        count=member_count,
+                        members=members_str,
+                    ),
+                    id=f"table_{table.table_id}",
+                )
+            )
+        items.append(MenuItem(text=Localization.get(user.locale, "back"), id="back"))
+        user.show_menu(
+            "active_tables_menu",
+            items,
+            multiletter=True,
+            escape_behavior=EscapeBehavior.SELECT_LAST,
+        )
+        self._user_states[user.username] = {"menu": "active_tables_menu"}
 
     # Dice keeping style display names
     DICE_KEEPING_STYLES = {
@@ -612,6 +674,8 @@ class Server:
             await self._handle_games_selection(user, selection_id, state)
         elif current_menu == "tables_menu":
             await self._handle_tables_selection(user, selection_id, state)
+        elif current_menu == "active_tables_menu":
+            await self._handle_active_tables_selection(user, selection_id)
         elif current_menu == "join_menu":
             await self._handle_join_selection(user, selection_id, state)
         elif current_menu == "options_menu":
@@ -738,6 +802,8 @@ class Server:
         if selection_id.startswith("category_"):
             category = selection_id[9:]  # Remove "category_" prefix
             self._show_games_menu(user, category)
+        elif selection_id == "active_tables":
+            self._show_active_tables_menu(user)
         elif selection_id == "back":
             self._show_main_menu(user)
 
@@ -825,6 +891,47 @@ class Server:
             else:
                 self._show_categories_menu(user)
 
+    async def _handle_active_tables_selection(
+        self, user: NetworkUser, selection_id: str
+    ) -> None:
+        """Handle active tables menu selection."""
+        if selection_id.startswith("table_"):
+            table_id = selection_id[6:]
+            table = self._tables.get_table(table_id)
+            if table:
+                items = [
+                    MenuItem(
+                        text=Localization.get(user.locale, "join-as-player"),
+                        id="join_player",
+                    ),
+                    MenuItem(
+                        text=Localization.get(user.locale, "join-as-spectator"),
+                        id="join_spectator",
+                    ),
+                    MenuItem(text=Localization.get(user.locale, "back"), id="back"),
+                ]
+                user.show_menu(
+                    "join_menu", items, escape_behavior=EscapeBehavior.SELECT_LAST
+                )
+                self._user_states[user.username] = {
+                    "menu": "join_menu",
+                    "table_id": table_id,
+                    "game_type": table.game_type,
+                    "return_menu": "active_tables_menu",
+                }
+            else:
+                user.speak_l("table-not-exists")
+                self._show_active_tables_menu(user)
+        elif selection_id == "back":
+            self._show_categories_menu(user)
+
+    def _return_from_join_menu(self, user: NetworkUser, state: dict) -> None:
+        """Return to the appropriate tables menu after join."""
+        if state.get("return_menu") == "active_tables_menu":
+            self._show_active_tables_menu(user)
+        else:
+            self._show_tables_menu(user, state.get("game_type", ""))
+
     async def _handle_join_selection(
         self, user: NetworkUser, selection_id: str, state: dict
     ) -> None:
@@ -834,7 +941,7 @@ class Server:
 
         if not table or not table.game:
             user.speak_l("table-not-exists")
-            self._show_tables_menu(user, state.get("game_type", ""))
+            self._return_from_join_menu(user, state)
             return
 
         game = table.game
@@ -874,7 +981,7 @@ class Server:
 
             if len(game.players) >= game.get_max_players():
                 user.speak_l("table-full")
-                self._show_tables_menu(user, state.get("game_type", ""))
+                self._return_from_join_menu(user, state)
                 return
 
             # Add player to game
@@ -892,7 +999,7 @@ class Server:
             self._user_states[user.username] = {"menu": "in_game", "table_id": table_id}
 
         elif selection_id == "back":
-            self._show_tables_menu(user, state.get("game_type", ""))
+            self._return_from_join_menu(user, state)
 
     async def _handle_saved_tables_selection(
         self, user: NetworkUser, selection_id: str, state: dict

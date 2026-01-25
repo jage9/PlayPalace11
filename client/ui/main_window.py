@@ -179,6 +179,8 @@ class MainWindow(wx.Frame):
         self.ID_TOGGLE_TABLE_CHAT = wx.NewIdRef()
         self.ID_TOGGLE_GLOBAL_CHAT = wx.NewIdRef()
         self.ID_PING = wx.NewIdRef()
+        self.ID_LIST_ONLINE = wx.NewIdRef()
+        self.ID_LIST_ONLINE_WITH_GAMES = wx.NewIdRef()
 
         # Buffer system IDs
         self.ID_PREV_BUFFER = wx.NewIdRef()

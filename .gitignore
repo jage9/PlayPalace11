@@ -3,6 +3,7 @@
 *.venv
 server/.ruff_cache
 server/.pytest_cache
+server/errors.log
 server/playpalace.db
 
 # PyInstaller artifacts

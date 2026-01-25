@@ -218,6 +218,10 @@ class Server:
             await self._handle_chat(client, packet)
         elif packet_type == "ping":
             await self._handle_ping(client)
+        elif packet_type == "list_online":
+            await self._handle_list_online(client)
+        elif packet_type == "list_online_with_games":
+            await self._handle_list_online_with_games(client)
 
     async def _handle_authorize(self, client: ClientConnection, packet: dict) -> None:
         """Handle authorization packet."""
@@ -701,6 +705,8 @@ class Server:
             await self._handle_my_stats_selection(user, selection_id, state)
         elif current_menu == "my_game_stats":
             await self._handle_my_game_stats_selection(user, selection_id, state)
+        elif current_menu == "online_users":
+            self._restore_previous_menu(user, state)
 
     async def _handle_main_menu_selection(
         self, user: NetworkUser, selection_id: str
@@ -2153,6 +2159,111 @@ class Server:
                         "language": language,
                     }
                 )
+
+    def _get_online_usernames(self) -> list[str]:
+        """Return sorted list of online usernames."""
+        return sorted(self._users.keys(), key=str.lower)
+
+    def _format_online_users_lines(self, user: NetworkUser) -> list[str]:
+        """Format online users with game names for menu display."""
+        lines: list[str] = []
+        for username in self._get_online_usernames():
+            table = self._tables.find_user_table(username)
+            if table:
+                game_class = get_game_class(table.game_type)
+                game_name = (
+                    Localization.get(user.locale, game_class.get_name_key())
+                    if game_class
+                    else table.game_type
+                )
+                lines.append(f"{username}: {game_name}")
+            else:
+                lines.append(f"{username}: Not in game")
+        if not lines:
+            lines.append("No users online.")
+        return lines
+
+    def _show_online_users_menu(self, user: NetworkUser) -> None:
+        """Show online users with games in a read-only menu."""
+        current_state = self._user_states.get(user.username, {})
+        previous_menu_id = current_state.get("menu")
+        previous_menu = None
+        if previous_menu_id:
+            current_menus = getattr(user, "_current_menus", {})
+            previous_menu = current_menus.get(previous_menu_id)
+
+        items = [
+            MenuItem(text=line, id="online_user")
+            for line in self._format_online_users_lines(user)
+        ]
+        user.show_menu(
+            "online_users",
+            items,
+            multiletter=False,
+            escape_behavior=EscapeBehavior.SELECT_LAST,
+        )
+        self._user_states[user.username] = {
+            "menu": "online_users",
+            "return_menu_id": previous_menu_id,
+            "return_menu": previous_menu,
+            "return_state": dict(current_state),
+        }
+
+    def _restore_previous_menu(self, user: NetworkUser, state: dict) -> None:
+        """Restore the previous menu after closing the online users list."""
+        previous_menu_id = state.get("return_menu_id")
+        previous_menu = state.get("return_menu")
+        if not previous_menu_id or not previous_menu:
+            self._show_main_menu(user)
+            return
+
+        user.show_menu(
+            previous_menu_id,
+            previous_menu.get("items", []),
+            multiletter=previous_menu.get("multiletter_enabled", True),
+            escape_behavior=EscapeBehavior(previous_menu.get("escape_behavior", "keybind")),
+            position=previous_menu.get("position"),
+            grid_enabled=previous_menu.get("grid_enabled", False),
+            grid_width=previous_menu.get("grid_width", 1),
+        )
+        restored_state = dict(state.get("return_state", {}))
+        restored_state["menu"] = previous_menu_id
+        self._user_states[user.username] = restored_state
+
+    async def _handle_list_online(self, client: ClientConnection) -> None:
+        """Handle request for online users list."""
+        username = client.username
+        if not username:
+            return
+
+        user = self._users.get(username)
+        if not user:
+            return
+
+        online = self._get_online_usernames()
+        if online:
+            user.speak(f"Online: {', '.join(online)}")
+        else:
+            user.speak("No users online.")
+
+    async def _handle_list_online_with_games(self, client: ClientConnection) -> None:
+        """Handle request for online users list with game info."""
+        username = client.username
+        if not username:
+            return
+
+        user = self._users.get(username)
+        if not user:
+            return
+
+        table = self._tables.find_user_table(username)
+        if table and table.game:
+            player = table.game.get_player_by_id(user.uuid)
+            if player:
+                table.game.status_box(player, self._format_online_users_lines(user))
+                return
+
+        self._show_online_users_menu(user)
 
     async def _handle_ping(self, client: ClientConnection) -> None:
         """Handle ping request - respond immediately with pong."""

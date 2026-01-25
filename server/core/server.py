@@ -2201,6 +2201,7 @@ class Server:
             items,
             multiletter=False,
             escape_behavior=EscapeBehavior.SELECT_LAST,
+            position=0,
         )
         self._user_states[user.username] = {
             "menu": "online_users",
@@ -2241,10 +2242,15 @@ class Server:
             return
 
         online = self._get_online_usernames()
-        if online:
-            user.speak(f"Online: {', '.join(online)}")
+        count = len(online)
+        if count == 0:
+            user.speak_l("online-users-none")
+            return
+        users_str = Localization.format_list_and(user.locale, online)
+        if count == 1:
+            user.speak_l("online-users-one", users=users_str)
         else:
-            user.speak("No users online.")
+            user.speak_l("online-users-many", count=count, users=users_str)
 
     async def _handle_list_online_with_games(self, client: ClientConnection) -> None:
         """Handle request for online users list with game info."""

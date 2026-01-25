@@ -68,6 +68,9 @@ goodbye = Até logo!
 # Anúncios de presença do usuário
 user-online = { $player } entrou online.
 user-offline = { $player } saiu.
+online-users-none = Nenhum usuário online.
+online-users-one = 1 usuário: { $users }
+online-users-many = { $count } usuários: { $users }
 
 # Opções
 language = Idioma

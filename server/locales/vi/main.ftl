@@ -74,6 +74,9 @@ goodbye = Tạm biệt!
 # Thông báo trạng thái người dùng
 user-online = { $player } vừa online.
 user-offline = { $player } đã offline.
+online-users-none = Không có người dùng trực tuyến.
+online-users-one = 1 người dùng: { $users }
+online-users-many = { $count } người dùng: { $users }
 
 # Tùy chọn
 language = Ngôn ngữ

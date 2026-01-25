@@ -68,6 +68,9 @@ goodbye = pa!
 # User presence announcements
 user-online = { $player } jest online.
 user-offline = { $player } poszedł offline
+online-users-none = Brak użytkowników online.
+online-users-one = 1 użytkownik: { $users }
+online-users-many = { $count } użytkowników: { $users }
 
 # Options
 language = Język

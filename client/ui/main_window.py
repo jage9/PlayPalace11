@@ -344,6 +344,8 @@ class MainWindow(wx.Frame):
     def on_list_online_with_games(self, event):
         """Handle Shift+F2 to request online users with game info."""
         if self.connected:
+            if self.current_menu_id == "online_users":
+                return
             self.network.send_packet({"type": "list_online_with_games"})
 
     def on_server_pong(self, packet):

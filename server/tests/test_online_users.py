@@ -43,7 +43,7 @@ async def test_list_online_users_speaks_sorted_list() -> None:
     client = DummyClient("Alice")
     await server._handle_list_online(client)
 
-    assert alice.messages[-1].data["text"] == "Online: Alice, Bob"
+    assert alice.messages[-1].data["text"] == "2 users: Alice and Bob"
 
 
 def test_online_users_menu_formats_game_names() -> None:

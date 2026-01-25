@@ -68,6 +68,9 @@ goodbye = 再见！
 # 用户在线状态公告
 user-online = { $player } 上线了。
 user-offline = { $player } 下线了。
+online-users-none = 没有用户在线。
+online-users-one = 1 位用户: { $users }
+online-users-many = { $count } 位用户: { $users }
 
 # 设置
 language = 语言

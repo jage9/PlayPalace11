@@ -68,6 +68,10 @@ class NetworkUser(User):
         """Set the user's approval status."""
         self._approved = approved
 
+    def set_trust_level(self, trust_level: int) -> None:
+        """Set the user's trust level."""
+        self._trust_level = trust_level
+
     @property
     def preferences(self) -> UserPreferences:
         return self._preferences

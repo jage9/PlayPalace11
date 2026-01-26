@@ -496,6 +496,7 @@ class CrazyEightsGame(Game):
             self.current_suit = start_card.suit
             self._broadcast_start_card()
             self.broadcast_l("crazyeights-dealt-cards", cards=7)
+            self.rebuild_all_menus()
         self._start_turn()
 
     def _draw_start_card(self) -> Card | None:
@@ -603,12 +604,15 @@ class CrazyEightsGame(Game):
                 self._end_round(p, last_card=card)
                 return
             self.awaiting_wild_suit = True
+            self.update_player_menu(p)
+            self.rebuild_all_menus()
             self._start_turn_timer()  # reset timer for suit selection
             if p.is_bot:
                 BotHelper.jolt_bot(p, ticks=random.randint(20, 30))
             return
 
         self.current_suit = card.suit
+        self.rebuild_all_menus()
 
         if card.rank == 13 and len(p.hand) == 0:
             next_player = self._next_player()
@@ -687,6 +691,7 @@ class CrazyEightsGame(Game):
         self.play_sound("game_crazyeights/morf.ogg")
         self.schedule_sound(self._suit_sound(suit), delay_ticks=15)
         self._broadcast_suit_chosen(suit)
+        self.rebuild_all_menus()
         if p.is_bot:
             BotHelper.jolt_bot(p, ticks=random.randint(20, 30))
 
@@ -758,6 +763,8 @@ class CrazyEightsGame(Game):
         if self.current_player != player:
             return Visibility.HIDDEN
         if self.wild_wait_ticks > 0:
+            return Visibility.HIDDEN
+        if self.hand_wait_ticks > 0:
             return Visibility.HIDDEN
         return Visibility.VISIBLE
 
@@ -1114,6 +1121,11 @@ class CrazyEightsGame(Game):
             return
 
         self.hand_wait_ticks = 5 * 20
+        for p in self.players:
+            user = self.get_user(p)
+            if user:
+                user.remove_menu("turn_menu")
+        self.rebuild_all_menus()
 
     def _hand_points(self, hand: list[Card]) -> int:
         total = 0
@@ -1237,6 +1249,10 @@ class CrazyEightsGame(Game):
         self._stop_turn_loop()
         self.play_sound("game_crazyeights/hitmark.ogg")
         self.broadcast_l("crazyeights-game-winner", player=winner.name, score=winner.score)
+        for p in self.players:
+            user = self.get_user(p)
+            if user:
+                user.remove_menu("turn_menu")
         self.finish_game()
 
     def build_game_result(self) -> GameResult:

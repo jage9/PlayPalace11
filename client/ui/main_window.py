@@ -1671,6 +1671,7 @@ class MainWindow(wx.Frame):
         new_menu_state = {
             "menu_id": menu_id,
             "items": items,
+            "item_sounds": item_sounds,
             "multiletter_enabled": multiletter_enabled,
             "escape_behavior": escape_behavior,
             "grid_enabled": grid_enabled,

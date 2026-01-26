@@ -198,11 +198,25 @@ class MenuList(wx.ListBox):
         # Don't skip - we handled it
         return
 
+    def _play_selection_sound(self, selection_index):
+        """Play the appropriate sound for the selected item."""
+        if not self.sound_manager:
+            return
+        
+        custom_sound = None
+        if selection_index != wx.NOT_FOUND:
+            data = self.GetClientData(selection_index)
+            if isinstance(data, dict):
+                custom_sound = data.get("sound")
+        
+        if custom_sound:
+            self.sound_manager.play(custom_sound)
+        else:
+            self.sound_manager.play_menuclick()
+
     def on_selection_change(self, event):
         """Handle selection change to play menuclick sound."""
-        if self.sound_manager:
-            # Call directly - CallAfter can cause issues with rapid events
-            self.sound_manager.play_menuclick()
+        self._play_selection_sound(self.GetSelection())
         event.Skip()
 
     def _find_and_select(self, search_text):
@@ -233,8 +247,8 @@ class MenuList(wx.ListBox):
                 self.SetSelection(i)
                 self.EnsureVisible(i)
                 # Play menuclick sound if selection changed
-                if old_selection != i and self.sound_manager:
-                    self.sound_manager.play_menuclick()
+                if old_selection != i:
+                    self._play_selection_sound(i)
                 return
 
     def clear_search_buffer(self):
@@ -305,5 +319,4 @@ class MenuList(wx.ListBox):
             self.SetSelection(new_pos)
             self.EnsureVisible(new_pos)
             # Play menuclick sound when moving
-            if self.sound_manager:
-                self.sound_manager.play_menuclick()
+            self._play_selection_sound(new_pos)

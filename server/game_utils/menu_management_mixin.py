@@ -34,7 +34,7 @@ class MenuManagementMixin:
 
         items: list[MenuItem] = []
         for resolved in self.get_all_visible_actions(player):
-            items.append(MenuItem(text=resolved.label, id=resolved.action.id))
+            items.append(MenuItem(text=resolved.label, id=resolved.action.id, sound=resolved.sound))
 
         user.show_menu(
             "turn_menu",
@@ -64,7 +64,7 @@ class MenuManagementMixin:
 
         items: list[MenuItem] = []
         for resolved in self.get_all_visible_actions(player):
-            items.append(MenuItem(text=resolved.label, id=resolved.action.id))
+            items.append(MenuItem(text=resolved.label, id=resolved.action.id, sound=resolved.sound))
 
         user.update_menu("turn_menu", items, selection_id=selection_id)
 

@@ -73,6 +73,7 @@ class Action(DataClassJSONMixin):
     is_enabled: str  # Method name (e.g., "_is_roll_enabled")
     is_hidden: str  # Method name (e.g., "_is_roll_hidden")
     get_label: str | None = None  # Optional method name (e.g., "_get_roll_label")
+    get_sound: str | None = None  # Optional method name (e.g., "_get_roll_sound")
     input_request: MenuInput | EditboxInput | None = None
     show_in_actions_menu: bool = True
 
@@ -91,6 +92,7 @@ class ResolvedAction:
     enabled: bool
     disabled_reason: str | None  # Localization key if disabled, None if enabled
     visible: bool
+    sound: str | None = None  # Sound to play on highlight
 
 
 @dataclass
@@ -165,12 +167,25 @@ class ActionSet(DataClassJSONMixin):
             if method:
                 label = method(player, action.id)
 
+        # Resolve sound
+        sound = None
+        if action.get_sound:
+            method = getattr(game, action.get_sound, None)
+            if method:
+                # Check if method accepts action_id kwarg
+                sig = inspect.signature(method)
+                if 'action_id' in sig.parameters:
+                    sound = method(player, action_id=action.id)
+                else:
+                    sound = method(player)
+
         return ResolvedAction(
             action=action,
             label=label,
             enabled=disabled_reason is None,
             disabled_reason=disabled_reason,
             visible=visible,
+            sound=sound,
         )
 
     def resolve_actions(

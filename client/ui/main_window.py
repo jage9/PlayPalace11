@@ -1642,13 +1642,16 @@ class MainWindow(wx.Frame):
         # Parse items - can be strings or objects with {text, id}
         items = []
         item_ids = []
+        item_sounds = []
         for item in items_raw:
             if isinstance(item, dict):
                 items.append(item.get("text", ""))
                 item_ids.append(item.get("id"))
+                item_sounds.append(item.get("sound"))
             else:
                 items.append(str(item))
                 item_ids.append(None)
+                item_sounds.append(None)
 
         # Save old item IDs before updating (for diff algorithm)
         old_item_ids = getattr(self, 'current_menu_item_ids', [])
@@ -1722,6 +1725,9 @@ class MainWindow(wx.Frame):
                 else:
                     self.menu_list.SetSelection(0)
 
+        # Update client data (sounds)
+        # Moved to end of function to ensure menu items exist
+
         # Same menu ID → use diff algorithm to minimize screen reader disruption
         elif self.menu_list.GetCount() > 0:
             # Get current menu items
@@ -1773,6 +1779,14 @@ class MainWindow(wx.Frame):
                     self.menu_list.SetSelection(position)
                 else:
                     self.menu_list.SetSelection(0)
+
+        # Update client data (sounds) - ensure we update ALL items after any changes
+        for i, sound in enumerate(item_sounds):
+            if i < self.menu_list.GetCount():
+                if sound:
+                    self.menu_list.SetClientData(i, {"sound": sound})
+                else:
+                    self.menu_list.SetClientData(i, None)
 
     def on_server_request_input(self, packet):
         """Handle request_input packet from server."""

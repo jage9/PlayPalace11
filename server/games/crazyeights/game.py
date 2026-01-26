@@ -367,6 +367,7 @@ class CrazyEightsGame(Game):
                     is_enabled="_is_play_card_enabled",
                     is_hidden="_is_play_card_hidden",
                     get_label="_get_card_label",
+                    get_sound="_get_card_sound",
                     show_in_actions_menu=False,
                 )
             )
@@ -1035,6 +1036,20 @@ class CrazyEightsGame(Game):
         user = self.get_user(player)
         locale = user.locale if user else "en"
         return self.format_card(card, locale)
+
+    def _get_card_sound(self, player: Player, action_id: str) -> str | None:
+        if not isinstance(player, CrazyEightsPlayer):
+            return None
+        try:
+            card_id = int(action_id.split("_")[-1])
+        except ValueError:
+            return None
+        card = next((c for c in player.hand if c.id == card_id), None)
+        if not card:
+            return None
+        if self._is_card_playable(card):
+            return "game_crazyeights/hlcard.ogg"
+        return None
 
     def format_card(self, card: Card, locale: str) -> str:
         if card.rank == 8:

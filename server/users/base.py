@@ -26,10 +26,16 @@ class MenuItem:
 
     text: str
     id: str | None = None
+    sound: str | None = None
 
-    def to_dict(self) -> dict[str, Any]:
-        if self.id is not None:
-            return {"text": self.text, "id": self.id}
+    def to_dict(self) -> dict[str, Any] | str:
+        if self.id is not None or self.sound is not None:
+            data = {"text": self.text}
+            if self.id is not None:
+                data["id"] = self.id
+            if self.sound is not None:
+                data["sound"] = self.sound
+            return data
         return self.text
 
 

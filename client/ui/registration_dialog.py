@@ -6,6 +6,7 @@ import asyncio
 import threading
 import websockets
 import ssl
+from websockets.asyncio.client import connect
 
 
 class RegistrationDialog(wx.Dialog):
@@ -183,7 +184,7 @@ class RegistrationDialog(wx.Dialog):
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = ssl.CERT_NONE
 
-            async with websockets.connect(self.server_url, ssl=ssl_context) as ws:
+            async with connect(self.server_url, ssl=ssl_context) as ws:
                 # Send registration packet
                 await ws.send(
                     json.dumps(

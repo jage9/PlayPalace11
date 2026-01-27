@@ -6,6 +6,7 @@ import threading
 import wx
 import websockets
 import ssl
+from websockets.asyncio.client import connect
 
 
 class NetworkManager:
@@ -88,7 +89,7 @@ class NetworkManager:
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = ssl.CERT_NONE
 
-            async with websockets.connect(server_url, ssl=ssl_context) as websocket:
+            async with connect(server_url, ssl=ssl_context) as websocket:
                 self.ws = websocket
                 self.connected = True
 

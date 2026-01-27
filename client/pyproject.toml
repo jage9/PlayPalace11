@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "wxPython>=4.2.0",
     "accessible-output2>=0.16",
-    "websockets>=10.0",
+    "websockets>=14.0",
     "sound-lib>=0.2.2",
 ]
 

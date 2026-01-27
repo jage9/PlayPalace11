@@ -6,14 +6,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Coroutine
 import websockets
-from websockets.server import WebSocketServerProtocol
+from websockets.asyncio.server import serve, ServerConnection
 
 
 @dataclass
 class ClientConnection:
     """Represents a connected client."""
 
-    websocket: WebSocketServerProtocol
+    websocket: ServerConnection
     address: str
     username: str | None = None
     authenticated: bool = False
@@ -57,7 +57,7 @@ class WebSocketServer:
         self._on_disconnect = on_disconnect
         self._on_message = on_message
         self._clients: dict[str, ClientConnection] = {}
-        self._server: websockets.WebSocketServer | None = None
+        self._server = None
         self._running = False
         self._ssl_context = None
 
@@ -74,12 +74,14 @@ class WebSocketServer:
     async def start(self) -> None:
         """Start the WebSocket server."""
         self._running = True
-        self._server = await websockets.serve(
+        # Manually enter the context manager to control lifecycle
+        self._server = await serve(
             self._handle_client,
             self.host,
             self.port,
             ssl=self._ssl_context,
-        )
+        ).__aenter__()
+        
         protocol = "wss" if self._ssl_context else "ws"
         print(f"WebSocket server started on {protocol}://{self.host}:{self.port}")
 
@@ -95,7 +97,7 @@ class WebSocketServer:
             await client.close()
         self._clients.clear()
 
-    async def _handle_client(self, websocket: WebSocketServerProtocol) -> None:
+    async def _handle_client(self, websocket: ServerConnection) -> None:
         """Handle a client connection."""
         address = f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
         client = ClientConnection(websocket=websocket, address=address)
@@ -116,7 +118,8 @@ class WebSocketServer:
         except websockets.exceptions.ConnectionClosed:
             pass
         finally:
-            del self._clients[address]
+            if address in self._clients:
+                del self._clients[address]
             if self._on_disconnect:
                 await self._on_disconnect(client)
 

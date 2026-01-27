@@ -30,6 +30,14 @@ build-backend = "hatchling.build"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 pythonpath = [".."]
+filterwarnings = [
+    # Fluent Compiler (AST deprecation in Py3.13)
+    "ignore:.*arguments.__init__ got an unexpected keyword argument 'lineno'.*:DeprecationWarning",
+    "ignore:.*arguments.__init__ got an unexpected keyword argument 'col_offset'.*:DeprecationWarning",
+    "ignore:.*If.__init__ missing 1 required positional argument. 'test'.*:DeprecationWarning",
+    "ignore:.*Module.__init__ got an unexpected keyword argument 'lineno'.*:DeprecationWarning",
+    "ignore:.*Module.__init__ got an unexpected keyword argument 'col_offset'.*:DeprecationWarning",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]

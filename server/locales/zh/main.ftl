@@ -200,6 +200,7 @@ account-declined = { $player } 的账户已被拒绝并删除。
 waiting-for-approval = 您的账户正在等待管理员审批，请稍候...
 account-approved-welcome = 您的账户已获批准！欢迎来到 PlayPalace！
 account-declined-goodbye = 您的账户申请已被拒绝。
+account-banned = 您的账户已被封禁，无法访问。
 
 # 拒绝原因
 decline-reason-prompt = 请输入拒绝原因（或按Escape键取消）：

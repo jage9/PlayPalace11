@@ -253,6 +253,7 @@ account-declined = Tài khoản của { $player } đã bị từ chối và xóa
 waiting-for-approval = Tài khoản của bạn đang chờ quản trị viên phê duyệt. Vui lòng đợi...
 account-approved-welcome = Tài khoản của bạn đã được phê duyệt! Chào mừng đến với PlayPalace!
 account-declined-goodbye = Yêu cầu tạo tài khoản của bạn đã bị từ chối.
+account-banned = Tài khoản của bạn đã bị cấm và không thể truy cập.
 
 # Lý do từ chối
 decline-reason-prompt = Nhập lý do từ chối (hoặc nhấn Escape để hủy):

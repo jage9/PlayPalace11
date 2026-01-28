@@ -253,6 +253,7 @@ account-declined = { $player }'s account has been declined and deleted.
 waiting-for-approval = Your account is waiting for approval by an administrator. Please wait...
 account-approved-welcome = Your account has been approved! Welcome to PlayPalace!
 account-declined-goodbye = Your account request has been declined.
+account-banned = Your account is banned and cannot be accessed.
 
 # Decline reason
 decline-reason-prompt = Enter a reason for declining (or press Escape to cancel):

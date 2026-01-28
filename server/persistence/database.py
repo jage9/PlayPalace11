@@ -323,6 +323,27 @@ class Database:
             ))
         return users
 
+    def get_banned_users(self) -> list[UserRecord]:
+        """Get all banned users."""
+        cursor = self._conn.cursor()
+        cursor.execute(
+            "SELECT id, username, password_hash, uuid, locale, preferences_json, trust_level, approved FROM users WHERE trust_level = ?",
+            (TrustLevel.BANNED.value,),
+        )
+        users = []
+        for row in cursor.fetchall():
+            users.append(UserRecord(
+                id=row["id"],
+                username=row["username"],
+                password_hash=row["password_hash"],
+                uuid=row["uuid"],
+                locale=row["locale"] or "en",
+                preferences_json=row["preferences_json"] or "{}",
+                trust_level=TrustLevel.BANNED,
+                approved=bool(row["approved"]) if row["approved"] is not None else False,
+            ))
+        return users
+
     def approve_user(self, username: str) -> bool:
         """Approve a user account. Returns True if user was found and approved."""
         cursor = self._conn.cursor()
@@ -340,13 +361,23 @@ class Database:
         self._conn.commit()
         return cursor.rowcount > 0
 
-    def get_non_admin_users(self) -> list[UserRecord]:
-        """Get all approved users who are not admins (trust_level < ADMIN)."""
+    def get_non_admin_users(self, exclude_banned: bool = True) -> list[UserRecord]:
+        """Get all approved users who are not admins (trust_level < ADMIN).
+
+        Args:
+            exclude_banned: If True (default), excludes banned users from the results.
+        """
         cursor = self._conn.cursor()
-        cursor.execute(
-            "SELECT id, username, password_hash, uuid, locale, preferences_json, trust_level, approved FROM users WHERE approved = 1 AND trust_level < ? ORDER BY username",
-            (TrustLevel.ADMIN.value,),
-        )
+        if exclude_banned:
+            cursor.execute(
+                "SELECT id, username, password_hash, uuid, locale, preferences_json, trust_level, approved FROM users WHERE approved = 1 AND trust_level > ? AND trust_level < ? ORDER BY username",
+                (TrustLevel.BANNED.value, TrustLevel.ADMIN.value),
+            )
+        else:
+            cursor.execute(
+                "SELECT id, username, password_hash, uuid, locale, preferences_json, trust_level, approved FROM users WHERE approved = 1 AND trust_level < ? ORDER BY username",
+                (TrustLevel.ADMIN.value,),
+            )
         users = []
         for row in cursor.fetchall():
             trust_level_int = row["trust_level"] if row["trust_level"] is not None else 1

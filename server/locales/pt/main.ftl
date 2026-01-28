@@ -210,6 +210,7 @@ account-declined = A conta de { $player } foi recusada e excluída.
 waiting-for-approval = Sua conta está aguardando aprovação de um administrador. Por favor, aguarde...
 account-approved-welcome = Sua conta foi aprovada! Bem-vindo ao PlayPalace!
 account-declined-goodbye = Sua solicitação de conta foi recusada.
+account-banned = Sua conta está banida e não pode ser acessada.
 
 # Motivo da recusa
 decline-reason-prompt = Digite um motivo para a recusa (ou pressione Escape para cancelar):

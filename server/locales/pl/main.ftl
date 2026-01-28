@@ -250,6 +250,7 @@ account-declined = Konto gracza { $player } zostało odrzucone i usunięte.
 waiting-for-approval = Twoje konto oczekuje na zatwierdzenie przez administratora. Proszę czekać...
 account-approved-welcome = Twoje konto zostało zatwierdzone! Witaj w PlayPalace!
 account-declined-goodbye = Twoja prośba o konto została odrzucona.
+account-banned = Twoje konto zostało zbanowane i nie można uzyskać do niego dostępu.
 
 # Powód odrzucenia
 decline-reason-prompt = Podaj powód odrzucenia (lub naciśnij Escape, aby anulować):

@@ -23,6 +23,7 @@ class EscapeBehavior(Enum):
 class TrustLevel(Enum):
     """User trust level for permission checks."""
 
+    BANNED = 0  # Banned user
     USER = 1  # Normal user
     ADMIN = 2  # Administrator
     SERVER_OWNER = 3  # Server owner (highest privilege)

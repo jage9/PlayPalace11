@@ -330,6 +330,18 @@ class Server(AdministrationMixin):
         # Send game list
         await self._send_game_list(client)
 
+        # Check if user is banned
+        if user.trust_level == TrustLevel.BANNED:
+            user.speak_l("account-banned")
+            for msg in user.get_queued_messages():
+                await user.connection.send(msg)
+            await user.connection.send({
+                "type": "disconnect",
+                "reconnect": False,
+                "show_message": True,
+            })
+            return
+
         # Check if user is approved
         if not user.approved:
             # User needs approval - show waiting screen

@@ -189,13 +189,14 @@ class Server(AdministrationMixin):
         """Handle client disconnection."""
         print(f"Client disconnected: {client.address}")
         if client.username:
-            # Check if the disconnecting user is an admin before cleanup
+            # Check user status before cleanup
             user = self._users.get(client.username)
-            is_admin = user and user.trust_level.value >= TrustLevel.ADMIN.value
 
-            # Broadcast offline announcement to all users with appropriate sound
-            offline_sound = "offlineadmin.ogg" if is_admin else "offline.ogg"
-            self._broadcast_presence_l("user-offline", client.username, offline_sound)
+            # Only broadcast offline if user was approved and not banned
+            if user and user.approved and user.trust_level != TrustLevel.BANNED:
+                is_admin = user.trust_level.value >= TrustLevel.ADMIN.value
+                offline_sound = "offlineadmin.ogg" if is_admin else "offline.ogg"
+                self._broadcast_presence_l("user-offline", client.username, offline_sound)
 
             # Clean up user state
             self._users.pop(client.username, None)
@@ -308,16 +309,6 @@ class Server(AdministrationMixin):
         )
         self._users[username] = user
 
-        # Broadcast online announcement to all users with appropriate sound
-        online_sound = "onlineadmin.ogg" if trust_level.value >= TrustLevel.ADMIN.value else "online.ogg"
-        self._broadcast_presence_l("user-online", username, online_sound)
-
-        # If user is server owner, announce that; otherwise if admin, announce that
-        if trust_level.value >= TrustLevel.SERVER_OWNER.value:
-            self._broadcast_server_owner_announcement(username)
-        elif trust_level.value >= TrustLevel.ADMIN.value:
-            self._broadcast_admin_announcement(username)
-
         # Send success response
         await client.send(
             {
@@ -347,6 +338,16 @@ class Server(AdministrationMixin):
             # User needs approval - show waiting screen
             self._show_waiting_for_approval(user)
             return
+
+        # Broadcast online announcement (only for approved, non-banned users)
+        online_sound = "onlineadmin.ogg" if trust_level.value >= TrustLevel.ADMIN.value else "online.ogg"
+        self._broadcast_presence_l("user-online", username, online_sound)
+
+        # If user is server owner, announce that; otherwise if admin, announce that
+        if trust_level.value >= TrustLevel.SERVER_OWNER.value:
+            self._broadcast_server_owner_announcement(username)
+        elif trust_level.value >= TrustLevel.ADMIN.value:
+            self._broadcast_admin_announcement(username)
 
         # Check if user is in a table
         table = self._tables.find_user_table(username)

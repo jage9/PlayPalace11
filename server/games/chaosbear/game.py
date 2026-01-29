@@ -271,6 +271,7 @@ class ChaosBearGame(Game):
 
     def end_turn(self) -> None:
         """End the current player's turn."""
+        self.on_turn_end()
         self.players_moved_this_round += 1
 
         alive_players = [p for p in self.players if p.alive and not p.is_spectator]

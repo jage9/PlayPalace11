@@ -29,7 +29,7 @@ from ...game_utils.options import (
     option_field,
 )
 from ...game_utils.teams import TeamManager
-from ...game_utils.round_timer import RoundTimer
+from ...game_utils.turn_system import RoundTransitionTimer
 from ...messages.localization import Localization
 from ...ui.keybinds import KeybindState
 
@@ -180,13 +180,13 @@ class ScopaGame(Game):
         """Initialize runtime state."""
         super().__post_init__()
         # Round timer for delays between rounds (state is in game fields)
-        self._round_timer = RoundTimer(self)
+        self._round_timer = RoundTransitionTimer(self)
 
     def rebuild_runtime_state(self) -> None:
         """Rebuild non-serialized state after deserialization."""
         super().rebuild_runtime_state()
         # Rebuild round timer
-        self._round_timer = RoundTimer(self)
+        self._round_timer = RoundTransitionTimer(self)
 
     def on_round_timer_ready(self) -> None:
         """Called when round timer expires. Start the next round."""
@@ -622,6 +622,7 @@ class ScopaGame(Game):
         player = self.current_player
         if not player:
             return
+        self.ensure_turn_started()
 
         # Announce turn (plays sound and broadcasts message)
         self.announce_turn()
@@ -745,6 +746,7 @@ class ScopaGame(Game):
 
     def _end_turn(self) -> None:
         """Handle end of a player's turn."""
+        self.on_turn_end()
         active_players = self.get_active_players()
 
         # Check if all players are out of cards

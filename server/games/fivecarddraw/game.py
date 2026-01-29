@@ -503,6 +503,7 @@ class FiveCardDrawGame(Game):
             self.bot_think(p)
             self._action_draw_cards(p, "draw_cards")
             return
+        self.ensure_turn_started()
         self.announce_turn(turn_sound="game_3cardpoker/turn.ogg")
         if p.is_bot:
             BotHelper.jolt_bot(p, ticks=random.randint(30, 50))
@@ -512,6 +513,7 @@ class FiveCardDrawGame(Game):
     def _advance_turn(self) -> None:
         if not self.betting:
             return
+        self.on_turn_end()
         active_ids = self._active_betting_ids()
         next_id = self.betting.next_player(self.current_player.id if self.current_player else None, active_ids)
         if next_id is None:

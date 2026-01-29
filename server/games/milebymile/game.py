@@ -14,7 +14,7 @@ from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, MenuInput, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.game_result import GameResult, PlayerResult
-from ...game_utils.round_timer import RoundTimer
+from ...game_utils.turn_system import RoundTransitionTimer
 from ...game_utils.teams import TeamManager
 from ...messages.localization import Localization
 from ...ui.keybinds import KeybindState
@@ -73,12 +73,12 @@ class MileByMileGame(Game):
     def __post_init__(self):
         """Initialize runtime state."""
         super().__post_init__()
-        self._round_timer = RoundTimer(self, delay_seconds=10.0)
+        self._round_timer = RoundTransitionTimer(self, delay_seconds=10.0)
 
     def rebuild_runtime_state(self) -> None:
         """Rebuild non-serialized state after deserialization."""
         super().rebuild_runtime_state()
-        self._round_timer = RoundTimer(self, delay_seconds=10.0)
+        self._round_timer = RoundTransitionTimer(self, delay_seconds=10.0)
 
     @classmethod
     def get_name(cls) -> str:
@@ -1445,6 +1445,7 @@ class MileByMileGame(Game):
         player = self.current_player
         if not player or not isinstance(player, MileByMilePlayer):
             return
+        self.ensure_turn_started()
 
         # Draw a card at start of turn
         card = self._draw_card(player)
@@ -1470,6 +1471,7 @@ class MileByMileGame(Game):
         # Don't process turns during countdown
         if self._round_timer.is_active:
             return
+        self.on_turn_end()
 
         # Check for race end
         if self.race_winner_team_index is not None:

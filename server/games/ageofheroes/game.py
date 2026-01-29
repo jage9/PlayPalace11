@@ -3029,6 +3029,7 @@ class AgeOfHeroesGame(Game):
             self.advance_turn(announce=False)
             self._start_turn()
             return
+        self.ensure_turn_started()
 
         # Process end-of-turn effects from previous turn
         if player.tribe_state:
@@ -3223,6 +3224,7 @@ class AgeOfHeroesGame(Game):
     def _end_turn(self) -> None:
         """End the current turn and advance to next player."""
         player = self.current_player
+        self.on_turn_end()
         if isinstance(player, AgeOfHeroesPlayer):
             # Collect special resources for monument (after action, before next turn)
             self._collect_special_resources(player)

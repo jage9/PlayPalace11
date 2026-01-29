@@ -674,6 +674,7 @@ class YahtzeeGame(Game, DiceGameMixin):
         player = self.current_player
         if not player:
             return
+        self.ensure_turn_started()
 
         ytz_player: YahtzeePlayer = player  # type: ignore
 
@@ -695,6 +696,7 @@ class YahtzeeGame(Game, DiceGameMixin):
         player = self.current_player
         if not player:
             return
+        self.on_turn_end()
 
         ytz_player: YahtzeePlayer = player  # type: ignore
 

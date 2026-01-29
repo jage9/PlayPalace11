@@ -352,6 +352,7 @@ class LightTurretGame(Game):
         if isinstance(player, LightTurretPlayer) and not player.alive:
             self._on_turn_end()
             return
+        self.ensure_turn_started()
 
         # Announce turn
         self.announce_turn()
@@ -542,5 +543,6 @@ class LightTurretGame(Game):
 
     def end_turn(self, jolt_min: int = 15, jolt_max: int = 25) -> None:
         """End the current player's turn."""
+        self.on_turn_end()
         BotHelper.jolt_bots(self, ticks=random.randint(jolt_min, jolt_max))
         self._on_turn_end()

@@ -514,6 +514,7 @@ class CrazyEightsGame(Game):
         player = self.current_player
         if not isinstance(player, CrazyEightsPlayer):
             return
+        self.ensure_turn_started()
         self.turn_has_drawn = False
         self.turn_drawn_card = None
         self.timer_warning_played = False
@@ -536,6 +537,7 @@ class CrazyEightsGame(Game):
 
     def _advance_turn(self) -> None:
         self._stop_turn_loop()
+        self.on_turn_end()
         self.advance_turn(announce=False)
         self._start_turn()
 

@@ -238,7 +238,7 @@ class CrazyEightsGame(Game):
         action_set.add(
             Action(
                 id="suit_clubs",
-                label="clubs",
+                label=Localization.get(locale, "suit-clubs"),
                 handler="_action_choose_suit",
                 is_enabled="_is_suit_choice_enabled",
                 is_hidden="_is_suit_choice_hidden",
@@ -248,7 +248,7 @@ class CrazyEightsGame(Game):
         action_set.add(
             Action(
                 id="suit_diamonds",
-                label="diamonds",
+                label=Localization.get(locale, "suit-diamonds"),
                 handler="_action_choose_suit",
                 is_enabled="_is_suit_choice_enabled",
                 is_hidden="_is_suit_choice_hidden",
@@ -258,7 +258,7 @@ class CrazyEightsGame(Game):
         action_set.add(
             Action(
                 id="suit_hearts",
-                label="hearts",
+                label=Localization.get(locale, "suit-hearts"),
                 handler="_action_choose_suit",
                 is_enabled="_is_suit_choice_enabled",
                 is_hidden="_is_suit_choice_hidden",
@@ -268,7 +268,7 @@ class CrazyEightsGame(Game):
         action_set.add(
             Action(
                 id="suit_spades",
-                label="spades",
+                label=Localization.get(locale, "suit-spades"),
                 handler="_action_choose_suit",
                 is_enabled="_is_suit_choice_enabled",
                 is_hidden="_is_suit_choice_hidden",

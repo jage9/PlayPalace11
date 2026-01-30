@@ -258,3 +258,27 @@ you-have-been-banned = 您已被此服务器封禁。
     原因：
 you-have-been-unbanned = 您已被此服务器解封。
     原因：
+virtual-bots-guided-overview = Guided Tables
+virtual-bots-groups-overview = Bot Groups
+virtual-bots-profiles-overview = Profiles
+virtual-bots-guided-header = Guided tables: { $count } rule(s). Allocation: { $allocation }, fallback: { $fallback }, default profile: { $default_profile }.
+virtual-bots-guided-empty = No guided table rules are configured.
+virtual-bots-guided-status-active = active
+virtual-bots-guided-status-inactive = inactive
+virtual-bots-guided-table-linked = linked to table { $table_id } (host { $host }, players { $players }, humans { $humans })
+virtual-bots-guided-table-stale = table { $table_id } missing on server
+virtual-bots-guided-table-unassigned = no table is currently tracked
+virtual-bots-guided-next-change = next change in { $ticks } ticks
+virtual-bots-guided-no-schedule = no scheduling window
+virtual-bots-guided-warning = ⚠ underfilled
+virtual-bots-guided-line = { $table }: game { $game }, priority { $priority }, bots { $assigned } (min { $min_bots }, max { $max_bots }), waiting { $waiting }, unavailable { $unavailable }, status { $status }, profile { $profile }, groups { $groups }. { $table_state }. { $next_change } { $warning_text }
+virtual-bots-groups-header = Bot groups: { $count } tag(s), { $bots } configured bots.
+virtual-bots-groups-empty = No bot groups are defined.
+virtual-bots-groups-line = { $group }: profile { $profile }, bots { $total } (online { $online }, waiting { $waiting }, in-game { $in_game }, offline { $offline }), rules { $rules }.
+virtual-bots-groups-no-rules = none
+virtual-bots-no-profile = default
+virtual-bots-profile-inherit-default = inherits default profile
+virtual-bots-profiles-header = Profiles: { $count } defined (default: { $default_profile }).
+virtual-bots-profiles-empty = No profiles are defined.
+virtual-bots-profiles-line = { $profile } ({ $bot_count } bots) overrides: { $overrides }.
+virtual-bots-profiles-no-overrides = inherits base configuration

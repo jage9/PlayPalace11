@@ -56,3 +56,77 @@ logout_after_game_max_ticks = 100  # 5 sec maximum delay before logout
 # This limit applies to each game type separately.
 # E.g., if set to 2, bots can own up to 2 scopa tables AND 2 ninetynine tables, etc.
 max_tables_per_game = 0
+# Default guided-table seat bounds for bots that don't have profile overrides
+min_bots_per_table = 0
+max_bots_per_table = 0
+# Waiting window (in ticks) before bots retry joining a guided table after failure
+waiting_min_ticks = 40
+waiting_max_ticks = 100
+
+# Behavior when no guided-table rule applies
+#   "default"  - bots fall back to the probabilistic join/create logic
+#   "disabled" - bots stay idle/offline unless a guided slot explicitly needs them
+fallback_behavior = "default"
+# Default profile applied to bots without an explicit profile assignment
+default_profile = "default"
+# Allocation policy when total bot pool can't satisfy all guided min_bots
+#   "best_effort" (default) fills higher-priority tables first and warns if short
+#   "strict" fails fast at startup if requirements exceed the pool
+allocation_mode = "best_effort"
+
+[virtual_bots.profiles.default]
+# Profiles inherit any keys omitted here from the top-level [virtual_bots] block
+min_bots_per_table = 0  # 0 means no lower bound
+max_bots_per_table = 0  # 0 means no upper bound
+
+[virtual_bots.profiles.host]
+# Host bots fill empty tables (0 seated) and lean toward creating games
+min_bots_per_table = 0
+max_bots_per_table = 0
+
+[virtual_bots.profiles.patron]
+# Patrons only join tables that already have at least one user seated
+min_bots_per_table = 1
+max_bots_per_table = 0
+
+[virtual_bots.profiles.mixer]
+# Mixers look for partially-filled tables to round out (1-4 seated)
+min_bots_per_table = 1
+max_bots_per_table = 4
+
+[virtual_bots.bot_groups.hosts]
+# Tag specific bots and optionally pin them to a profile
+bots = ["Alex", "Jordan", "Taylor"]
+profile = "host"
+
+[virtual_bots.bot_groups.patrons]
+bots = ["Morgan", "Casey", "Riley", "Quinn"]
+profile = "patron"
+
+[virtual_bots.bot_groups.mixers]
+bots = ["Avery", "Skyler", "Jamie", "Phoenix", "River", "Sage", "Rowan", "Finley"]
+profile = "mixer"
+
+# Optional guided table rules pin bots to specific tables/channels.
+# Each rule lists the bot groups allowed to fill it, the enforced bot counts,
+# and the deterministic priority (lower numbers first). Tables only host one game
+# at a time, so add multiple entries if you want the same profile across games.
+[[virtual_bots.guided_tables]]
+table = "the table"
+game = "crazyeights"
+bot_groups = ["hosts", "patrons", "mixers"]
+min_bots = 4
+max_bots = 4
+priority = 10
+# profile = "mixer"  # Uncomment to force every assigned bot to behave like a mixer here
+
+[[virtual_bots.guided_tables]]
+table = "scopa_lounge"
+game = "scopa"
+bot_groups = ["mixers"]
+min_bots = 2
+max_bots = 4
+priority = 25
+# Optional tick-based scheduling: run this lounge for half of each 60-second (1200-tick) cycle
+cycle_ticks = 1200
+active_ticks = [0, 600]

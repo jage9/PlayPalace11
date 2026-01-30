@@ -106,6 +106,18 @@ Values are in bytes and map directly to the `max_size` setting used by the under
 Set `allow_insecure_ws` to `true` only for trusted development setups where TLS certificates are unavailable; the server will refuse to start without TLS when this flag is `false`, and it will print a loud warning whenever it runs in plaintext mode.
 `[auth.rate_limits]` caps how many login attempts each IP can make per minute, how many failed attempts a specific username can accrue, and how many registrations are allowed per minute from the same IP. Setting any of the limits to `0` disables that particular throttle.
 
+#### Guided Virtual Bots
+
+The `[virtual_bots]` section now supports deterministic "guided tables" for staging named bot groups into specific games:
+
+- `fallback_behavior` controls whether unassigned bots continue using the legacy probabilistic matchmaking (`"default"`) or stay offline until a guided rule needs them (`"disabled"`). `allocation_mode` (`"best_effort"` vs `"strict"`) dictates what happens when there aren't enough tagged bots to meet every `min_bots` target.
+- `[virtual_bots.profiles.<name>]` let you override any timing/behavior knob (idle/online/offline windows, join/create/offline probabilities, logout delays, plus the new `min_bots_per_table`, `max_bots_per_table`, and `waiting_*` guards) per persona—e.g., `host`, `patron`, `mixer`.
+- `[virtual_bots.bot_groups.<tag>]` enumerates which bot usernames belong to each tag and optionally pins them to a profile. Guided tables refer to these tags instead of raw names, so you can reassign bots without editing every rule.
+- `[[virtual_bots.guided_tables]]` entries describe each "channel": set the unique `table` label, the single allowed `game`, deterministic `priority`, desired bot counts (`min_bots`/`max_bots`), and the `bot_groups` allowed to fill the seats. Optional `profile` overrides force all bots in that rule to adopt one profile, and optional `cycle_ticks` + `active_ticks = [start, end]` windows provide tick-based scheduling without referencing wall-clock time.
+- Server owners can review the live guided-table plan from the admin → Virtual Bots menu: **Guided Tables** shows rule health (active, shortages, current table IDs), **Bot Groups** lists inventory per tag, and **Profiles** dumps the effective overrides so you can audit behavior without opening `config.toml`.
+
+See `server/config.example.toml` for a complete annotated sample that keeps four bots glued to a Crazy Eights table while rotating a mixer profile across a Scopa lounge during half of each scheduling cycle.
+
 ## Project Structure
 
 The server and client are separate codebases with different philosophies.

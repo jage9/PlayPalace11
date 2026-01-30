@@ -358,10 +358,8 @@ class ScopaGame(Game):
         return None
 
     def _is_card_action_hidden(self, player: Player) -> Visibility:
-        """Card actions are visible for current player during play."""
+        """Card actions are visible during play (players can always see their hand)."""
         if self.status != "playing":
-            return Visibility.HIDDEN
-        if self.current_player != player:
             return Visibility.HIDDEN
         return Visibility.VISIBLE
 
@@ -396,14 +394,13 @@ class ScopaGame(Game):
 
         is_playing = self.status == "playing"
         is_spectator = player.is_spectator
-        is_current = self.current_player == player
 
         # Remove old card actions
         turn_set.remove_by_prefix("play_card_")
 
-        # Add card actions for current player
+        # Add card actions for all players (so they can see their hand)
         # Use dynamic label to ensure locale changes are reflected
-        if is_playing and is_current and not is_spectator:
+        if is_playing and not is_spectator:
             for card in sort_cards(player.hand, by_suit=False):
                 turn_set.add(
                     Action(

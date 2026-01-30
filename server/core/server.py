@@ -388,7 +388,7 @@ class Server(AdministrationMixin):
         # Check if user is banned
         if user.trust_level == TrustLevel.BANNED:
             user.play_sound("accountban.ogg")
-            user.speak_l("account-banned")
+            user.speak_l("account-banned", buffer="activity")
             for msg in user.get_queued_messages():
                 await user.connection.send(msg)
             await user.connection.send({
@@ -401,7 +401,7 @@ class Server(AdministrationMixin):
         # Check if user is approved
         if not user.approved:
             # User needs approval - show limited main menu
-            user.speak_l("waiting-for-approval")
+            user.speak_l("waiting-for-approval", buffer="activity")
             self._show_main_menu(user)
             return
 
@@ -419,7 +419,7 @@ class Server(AdministrationMixin):
         if trust_level.value >= TrustLevel.ADMIN.value:
             pending_users = self._db.get_pending_users(exclude_banned=True)
             if pending_users:
-                user.speak_l("account-request")
+                user.speak_l("account-request", buffer="activity")
                 user.play_sound("accountrequest.ogg")
 
         # Check if user is in a table
@@ -935,7 +935,7 @@ class Server(AdministrationMixin):
             if user.trust_level.value >= TrustLevel.ADMIN.value:
                 self._show_admin_menu(user)
         elif selection_id == "logout":
-            user.speak_l("goodbye")
+            user.speak_l("goodbye", buffer="activity")
             await user.connection.send({"type": "disconnect", "reconnect": False})
 
     async def _handle_options_selection(

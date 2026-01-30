@@ -11,12 +11,17 @@ if TYPE_CHECKING:
     from ..persistence.database import Database
 
 
+# Activity buffer helper for admin/system announcements
+def _speak_activity(user, message_id: str, **kwargs) -> None:
+    user.speak_l(message_id, buffer="activity", **kwargs)
+
+
 def require_admin(func):
     """Decorator that checks if the user is still an admin before executing an admin action."""
     @functools.wraps(func)
     async def wrapper(self, admin, *args, **kwargs):
         if admin.trust_level.value < TrustLevel.ADMIN.value:
-            admin.speak_l("not-admin-anymore")
+            _speak_activity(admin, "not-admin-anymore")
             self._show_main_menu(admin)
             return
         return await func(self, admin, *args, **kwargs)
@@ -28,7 +33,7 @@ def require_server_owner(func):
     @functools.wraps(func)
     async def wrapper(self, owner, *args, **kwargs):
         if owner.trust_level.value < TrustLevel.SERVER_OWNER.value:
-            owner.speak_l("not-server-owner")
+            _speak_activity(owner, "not-server-owner")
             self._show_main_menu(owner)
             return
         return await func(self, owner, *args, **kwargs)
@@ -63,7 +68,7 @@ class AdministrationMixin:
                 continue  # Not an admin
             if exclude_username and username == exclude_username:
                 continue  # Skip the excluded admin
-            user.speak_l(message_id)
+            _speak_activity(user, message_id)
             user.play_sound(sound)
 
     # ==================== Menu Display Functions ====================
@@ -124,7 +129,7 @@ class AdministrationMixin:
         pending = self._db.get_pending_users()
 
         if not pending:
-            user.speak_l("no-pending-accounts")
+            _speak_activity(user, "no-pending-accounts")
             self._show_admin_menu(user)
             return
 
@@ -164,7 +169,7 @@ class AdministrationMixin:
         non_admins = self._db.get_non_admin_users()
 
         if not non_admins:
-            user.speak_l("no-users-to-promote")
+            _speak_activity(user, "no-users-to-promote")
             self._show_admin_menu(user)
             return
 
@@ -190,7 +195,7 @@ class AdministrationMixin:
         admins = [a for a in admins if a.username != user.username]
 
         if not admins:
-            user.speak_l("no-admins-to-demote")
+            _speak_activity(user, "no-admins-to-demote")
             self._show_admin_menu(user)
             return
 
@@ -209,7 +214,7 @@ class AdministrationMixin:
 
     def _show_promote_confirm_menu(self, user: NetworkUser, target_username: str) -> None:
         """Show confirmation menu for promoting a user to admin."""
-        user.speak_l("confirm-promote", player=target_username)
+        _speak_activity(user, "confirm-promote", player=target_username)
         items = [
             MenuItem(text=Localization.get(user.locale, "confirm-yes"), id="yes"),
             MenuItem(text=Localization.get(user.locale, "confirm-no"), id="no"),
@@ -227,7 +232,7 @@ class AdministrationMixin:
 
     def _show_demote_confirm_menu(self, user: NetworkUser, target_username: str) -> None:
         """Show confirmation menu for demoting an admin."""
-        user.speak_l("confirm-demote", player=target_username)
+        _speak_activity(user, "confirm-demote", player=target_username)
         items = [
             MenuItem(text=Localization.get(user.locale, "confirm-yes"), id="yes"),
             MenuItem(text=Localization.get(user.locale, "confirm-no"), id="no"),
@@ -268,7 +273,7 @@ class AdministrationMixin:
         admins = self._db.get_admin_users(include_server_owner=False)
 
         if not admins:
-            user.speak_l("no-admins-for-transfer")
+            _speak_activity(user, "no-admins-for-transfer")
             self._show_admin_menu(user)
             return
 
@@ -287,7 +292,7 @@ class AdministrationMixin:
 
     def _show_transfer_ownership_confirm_menu(self, user: NetworkUser, target_username: str) -> None:
         """Show confirmation menu for transferring ownership."""
-        user.speak_l("confirm-transfer-ownership", player=target_username)
+        _speak_activity(user, "confirm-transfer-ownership", player=target_username)
         items = [
             MenuItem(text=Localization.get(user.locale, "confirm-yes"), id="yes"),
             MenuItem(text=Localization.get(user.locale, "confirm-no"), id="no"),
@@ -327,7 +332,7 @@ class AdministrationMixin:
         bannable_users = self._db.get_non_admin_users(exclude_banned=True)
 
         if not bannable_users:
-            user.speak_l("no-users-to-ban")
+            _speak_activity(user, "no-users-to-ban")
             self._show_admin_menu(user)
             return
 
@@ -349,7 +354,7 @@ class AdministrationMixin:
         banned_users = self._db.get_banned_users()
 
         if not banned_users:
-            user.speak_l("no-users-to-unban")
+            _speak_activity(user, "no-users-to-unban")
             self._show_admin_menu(user)
             return
 
@@ -368,7 +373,7 @@ class AdministrationMixin:
 
     def _show_ban_confirm_menu(self, user: NetworkUser, target_username: str) -> None:
         """Show confirmation menu for banning a user."""
-        user.speak_l("confirm-ban", player=target_username)
+        _speak_activity(user, "confirm-ban", player=target_username)
         items = [
             MenuItem(text=Localization.get(user.locale, "confirm-yes"), id="yes"),
             MenuItem(text=Localization.get(user.locale, "confirm-no"), id="no"),
@@ -386,7 +391,7 @@ class AdministrationMixin:
 
     def _show_unban_confirm_menu(self, user: NetworkUser, target_username: str) -> None:
         """Show confirmation menu for unbanning a user."""
-        user.speak_l("confirm-unban", player=target_username)
+        _speak_activity(user, "confirm-unban", player=target_username)
         items = [
             MenuItem(text=Localization.get(user.locale, "confirm-yes"), id="yes"),
             MenuItem(text=Localization.get(user.locale, "confirm-no"), id="no"),
@@ -471,7 +476,7 @@ class AdministrationMixin:
 
     def _show_virtual_bots_clear_confirm_menu(self, user: NetworkUser) -> None:
         """Show confirmation menu for clearing all virtual bots."""
-        user.speak_l("virtual-bots-clear-confirm")
+        _speak_activity(user, "virtual-bots-clear-confirm")
         items = [
             MenuItem(text=Localization.get(user.locale, "confirm-yes"), id="yes"),
             MenuItem(text=Localization.get(user.locale, "confirm-no"), id="no"),
@@ -782,7 +787,7 @@ class AdministrationMixin:
     async def _approve_user(self, admin: NetworkUser, username: str) -> None:
         """Approve a pending user account."""
         if self._db.approve_user(username):
-            admin.speak_l("account-approved", player=username)
+            _speak_activity(admin, "account-approved", player=username)
 
             # Notify other admins of the account action
             self._notify_admins(
@@ -798,7 +803,7 @@ class AdministrationMixin:
                 waiting_state = self._user_states.get(username, {})
                 if waiting_state.get("menu") == "main_menu":
                     # User is online and waiting - welcome them and show full main menu
-                    waiting_user.speak_l("account-approved-welcome")
+                    _speak_activity(waiting_user, "account-approved-welcome")
                     waiting_user.play_sound("accountapprove.ogg")
                     self._show_main_menu(waiting_user)
 
@@ -811,7 +816,7 @@ class AdministrationMixin:
         waiting_user = self._users.get(username)
 
         if self._db.delete_user(username):
-            admin.speak_l("account-declined", player=username)
+            _speak_activity(admin, "account-declined", player=username)
 
             # Notify other admins of the account action
             self._notify_admins(
@@ -832,7 +837,7 @@ class AdministrationMixin:
                 # Combine into single message for the dialog
                 full_message = f"{decline_message}\n{display_reason}"
                 waiting_user.play_sound("accountdeny.ogg")
-                waiting_user.speak(full_message)
+                waiting_user.speak(full_message, buffer="activity")
                 # Flush queued messages before disconnect so client receives them
                 for msg in waiting_user.get_queued_messages():
                     await waiting_user.connection.send(msg)
@@ -860,13 +865,13 @@ class AdministrationMixin:
 
         # Always notify the target user with personalized message
         if target_user:
-            target_user.speak_l("promote-announcement-you")
+            _speak_activity(target_user, "promote-announcement-you")
             target_user.play_sound("accountpromoteadmin.ogg")
 
         # Broadcast the announcement to others based on scope
         if broadcast_scope == "nobody":
             # Silent mode - only notify the server owner who performed the action
-            owner.speak_l("promote-announcement", player=username)
+            _speak_activity(owner, "promote-announcement", player=username)
             owner.play_sound("accountpromoteadmin.ogg")
         else:
             # Broadcast to all or admins (excluding the target user who already got personalized message)
@@ -895,13 +900,13 @@ class AdministrationMixin:
 
         # Always notify the target user with personalized message
         if target_user:
-            target_user.speak_l("demote-announcement-you")
+            _speak_activity(target_user, "demote-announcement-you")
             target_user.play_sound("accountdemoteadmin.ogg")
 
         # Broadcast the announcement to others based on scope
         if broadcast_scope == "nobody":
             # Silent mode - only notify the server owner who performed the action
-            owner.speak_l("demote-announcement", player=username)
+            _speak_activity(owner, "demote-announcement", player=username)
             owner.play_sound("accountdemoteadmin.ogg")
         else:
             # Broadcast to all or admins (excluding the target user who already got personalized message)
@@ -931,7 +936,7 @@ class AdministrationMixin:
                 continue  # Skip the excluded user
             if broadcast_scope == "admins" and user.trust_level.value < TrustLevel.ADMIN.value:
                 continue  # Only admins if broadcasting to admins only
-            user.speak_l(message_id, player=player_name)
+            _speak_activity(user, message_id, player=player_name)
             user.play_sound(sound)
 
     @require_server_owner
@@ -955,13 +960,13 @@ class AdministrationMixin:
 
         # Always notify the target user with personalized message
         if target_user:
-            target_user.speak_l("transfer-ownership-announcement-you")
+            _speak_activity(target_user, "transfer-ownership-announcement-you")
             target_user.play_sound("accounttransferownership.ogg")
 
         # Broadcast the announcement to others based on scope
         if broadcast_scope == "nobody":
             # Silent mode - only notify the former owner who performed the action
-            owner.speak_l("transfer-ownership-announcement", player=username)
+            _speak_activity(owner, "transfer-ownership-announcement", player=username)
             owner.play_sound("accounttransferownership.ogg")
         else:
             # Broadcast to all or admins (excluding the target user who already got personalized message)
@@ -989,7 +994,7 @@ class AdministrationMixin:
         # Broadcast the ban announcement based on scope
         if broadcast_scope == "nobody":
             # Silent mode - only notify the admin who performed the action
-            admin.speak_l("user-banned", player=username)
+            _speak_activity(admin, "user-banned", player=username)
             admin.play_sound("accountban.ogg")
         else:
             # Broadcast to all or admins
@@ -1013,7 +1018,7 @@ class AdministrationMixin:
             # Combine into single message for the dialog
             full_message = f"{ban_message}\n{display_reason}"
             target_user.play_sound("accountban.ogg")
-            target_user.speak(full_message)
+            target_user.speak(full_message, buffer="activity")
             # Flush queued messages before disconnect so client receives them
             for msg in target_user.get_queued_messages():
                 await target_user.connection.send(msg)
@@ -1039,7 +1044,7 @@ class AdministrationMixin:
         # Broadcast the unban announcement based on scope
         if broadcast_scope == "nobody":
             # Silent mode - only notify the admin who performed the action
-            admin.speak_l("user-unbanned", player=username)
+            _speak_activity(admin, "user-unbanned", player=username)
             admin.play_sound("accountapprove.ogg")
         else:
             # Broadcast to all or admins
@@ -1058,17 +1063,17 @@ class AdministrationMixin:
     async def _fill_virtual_bots(self, owner: NetworkUser) -> None:
         """Fill the server with virtual bots from config."""
         if not hasattr(self, "_virtual_bots") or not self._virtual_bots:
-            owner.speak_l("virtual-bots-not-available")
+            _speak_activity(owner, "virtual-bots-not-available")
             self._show_virtual_bots_menu(owner)
             return
 
         added, online = self._virtual_bots.fill_server()
         if added > 0:
-            owner.speak_l("virtual-bots-filled", added=added, online=online)
+            _speak_activity(owner, "virtual-bots-filled", added=added, online=online)
             # Save state after filling
             self._virtual_bots.save_state()
         else:
-            owner.speak_l("virtual-bots-already-filled")
+            _speak_activity(owner, "virtual-bots-already-filled")
 
         self._show_virtual_bots_menu(owner)
 
@@ -1076,19 +1081,19 @@ class AdministrationMixin:
     async def _clear_virtual_bots(self, owner: NetworkUser) -> None:
         """Clear all virtual bots from the server."""
         if not hasattr(self, "_virtual_bots") or not self._virtual_bots:
-            owner.speak_l("virtual-bots-not-available")
+            _speak_activity(owner, "virtual-bots-not-available")
             self._show_virtual_bots_menu(owner)
             return
 
         bots_cleared, tables_killed = self._virtual_bots.clear_bots()
         if bots_cleared > 0:
-            owner.speak_l(
+            _speak_activity(owner, 
                 "virtual-bots-cleared",
                 bots=bots_cleared,
                 tables=tables_killed,
             )
         else:
-            owner.speak_l("virtual-bots-none-to-clear")
+            _speak_activity(owner, "virtual-bots-none-to-clear")
 
         self._show_virtual_bots_menu(owner)
 
@@ -1096,12 +1101,12 @@ class AdministrationMixin:
     async def _show_virtual_bots_status(self, owner: NetworkUser) -> None:
         """Show virtual bots status."""
         if not hasattr(self, "_virtual_bots") or not self._virtual_bots:
-            owner.speak_l("virtual-bots-not-available")
+            _speak_activity(owner, "virtual-bots-not-available")
             self._show_virtual_bots_menu(owner)
             return
 
         status = self._virtual_bots.get_status()
-        owner.speak_l(
+        _speak_activity(owner, 
             "virtual-bots-status-report",
             total=status["total"],
             online=status["online"],

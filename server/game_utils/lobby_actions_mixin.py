@@ -281,7 +281,9 @@ class LobbyActionsMixin:
     def add_player(self, name: str, user: "User") -> "Player":
         """Add a player to the game."""
         is_bot = hasattr(user, "is_bot") and user.is_bot
+        is_virtual_bot = getattr(user, "is_virtual_bot", False)
         player = self.create_player(user.uuid, name, is_bot=is_bot)
+        player.is_virtual_bot = is_virtual_bot
         self.players.append(player)
         self.attach_user(player.id, user)
         # Set up action sets for the new player

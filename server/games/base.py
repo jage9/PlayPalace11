@@ -56,6 +56,7 @@ class Player(DataClassJSONMixin):
     id: str  # UUID - unique identifier (from user.uuid for humans, generated for bots)
     name: str  # Display name
     is_bot: bool = False
+    is_virtual_bot: bool = False  # True for server-level virtual bots (should appear in stats)
     is_spectator: bool = False
     # Bot AI state (serialized for persistence)
     bot_think_ticks: int = 0  # Ticks until bot can act

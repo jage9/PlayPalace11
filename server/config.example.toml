@@ -1,0 +1,30 @@
+# PlayPalace Server Configuration
+# Copy this file to config.toml and customize as needed.
+
+[virtual_bots]
+# Bot names - these will be used for virtual bot usernames
+names = [
+    "Alex", "Jordan", "Taylor", "Morgan", "Casey",
+    "Riley", "Quinn", "Avery", "Skyler", "Jamie",
+    "Phoenix", "River", "Sage", "Rowan", "Finley"
+]
+
+# Timing settings (in ticks, 50ms each = 20 ticks/sec)
+min_idle_ticks = 100      # 5 sec minimum between actions when idle
+max_idle_ticks = 600      # 30 sec maximum between actions when idle
+min_online_ticks = 1200   # 1 min minimum online before considering going offline
+max_online_ticks = 6000   # 5 min maximum online
+min_offline_ticks = 600   # 30 sec minimum offline
+max_offline_ticks = 3000  # 2.5 min maximum offline
+leave_game_delay_ticks = 200  # 10 sec - spread bot departures after game ends
+start_game_delay_ticks = 400  # 20 sec - wait for players before starting
+
+# Behavior probabilities (per decision tick when idle)
+join_game_chance = 0.3    # Chance to try joining an existing game
+create_game_chance = 0.1  # Chance to try creating a new game
+go_offline_chance = 0.05  # Chance to go offline (when online long enough)
+
+# Post-game logout behavior
+logout_after_game_chance = 0.33    # 33% chance to log off after finishing a game
+logout_after_game_min_ticks = 40   # 2 sec minimum delay before logout
+logout_after_game_max_ticks = 100  # 5 sec maximum delay before logout

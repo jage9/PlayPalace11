@@ -48,8 +48,11 @@ class GameResultMixin:
         if show_end_screen:
             self._show_end_screen(result)
 
-        # Auto-destroy if no humans remain (bot-only games)
-        has_humans = any(not p.is_bot for p in self.players)
+        # Auto-destroy if no humans remain (bot-only games, but not virtual bot games)
+        has_humans = any(
+            not p.is_bot or getattr(p, "is_virtual_bot", False)
+            for p in self.players
+        )
         if not has_humans:
             self.destroy()
 
@@ -70,6 +73,7 @@ class GameResultMixin:
                     player_id=p.id,
                     player_name=p.name,
                     is_bot=p.is_bot,
+                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
                 )
                 for p in self.get_active_players()
             ],
@@ -129,7 +133,11 @@ class GameResultMixin:
         Default: Winner first, everyone else tied for second.
         """
         winner_name = result.custom_data.get("winner_name")
-        human_players = [p for p in result.player_results if not p.is_bot]
+        # Include humans and virtual bots, exclude table bots
+        human_players = [
+            p for p in result.player_results
+            if not p.is_bot or p.is_virtual_bot
+        ]
 
         if not human_players:
             return []

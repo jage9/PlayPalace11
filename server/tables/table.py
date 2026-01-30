@@ -75,6 +75,10 @@ class Table(DataClassJSONMixin):
         self.members = [m for m in self.members if m.username != username]
         self._users.pop(username, None)
 
+        # Destroy table if it's empty after game ended
+        if not self.members and self.status == "finished":
+            self.destroy()
+
     def get_user(self, username: str) -> "User | None":
         """Get a user by username."""
         return self._users.get(username)

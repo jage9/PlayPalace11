@@ -26,6 +26,7 @@ class PlayerResult(DataClassJSONMixin):
     player_id: str
     player_name: str
     is_bot: bool
+    is_virtual_bot: bool = False  # True for server-level virtual bots (include in stats)
 
 
 @dataclass
@@ -92,9 +93,12 @@ class GameResult(DataClassJSONMixin):
         return [p.player_id for p in self.player_results]
 
     def get_human_player_ids(self) -> list[str]:
-        """Get list of human (non-bot) player IDs."""
-        return [p.player_id for p in self.player_results if not p.is_bot]
+        """Get list of human and virtual bot player IDs (excludes table bots)."""
+        return [
+            p.player_id for p in self.player_results
+            if not p.is_bot or p.is_virtual_bot
+        ]
 
     def has_human_players(self) -> bool:
-        """Check if any human players participated."""
-        return any(not p.is_bot for p in self.player_results)
+        """Check if any human or virtual bot players participated."""
+        return any(not p.is_bot or p.is_virtual_bot for p in self.player_results)

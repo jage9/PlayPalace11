@@ -76,7 +76,7 @@ class AdministrationMixin:
                 id="account_approval",
             ),
         ]
-        # Only server owners can promote/demote admins and transfer ownership
+        # Only server owners can promote/demote admins, transfer ownership, and manage virtual bots
         if user.trust_level.value >= TrustLevel.SERVER_OWNER.value:
             items.append(
                 MenuItem(
@@ -94,6 +94,12 @@ class AdministrationMixin:
                 MenuItem(
                     text=Localization.get(user.locale, "transfer-ownership"),
                     id="transfer_ownership",
+                )
+            )
+            items.append(
+                MenuItem(
+                    text=Localization.get(user.locale, "virtual-bots"),
+                    id="virtual_bots",
                 )
             )
         items.append(MenuItem(text=Localization.get(user.locale, "back"), id="back"))
@@ -307,6 +313,52 @@ class AdministrationMixin:
             "target_username": target_username,
         }
 
+    def _show_virtual_bots_menu(self, user: NetworkUser) -> None:
+        """Show virtual bots management menu."""
+        # Get current status if manager exists
+        status_text = ""
+        if hasattr(self, "_virtual_bots") and self._virtual_bots:
+            status = self._virtual_bots.get_status()
+            status_text = f" ({status['online']}/{status['total']})"
+
+        items = [
+            MenuItem(
+                text=Localization.get(user.locale, "virtual-bots-fill") + status_text,
+                id="fill",
+            ),
+            MenuItem(
+                text=Localization.get(user.locale, "virtual-bots-clear"),
+                id="clear",
+            ),
+            MenuItem(
+                text=Localization.get(user.locale, "virtual-bots-status"),
+                id="status",
+            ),
+            MenuItem(text=Localization.get(user.locale, "back"), id="back"),
+        ]
+        user.show_menu(
+            "virtual_bots_menu",
+            items,
+            multiletter=True,
+            escape_behavior=EscapeBehavior.SELECT_LAST,
+        )
+        self._user_states[user.username] = {"menu": "virtual_bots_menu"}
+
+    def _show_virtual_bots_clear_confirm_menu(self, user: NetworkUser) -> None:
+        """Show confirmation menu for clearing all virtual bots."""
+        user.speak_l("virtual-bots-clear-confirm")
+        items = [
+            MenuItem(text=Localization.get(user.locale, "confirm-yes"), id="yes"),
+            MenuItem(text=Localization.get(user.locale, "confirm-no"), id="no"),
+        ]
+        user.show_menu(
+            "virtual_bots_clear_confirm_menu",
+            items,
+            multiletter=True,
+            escape_behavior=EscapeBehavior.SELECT_LAST,
+        )
+        self._user_states[user.username] = {"menu": "virtual_bots_clear_confirm_menu"}
+
     # ==================== Menu Selection Handlers ====================
 
     async def _handle_admin_menu_selection(
@@ -321,6 +373,8 @@ class AdministrationMixin:
             self._show_demote_admin_menu(user)
         elif selection_id == "transfer_ownership":
             self._show_transfer_ownership_menu(user)
+        elif selection_id == "virtual_bots":
+            self._show_virtual_bots_menu(user)
         elif selection_id == "back":
             self._show_main_menu(user)
 
@@ -488,6 +542,28 @@ class AdministrationMixin:
         broadcast_scope = selection_id
 
         await self._transfer_ownership(user, target_username, broadcast_scope)
+
+    async def _handle_virtual_bots_selection(
+        self, user: NetworkUser, selection_id: str
+    ) -> None:
+        """Handle virtual bots menu selection."""
+        if selection_id == "fill":
+            await self._fill_virtual_bots(user)
+        elif selection_id == "clear":
+            self._show_virtual_bots_clear_confirm_menu(user)
+        elif selection_id == "status":
+            await self._show_virtual_bots_status(user)
+        elif selection_id == "back":
+            self._show_admin_menu(user)
+
+    async def _handle_virtual_bots_clear_confirm_selection(
+        self, user: NetworkUser, selection_id: str
+    ) -> None:
+        """Handle virtual bots clear confirmation menu selection."""
+        if selection_id == "yes":
+            await self._clear_virtual_bots(user)
+        else:
+            self._show_virtual_bots_menu(user)
 
     # ==================== Admin Actions ====================
 
@@ -685,3 +761,61 @@ class AdministrationMixin:
             )
 
         self._show_admin_menu(owner)
+
+    # ==================== Virtual Bot Actions ====================
+
+    @require_server_owner
+    async def _fill_virtual_bots(self, owner: NetworkUser) -> None:
+        """Fill the server with virtual bots from config."""
+        if not hasattr(self, "_virtual_bots") or not self._virtual_bots:
+            owner.speak_l("virtual-bots-not-available")
+            self._show_virtual_bots_menu(owner)
+            return
+
+        added, online = self._virtual_bots.fill_server()
+        if added > 0:
+            owner.speak_l("virtual-bots-filled", added=added, online=online)
+            # Save state after filling
+            self._virtual_bots.save_state()
+        else:
+            owner.speak_l("virtual-bots-already-filled")
+
+        self._show_virtual_bots_menu(owner)
+
+    @require_server_owner
+    async def _clear_virtual_bots(self, owner: NetworkUser) -> None:
+        """Clear all virtual bots from the server."""
+        if not hasattr(self, "_virtual_bots") or not self._virtual_bots:
+            owner.speak_l("virtual-bots-not-available")
+            self._show_virtual_bots_menu(owner)
+            return
+
+        bots_cleared, tables_killed = self._virtual_bots.clear_bots()
+        if bots_cleared > 0:
+            owner.speak_l(
+                "virtual-bots-cleared",
+                bots=bots_cleared,
+                tables=tables_killed,
+            )
+        else:
+            owner.speak_l("virtual-bots-none-to-clear")
+
+        self._show_virtual_bots_menu(owner)
+
+    @require_server_owner
+    async def _show_virtual_bots_status(self, owner: NetworkUser) -> None:
+        """Show virtual bots status."""
+        if not hasattr(self, "_virtual_bots") or not self._virtual_bots:
+            owner.speak_l("virtual-bots-not-available")
+            self._show_virtual_bots_menu(owner)
+            return
+
+        status = self._virtual_bots.get_status()
+        owner.speak_l(
+            "virtual-bots-status-report",
+            total=status["total"],
+            online=status["online"],
+            offline=status["offline"],
+            in_game=status["in_game"],
+        )
+        self._show_virtual_bots_menu(owner)

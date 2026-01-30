@@ -254,3 +254,14 @@ class User(ABC):
 def generate_uuid() -> str:
     """Generate a new UUID string."""
     return str(uuid_module.uuid4())
+
+
+def generate_virtual_bot_uuid(name: str) -> str:
+    """Generate a deterministic UUID for a virtual bot based on its name.
+
+    This ensures virtual bots have consistent UUIDs across server restarts
+    so their game stats persist properly.
+    """
+    # Use UUID5 with a custom namespace for virtual bots
+    namespace = uuid_module.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+    return str(uuid_module.uuid5(namespace, f"virtual_bot:{name}"))

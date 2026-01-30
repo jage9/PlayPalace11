@@ -9,6 +9,7 @@ import json
 
 from .tick import TickScheduler
 from .administration import AdministrationMixin
+from .virtual_bots import VirtualBotManager
 from ..network.websocket_server import WebSocketServer, ClientConnection
 from ..persistence.database import Database
 from ..auth.auth import AuthManager
@@ -60,6 +61,9 @@ class Server(AdministrationMixin):
         self._users: dict[str, NetworkUser] = {}  # username -> NetworkUser
         self._user_states: dict[str, dict] = {}  # username -> UI state
 
+        # Virtual bot manager
+        self._virtual_bots = VirtualBotManager(self)
+
         # Initialize localization
         if locales_dir is None:
             locales_dir = _DEFAULT_LOCALES_DIR
@@ -81,6 +85,12 @@ class Server(AdministrationMixin):
 
         # Load existing tables
         self._load_tables()
+
+        # Initialize virtual bots
+        self._virtual_bots.load_config()
+        loaded = self._virtual_bots.load_state()
+        if loaded > 0:
+            print(f"Restored {loaded} virtual bots from previous session.")
 
         # Start WebSocket server
         self._ws_server = WebSocketServer(
@@ -107,6 +117,9 @@ class Server(AdministrationMixin):
 
         # Save all tables
         self._save_tables()
+
+        # Save virtual bot state (they persist across restarts)
+        self._virtual_bots.save_state()
 
         # Stop tick scheduler
         if self._tick_scheduler:
@@ -168,6 +181,9 @@ class Server(AdministrationMixin):
         # Tick all tables
         self._tables.on_tick()
 
+        # Tick virtual bots (handle state transitions)
+        self._virtual_bots.on_tick()
+
         # Flush queued messages for all users
         self._flush_user_messages()
 
@@ -225,6 +241,14 @@ class Server(AdministrationMixin):
             if not user.approved:
                 continue  # Don't send broadcasts to unapproved users
             user.speak_l("user-is-server-owner", player=owner_name)
+
+    def _broadcast_table_created(self, host_name: str, game_name: str) -> None:
+        """Broadcast a table creation announcement to all approved online users."""
+        for username, user in self._users.items():
+            if not user.approved:
+                continue  # Don't send broadcasts to unapproved users
+            user.speak_l("table-created", host=host_name, game=game_name)
+            user.play_sound("table_created.ogg")
 
     async def _on_client_message(self, client: ClientConnection, packet: dict) -> None:
         """Handle incoming message from client."""
@@ -824,6 +848,10 @@ class Server(AdministrationMixin):
             await self._handle_transfer_ownership_confirm_selection(user, selection_id, state)
         elif current_menu == "transfer_broadcast_choice_menu":
             await self._handle_transfer_broadcast_choice_selection(user, selection_id, state)
+        elif current_menu == "virtual_bots_menu":
+            await self._handle_virtual_bots_selection(user, selection_id)
+        elif current_menu == "virtual_bots_clear_confirm_menu":
+            await self._handle_virtual_bots_clear_confirm_selection(user, selection_id)
 
     async def _handle_main_menu_selection(
         self, user: NetworkUser, selection_id: str
@@ -963,11 +991,10 @@ class Server(AdministrationMixin):
                 game._table = table  # Enable game to call table.destroy()
                 game.initialize_lobby(user.username, user)
 
-                user.speak_l(
-                    "table-created",
-                    host=user.username,
-                    game=state.get("game_name", game_type),
-                )
+                # Broadcast table creation to all users
+                game_name = state.get("game_name", game_type)
+                self._broadcast_table_created(user.username, game_name)
+
                 min_players = game_class.get_min_players()
                 max_players = game_class.get_max_players()
                 user.speak_l(
@@ -1366,6 +1393,7 @@ class Server(AdministrationMixin):
                     player_id=p["player_id"],
                     player_name=p["player_name"],
                     is_bot=p["is_bot"],
+                    is_virtual_bot=p.get("is_virtual_bot", False),
                 )
                 for p in player_rows
             ]
@@ -1394,7 +1422,7 @@ class Server(AdministrationMixin):
         for result in game_results:
             winner_name = result.custom_data.get("winner_name")
             for p in result.player_results:
-                if p.is_bot:
+                if p.is_bot and not p.is_virtual_bot:
                     continue
                 if p.player_id not in player_stats:
                     player_stats[p.player_id] = {
@@ -1523,7 +1551,7 @@ class Server(AdministrationMixin):
         for result in game_results:
             final_scores = result.custom_data.get("final_scores", {})
             for p in result.player_results:
-                if p.is_bot:
+                if p.is_bot and not p.is_virtual_bot:
                     continue
                 if p.player_id not in player_scores:
                     player_scores[p.player_id] = {"total": 0, "name": p.player_name}
@@ -1578,7 +1606,7 @@ class Server(AdministrationMixin):
         for result in game_results:
             final_scores = result.custom_data.get("final_scores", {})
             for p in result.player_results:
-                if p.is_bot:
+                if p.is_bot and not p.is_virtual_bot:
                     continue
                 score = final_scores.get(p.player_name, 0)
                 if p.player_id not in player_high:
@@ -1631,7 +1659,7 @@ class Server(AdministrationMixin):
         player_games: dict[str, dict] = {}
         for result in game_results:
             for p in result.player_results:
-                if p.is_bot:
+                if p.is_bot and not p.is_virtual_bot:
                     continue
                 if p.player_id not in player_games:
                     player_games[p.player_id] = {"count": 0, "name": p.player_name}
@@ -1721,7 +1749,7 @@ class Server(AdministrationMixin):
         for result in game_results:
             custom_data = result.custom_data
             for p in result.player_results:
-                if p.is_bot:
+                if p.is_bot and not p.is_virtual_bot:
                     continue
 
                 if p.player_id not in player_data:
@@ -2173,7 +2201,7 @@ class Server(AdministrationMixin):
             timestamp=result.timestamp,
             duration_ticks=result.duration_ticks,
             players=[
-                (p.player_id, p.player_name, p.is_bot)
+                (p.player_id, p.player_name, p.is_bot, getattr(p, "is_virtual_bot", False))
                 for p in result.player_results
             ],
             custom_data=result.custom_data,

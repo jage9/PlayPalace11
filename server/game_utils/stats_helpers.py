@@ -66,8 +66,8 @@ class LeaderboardHelper:
 
         for result in results:
             for player in result.player_results:
-                if player.is_bot:
-                    continue  # Skip bots in leaderboards
+                if player.is_bot and not player.is_virtual_bot:
+                    continue  # Skip table bots in leaderboards (but include virtual bots)
 
                 score = score_extractor(result, player.player_id)
                 if score is not None:
@@ -287,8 +287,10 @@ class RatingHelper:
             # Default: winner first, everyone else tied for second
             def ranking_extractor(r: "GameResult") -> list[list[str]]:
                 winner_name = r.custom_data.get("winner_name")
+                # Include humans and virtual bots, exclude table bots
                 human_players = [
-                    p for p in r.player_results if not p.is_bot
+                    p for p in r.player_results
+                    if not p.is_bot or p.is_virtual_bot
                 ]
 
                 if not human_players:

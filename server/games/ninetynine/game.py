@@ -13,7 +13,7 @@ import random
 
 from ..base import Game, Player, GameOptions
 from ..registry import register_game
-from ...game_utils.actions import Action, ActionSet, Visibility
+from ...game_utils.actions import Action, ActionSet, MenuInput, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.game_result import GameResult, PlayerResult
 from ...game_utils.cards import (
@@ -34,7 +34,7 @@ from ...game_utils.cards import (
 from ...game_utils.options import BoolOption, IntOption, MenuOption, option_field
 from ...messages.localization import Localization
 from ...ui.keybinds import KeybindState
-from .bot import bot_think as _bot_think
+from .bot import bot_think as _bot_think, evaluate_count as _evaluate_count
 
 
 # =============================================================================
@@ -71,6 +71,7 @@ class NinetyNinePlayer(Player):
 
     hand: list[Card] = field(default_factory=list)
     tokens: int = DEFAULT_TOKENS
+    draw_timeout_ticks: int = 0  # Per-player manual draw countdown
 
 
 @dataclass
@@ -144,14 +145,6 @@ class NinetyNineGame(Game):
     # Players still in the game (have tokens)
     alive_player_ids: list[str] = field(default_factory=list)
 
-    # Pending choice state (for Ace or Ten)
-    pending_choice: str | None = None  # "ace" or "ten"
-    pending_card_index: int = -1
-
-    # Manual draw state (when autodraw is off)
-    pending_draw_player_id: str | None = None
-    draw_timeout_ticks: int = 0
-
     @classmethod
     def get_name(cls) -> str:
         return "Ninety Nine"
@@ -195,15 +188,6 @@ class NinetyNineGame(Game):
     def is_quentin_c(self) -> bool:
         """Check if using Quentin C rules."""
         return self.options.rules_variant == "quentin_c"
-
-    @property
-    def pending_draw_player(self) -> NinetyNinePlayer | None:
-        """Get the player who needs to draw (manual draw mode)."""
-        if self.pending_draw_player_id:
-            player = self.get_player_by_id(self.pending_draw_player_id)
-            if isinstance(player, NinetyNinePlayer):
-                return player
-        return None
 
     def on_player_skipped(self, player: Player) -> None:
         """Announce when a player is skipped."""
@@ -369,18 +353,33 @@ class NinetyNineGame(Game):
 
         is_current = self.current_player == player
         is_playing = self.status == "playing"
-        has_pending_choice = self.pending_choice is not None
-        needs_to_draw = self.pending_draw_player_id == player.id
+        needs_to_draw = player.draw_timeout_ticks > 0
 
         # Remove old dynamic actions
         turn_set.remove_by_prefix("card_slot_")
-        turn_set.remove("choice_1")
-        turn_set.remove("choice_2")
         turn_set.remove("draw_card")
 
         # Add card slot actions for cards in hand
         for i, card in enumerate(player.hand, 1):
             action_id = f"card_slot_{i}"
+
+            # Attach MenuInput for aces/tens that need a choice
+            # (only for the current player, and only in Quentin C variant)
+            input_request = None
+            if is_current and self.is_quentin_c:
+                if card.rank == 1 and self.count <= ACE_AUTO_THRESHOLD:
+                    input_request = MenuInput(
+                        prompt="ninetynine-ace-choice",
+                        options="_card_choice_options",
+                        bot_select="_bot_select_card_choice",
+                    )
+                elif card.rank == 10 and self.count < TEN_AUTO_THRESHOLD:
+                    input_request = MenuInput(
+                        prompt="ninetynine-ten-choice",
+                        options="_card_choice_options",
+                        bot_select="_bot_select_card_choice",
+                    )
+
             turn_set.add(
                 Action(
                     id=action_id,
@@ -388,37 +387,7 @@ class NinetyNineGame(Game):
                     handler="_action_play_card",
                     is_enabled="_is_card_slot_enabled",
                     is_hidden="_is_card_slot_hidden",
-                )
-            )
-
-        # Add choice actions if needed
-        if has_pending_choice and is_current:
-            if self.pending_choice == "ace":
-                choice_1_label = Localization.get(locale, "ninetynine-ace-add-eleven")
-                choice_2_label = Localization.get(locale, "ninetynine-ace-add-one")
-            elif self.pending_choice == "ten":
-                choice_1_label = Localization.get(locale, "ninetynine-ten-add")
-                choice_2_label = Localization.get(locale, "ninetynine-ten-subtract")
-            else:
-                choice_1_label = "Choice 1"
-                choice_2_label = "Choice 2"
-
-            turn_set.add(
-                Action(
-                    id="choice_1",
-                    label=choice_1_label,
-                    handler="_action_choice_1",
-                    is_enabled="_is_choice_enabled",
-                    is_hidden="_is_choice_hidden",
-                )
-            )
-            turn_set.add(
-                Action(
-                    id="choice_2",
-                    label=choice_2_label,
-                    handler="_action_choice_2",
-                    is_enabled="_is_choice_enabled",
-                    is_hidden="_is_choice_hidden",
+                    input_request=input_request,
                 )
             )
 
@@ -459,28 +428,14 @@ class NinetyNineGame(Game):
         return Visibility.HIDDEN
 
     def _is_card_slot_enabled(self, player: Player) -> str | None:
-        """Check if card slot actions are enabled (always enabled during play)."""
+        """Check if card slot actions are enabled."""
         if self.status != "playing":
             return "action-not-playing"
-        # Always enabled during play - handler will announce card if not playable
+        # Turn check is done in handler to allow action to appear in menu
         return None
 
     def _is_card_slot_hidden(self, player: Player) -> Visibility:
         """Card slots are visible during play."""
-        if self.status != "playing":
-            return Visibility.HIDDEN
-        return Visibility.VISIBLE
-
-    def _is_choice_enabled(self, player: Player) -> str | None:
-        """Check if choice actions are enabled."""
-        if self.status != "playing":
-            return "action-not-playing"
-        if self.current_player != player:
-            return "action-not-your-turn"
-        return None
-
-    def _is_choice_hidden(self, player: Player) -> Visibility:
-        """Choice actions are visible during play."""
         if self.status != "playing":
             return Visibility.HIDDEN
         return Visibility.VISIBLE
@@ -503,6 +458,74 @@ class NinetyNineGame(Game):
         """Update turn actions for all players."""
         for player in self.players:
             self._update_turn_actions(player)
+
+    # ==========================================================================
+    # MenuInput Callbacks (for Ace / Ten subchoices)
+    # ==========================================================================
+
+    def _card_choice_options(self, player: Player) -> list[str]:
+        """Get choice options for ace or ten cards."""
+        if not isinstance(player, NinetyNinePlayer):
+            return []
+
+        action_id = self._pending_actions.get(player.id)
+        if not action_id:
+            return []
+
+        try:
+            slot = int(action_id.split("_")[-1]) - 1
+        except ValueError:
+            return []
+
+        if slot < 0 or slot >= len(player.hand):
+            return []
+
+        card = player.hand[slot]
+        user = self.get_user(player)
+        locale = user.locale if user else "en"
+
+        if card.rank == 1:
+            return [
+                Localization.get(locale, "ninetynine-ace-add-eleven"),
+                Localization.get(locale, "ninetynine-ace-add-one"),
+            ]
+        elif card.rank == 10:
+            return [
+                Localization.get(locale, "ninetynine-ten-add"),
+                Localization.get(locale, "ninetynine-ten-subtract"),
+            ]
+        return []
+
+    def _bot_select_card_choice(
+        self, player: Player, options: list[str]
+    ) -> str | None:
+        """Bot selects card choice for ace or ten."""
+        if not isinstance(player, NinetyNinePlayer):
+            return None
+
+        action_id = self._pending_actions.get(player.id)
+        if not action_id:
+            return None
+
+        try:
+            slot = int(action_id.split("_")[-1]) - 1
+        except ValueError:
+            return None
+
+        if slot < 0 or slot >= len(player.hand):
+            return None
+
+        card = player.hand[slot]
+
+        if card.rank == 1:  # Ace: compare +11 vs +1
+            score_11 = _evaluate_count(self, player, self.count + 11, 1)
+            score_1 = _evaluate_count(self, player, self.count + 1, 1)
+            return options[0] if score_11 > score_1 else options[1]
+        elif card.rank == 10:  # Ten: compare +10 vs -10
+            score_plus = _evaluate_count(self, player, self.count + 10, 10)
+            score_minus = _evaluate_count(self, player, self.count - 10, 10)
+            return options[0] if score_plus > score_minus else options[1]
+        return None
 
     # ==========================================================================
     # Game Flow
@@ -539,9 +562,6 @@ class NinetyNineGame(Game):
         self.count = 0
         self.turn_direction = 1
         self.turn_skip_count = 0
-        self.pending_choice = None
-        self.pending_draw_player_id = None
-        self.draw_timeout_ticks = 0
 
         # Build and shuffle deck based on variant
         if self.is_quentin_c:
@@ -674,9 +694,23 @@ class NinetyNineGame(Game):
     # Action Handlers
     # ==========================================================================
 
-    def _action_play_card(self, player: Player, action_id: str) -> None:
-        """Handle playing a card, or announce it if not playable."""
+    def _action_play_card(self, player: Player, *args) -> None:
+        """Handle playing a card, or announce it if not playable.
+
+        Can be called as:
+        - _action_play_card(player, action_id) - no input
+        - _action_play_card(player, input_value, action_id) - with menu input
+        """
         if not isinstance(player, NinetyNinePlayer):
+            return
+
+        # Parse arguments
+        if len(args) == 1:
+            action_id = args[0]
+            input_value = None
+        elif len(args) == 2:
+            input_value, action_id = args
+        else:
             return
 
         # Extract slot number
@@ -692,46 +726,34 @@ class NinetyNineGame(Game):
         user = self.get_user(player)
         locale = user.locale if user else "en"
 
-        # Check if card can be played - if not, just announce it
+        # Check if it's the player's turn
         if self.current_player != player:
             if user:
-                user.speak(card_name(card, locale))
+                user.speak_l("action-not-your-turn")
             return
 
-        if self.pending_choice is not None:
-            if user:
-                user.speak_l("ninetynine-choose-first")
-            return
-
-        if self.pending_draw_player_id == player.id:
+        if player.draw_timeout_ticks > 0:
             if user:
                 user.speak_l("ninetynine-draw-first")
             return
+
         old_count = self.count
 
-        # Calculate value and check if choice is needed
+        # Handle ace/ten with menu input (choice was made via MenuInput)
+        if input_value is not None:
+            if card.rank == 1:  # Ace
+                add_eleven = Localization.get(locale, "ninetynine-ace-add-eleven")
+                value = 11 if input_value == add_eleven else 1
+            elif card.rank == 10:  # Ten
+                add_ten = Localization.get(locale, "ninetynine-ten-add")
+                value = 10 if input_value == add_ten else -10
+            else:
+                return
+            self._play_card(player, slot, card, old_count + value)
+            return
+
+        # Calculate value for cards without MenuInput
         value = self.calculate_card_value(card, old_count)
-
-        # Handle cards that need choice
-        if card.rank == 1 and value is None:  # Ace needs choice
-            self.pending_choice = "ace"
-            self.pending_card_index = slot
-            user = self.get_user(player)
-            if user:
-                user.speak_l("ninetynine-ace-choice")
-            self._update_all_turn_actions()
-            self.rebuild_all_menus()
-            return
-
-        if card.rank == 10 and value is None:  # Ten needs choice
-            self.pending_choice = "ten"
-            self.pending_card_index = slot
-            user = self.get_user(player)
-            if user:
-                user.speak_l("ninetynine-ten-choice")
-            self._update_all_turn_actions()
-            self.rebuild_all_menus()
-            return
 
         if card.rank == 2 and self.is_quentin_c:  # 2 card special handling
             new_count = self.calculate_two_effect(old_count)
@@ -745,58 +767,6 @@ class NinetyNineGame(Game):
         # Normal card play
         if value is None:
             value = 0
-        self._play_card(player, slot, card, old_count + value)
-
-    def _action_choice_1(self, player: Player, action_id: str) -> None:
-        """Handle first choice option (Add 11 for Ace, Add 10 for Ten)."""
-        if not isinstance(player, NinetyNinePlayer):
-            return
-
-        if self.current_player != player or self.pending_choice is None:
-            return
-
-        slot = self.pending_card_index
-        if slot < 0 or slot >= len(player.hand):
-            return
-
-        card = player.hand[slot]
-        old_count = self.count
-
-        if self.pending_choice == "ace":
-            value = 11
-        elif self.pending_choice == "ten":
-            value = 10
-        else:
-            return
-
-        self.pending_choice = None
-        self.pending_card_index = -1
-        self._play_card(player, slot, card, old_count + value)
-
-    def _action_choice_2(self, player: Player, action_id: str) -> None:
-        """Handle second choice option (Add 1 for Ace, Subtract 10 for Ten)."""
-        if not isinstance(player, NinetyNinePlayer):
-            return
-
-        if self.current_player != player or self.pending_choice is None:
-            return
-
-        slot = self.pending_card_index
-        if slot < 0 or slot >= len(player.hand):
-            return
-
-        card = player.hand[slot]
-        old_count = self.count
-
-        if self.pending_choice == "ace":
-            value = 1
-        elif self.pending_choice == "ten":
-            value = -10
-        else:
-            return
-
-        self.pending_choice = None
-        self.pending_card_index = -1
         self._play_card(player, slot, card, old_count + value)
 
     def _play_card(
@@ -853,9 +823,12 @@ class NinetyNineGame(Game):
             self._update_all_turn_actions()
             self._advance_turn()
         else:
-            # Manual draw mode
-            self.pending_draw_player_id = player.id
-            self.draw_timeout_ticks = DRAW_TIMEOUT_TICKS
+            # Manual draw mode - set per-player timeout
+            # Bots draw after a short delay; humans get the full window
+            if player.is_bot:
+                player.draw_timeout_ticks = random.randint(15, 30)
+            else:
+                player.draw_timeout_ticks = DRAW_TIMEOUT_TICKS
             self._advance_turn()
             self._update_all_turn_actions()
             self.rebuild_all_menus()
@@ -914,7 +887,7 @@ class NinetyNineGame(Game):
             )
         else:
             self._play_sound_for_player(
-                player, "game_ninetynine/lose1_other.ogg", "game_ninetynine/lose1_you.ogg"
+                player, "game_ninetynine/lose1_you.ogg", "game_ninetynine/lose1_other.ogg"
             )
 
         for other in others:
@@ -929,7 +902,7 @@ class NinetyNineGame(Game):
     ) -> None:
         """Player loses tokens (passing through milestone or busting)."""
         self._play_sound_for_player(
-            player, "game_ninetynine/lose1_you.ogg", "game_ninetynine/lose1_other.ogg"
+            player, "game_ninetynine/lose1_other.ogg", "game_ninetynine/lose1_you.ogg"
         )
 
         player.tokens = max(0, player.tokens - amount)
@@ -1053,6 +1026,7 @@ class NinetyNineGame(Game):
                     player_id=p.id,
                     player_name=p.name,
                     is_bot=p.is_bot,
+                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
                 )
                 for p in self.get_active_players()
             ],
@@ -1082,8 +1056,10 @@ class NinetyNineGame(Game):
         if not isinstance(player, NinetyNinePlayer):
             return
 
-        if self.pending_draw_player_id != player.id:
-            return
+        # Note: We don't guard on draw_timeout_ticks here because:
+        # - For humans: the draw action is only added to menu when timeout > 0
+        # - For bots: on_tick calls this when timeout reaches 0 (countdown expired)
+        # The callers are responsible for ensuring the draw is valid.
 
         drawn = self._draw_card()
         if drawn:
@@ -1104,8 +1080,7 @@ class NinetyNineGame(Game):
                 player=player.name,
             )
 
-        self.pending_draw_player_id = None
-        self.draw_timeout_ticks = 0
+        player.draw_timeout_ticks = 0
         self._update_all_turn_actions()
         self.rebuild_all_menus()
 
@@ -1142,28 +1117,30 @@ class NinetyNineGame(Game):
         if not self.game_active:
             return
 
-        # Handle pending draw
-        if self.pending_draw_player_id:
-            draw_player = self.pending_draw_player
-            if draw_player:
-                if draw_player.is_bot:
-                    if draw_player.bot_think_ticks > 0:
-                        draw_player.bot_think_ticks -= 1
-                    else:
-                        self._action_draw_card(draw_player, "draw_card")
+        # Handle per-player pending draws
+        for player in self.alive_players:
+            if player.draw_timeout_ticks <= 0:
+                continue
+
+            player.draw_timeout_ticks -= 1
+
+            if player.is_bot:
+                # Bots draw after a short delay (don't wait for their turn)
+                if player.draw_timeout_ticks <= 0:
+                    self._action_draw_card(player, "draw_card")
+                    if not self.game_active:
                         return
+                continue
 
-                if self.draw_timeout_ticks > 0:
-                    self.draw_timeout_ticks -= 1
-                    if self.draw_timeout_ticks <= 0:
-                        self.pending_draw_player_id = None
-
-                        if len(draw_player.hand) == 0:
-                            self._player_out_of_cards(draw_player)
-                            return
-
-                        self._update_all_turn_actions()
-                        self.rebuild_all_menus()
+            if player.draw_timeout_ticks <= 0:
+                # Human timeout expired without drawing
+                if len(player.hand) == 0:
+                    self._player_out_of_cards(player)
+                    if not self.game_active:
+                        return
+                else:
+                    self._update_turn_actions(player)
+                    self.rebuild_player_menu(player)
 
         BotHelper.on_tick(self)
 

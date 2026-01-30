@@ -119,7 +119,8 @@ class Database:
                 result_id INTEGER REFERENCES game_results(id) ON DELETE CASCADE,
                 player_id TEXT NOT NULL,
                 player_name TEXT NOT NULL,
-                is_bot INTEGER NOT NULL
+                is_bot INTEGER NOT NULL,
+                is_virtual_bot INTEGER NOT NULL DEFAULT 0
             )
         """)
 
@@ -169,6 +170,16 @@ class Database:
             # Add approved column - existing users are auto-approved
             cursor.execute("ALTER TABLE users ADD COLUMN approved INTEGER DEFAULT 0")
             cursor.execute("UPDATE users SET approved = 1")  # Approve all existing users
+            self._conn.commit()
+
+        # Check game_result_players for is_virtual_bot column
+        cursor.execute("PRAGMA table_info(game_result_players)")
+        grp_columns = [row[1] for row in cursor.fetchall()]
+
+        if "is_virtual_bot" not in grp_columns:
+            cursor.execute(
+                "ALTER TABLE game_result_players ADD COLUMN is_virtual_bot INTEGER DEFAULT 0"
+            )
             self._conn.commit()
 
     # User operations
@@ -618,7 +629,7 @@ class Database:
         game_type: str,
         timestamp: str,
         duration_ticks: int,
-        players: list[tuple[str, str, bool]],  # (player_id, player_name, is_bot)
+        players: list[tuple[str, str, bool, bool]],  # (player_id, player_name, is_bot, is_virtual_bot)
         custom_data: dict | None = None,
     ) -> int:
         """
@@ -628,7 +639,7 @@ class Database:
             game_type: The game type identifier
             timestamp: ISO format timestamp
             duration_ticks: Game duration in ticks
-            players: List of (player_id, player_name, is_bot) tuples
+            players: List of (player_id, player_name, is_bot, is_virtual_bot) tuples
             custom_data: Game-specific result data
 
         Returns:
@@ -652,13 +663,13 @@ class Database:
         result_id = cursor.lastrowid
 
         # Insert player records
-        for player_id, player_name, is_bot in players:
+        for player_id, player_name, is_bot, is_virtual_bot in players:
             cursor.execute(
                 """
-                INSERT INTO game_result_players (result_id, player_id, player_name, is_bot)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO game_result_players (result_id, player_id, player_name, is_bot, is_virtual_bot)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (result_id, player_id, player_name, 1 if is_bot else 0),
+                (result_id, player_id, player_name, 1 if is_bot else 0, 1 if is_virtual_bot else 0),
             )
 
         self._conn.commit()
@@ -724,7 +735,7 @@ class Database:
         cursor = self._conn.cursor()
         cursor.execute(
             """
-            SELECT player_id, player_name, is_bot
+            SELECT player_id, player_name, is_bot, is_virtual_bot
             FROM game_result_players
             WHERE result_id = ?
             """,
@@ -735,6 +746,7 @@ class Database:
                 "player_id": row["player_id"],
                 "player_name": row["player_name"],
                 "is_bot": bool(row["is_bot"]),
+                "is_virtual_bot": bool(row["is_virtual_bot"]) if row["is_virtual_bot"] is not None else False,
             }
             for row in cursor.fetchall()
         ]
@@ -901,3 +913,80 @@ class Database:
             (game_type, limit),
         )
         return [(row["player_id"], row["mu"], row["sigma"]) for row in cursor.fetchall()]
+
+    # ==================== Virtual Bot Persistence ====================
+
+    def _ensure_virtual_bots_table(self) -> None:
+        """Create virtual_bots table if it doesn't exist."""
+        cursor = self._conn.cursor()
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS virtual_bots (
+                name TEXT PRIMARY KEY,
+                state TEXT NOT NULL,
+                online_ticks INTEGER NOT NULL DEFAULT 0,
+                target_online_ticks INTEGER NOT NULL DEFAULT 0,
+                table_id TEXT,
+                game_join_tick INTEGER NOT NULL DEFAULT 0
+            )
+            """
+        )
+        self._conn.commit()
+
+    def save_virtual_bot(
+        self,
+        name: str,
+        state: str,
+        online_ticks: int,
+        target_online_ticks: int,
+        table_id: str | None,
+        game_join_tick: int,
+    ) -> None:
+        """Save or update a virtual bot's state."""
+        self._ensure_virtual_bots_table()
+        cursor = self._conn.cursor()
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO virtual_bots
+            (name, state, online_ticks, target_online_ticks, table_id, game_join_tick)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (name, state, online_ticks, target_online_ticks, table_id, game_join_tick),
+        )
+        self._conn.commit()
+
+    def load_all_virtual_bots(self) -> list[dict]:
+        """Load all virtual bot states from the database."""
+        self._ensure_virtual_bots_table()
+        cursor = self._conn.cursor()
+        cursor.execute(
+            """
+            SELECT name, state, online_ticks, target_online_ticks, table_id, game_join_tick
+            FROM virtual_bots
+            """
+        )
+        return [
+            {
+                "name": row["name"],
+                "state": row["state"],
+                "online_ticks": row["online_ticks"],
+                "target_online_ticks": row["target_online_ticks"],
+                "table_id": row["table_id"],
+                "game_join_tick": row["game_join_tick"],
+            }
+            for row in cursor.fetchall()
+        ]
+
+    def delete_virtual_bot(self, name: str) -> None:
+        """Delete a single virtual bot from the database."""
+        self._ensure_virtual_bots_table()
+        cursor = self._conn.cursor()
+        cursor.execute("DELETE FROM virtual_bots WHERE name = ?", (name,))
+        self._conn.commit()
+
+    def delete_all_virtual_bots(self) -> None:
+        """Delete all virtual bots from the database."""
+        self._ensure_virtual_bots_table()
+        cursor = self._conn.cursor()
+        cursor.execute("DELETE FROM virtual_bots")
+        self._conn.commit()

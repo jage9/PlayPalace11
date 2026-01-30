@@ -187,7 +187,7 @@ dependencies = [
 requires-dist = [
     { name = "accessible-output2", specifier = ">=0.16" },
     { name = "sound-lib", specifier = ">=0.2.2" },
-    { name = "websockets", specifier = ">=10.0" },
+    { name = "websockets", specifier = ">=14.0" },
     { name = "wxpython", specifier = ">=4.2.0" },
 ]
 

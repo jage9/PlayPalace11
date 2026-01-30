@@ -289,3 +289,20 @@ no-admins-for-transfer = No admins available to transfer ownership to.
 confirm-transfer-ownership = Are you sure you want to transfer server ownership to { $player }? You will be demoted to admin.
 transfer-ownership-announcement = { $player } is now the Play Palace server owner!
 transfer-ownership-announcement-you = You are now the Play palace server owner!
+
+# Virtual bots (server owner only)
+virtual-bots = Virtual Bots
+virtual-bots-fill = Fill Server
+virtual-bots-clear = Clear All Bots
+virtual-bots-status = Status
+virtual-bots-clear-confirm = Are you sure you want to clear all virtual bots? This will also destroy any tables they are in.
+virtual-bots-not-available = Virtual bots are not available.
+virtual-bots-filled = Added { $added } virtual bots. { $online } are now online.
+virtual-bots-already-filled = All virtual bots from the configuration are already active.
+virtual-bots-cleared = Cleared { $bots } virtual bots and destroyed { $tables } { $tables ->
+    [one] table
+   *[other] tables
+}.
+virtual-bot-table-closed = Table closed by administrator.
+virtual-bots-none-to-clear = No virtual bots to clear.
+virtual-bots-status-report = Virtual Bots: { $total } total, { $online } online, { $offline } offline, { $in_game } in game.

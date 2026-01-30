@@ -203,7 +203,8 @@ class Server(AdministrationMixin):
 
     async def _on_client_disconnect(self, client: ClientConnection) -> None:
         """Handle client disconnection."""
-        print(f"Client disconnected: {client.address}")
+        username = client.username or "unknown"
+        print(f"Client disconnected: {username}@{client.address}")
         if client.username:
             username = client.username
             table = self._tables.find_user_table(username)
@@ -381,6 +382,7 @@ class Server(AdministrationMixin):
                 "version": VERSION,
             }
         )
+        print(f"Client authorized: {username}@{client.address}")
 
         # Send game list
         await self._send_game_list(client)

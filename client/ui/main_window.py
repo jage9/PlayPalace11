@@ -1042,9 +1042,9 @@ class MainWindow(wx.Frame):
         # Play connection loop sound
         self.sound_manager.music("connectloop.ogg")
 
-        self.add_history(f"Connecting to {server_url}...")
+        self.add_history(f"Connecting to {server_url}...", "activity")
         if self.network.connect(server_url, username, password):
-            self.add_history(f"Connecting as {username}...")
+            self.add_history(f"Connecting as {username}...", "activity")
 
             # Set a timeout to detect if connection never succeeds
             self.connection_timeout_timer = wx.CallLater(10000, self._check_connection_timeout)
@@ -1216,7 +1216,7 @@ class MainWindow(wx.Frame):
             username = new_credentials.get("username")
             password = new_credentials.get("password", "")
 
-            self.add_history(f"Connecting to {server_url} as {username}...")
+            self.add_history(f"Connecting to {server_url} as {username}...", "activity")
             self.sound_manager.music("connectloop.ogg")
             if self.network.connect(server_url, username, password):
                 # Set connection timeout
@@ -1235,6 +1235,8 @@ class MainWindow(wx.Frame):
         """Handle authorization success from server."""
         self.connected = True
         version = packet.get("version", "unknown")
+        username = packet.get("username") or self.credentials.get("username", "Guest")
+        server_url = self.credentials.get("server_url", "")
 
         # Cancel any pending timeout timer
         if self.connection_timeout_timer:
@@ -1245,7 +1247,16 @@ class MainWindow(wx.Frame):
         self.sound_manager.stop_music(fade=False)
         self.sound_manager.play("welcome.ogg", volume=1.0)
 
-        self.add_history(f"Connected to server version {version}")
+        if server_url:
+            self.add_history(
+                f"Connected to {server_url} as {username} (server {version})",
+                "activity",
+            )
+        else:
+            self.add_history(
+                f"Connected as {username} (server {version})",
+                "activity",
+            )
 
     def on_open_server_options(self, packet):
         """Handle open server options packet from server.
@@ -1262,7 +1273,11 @@ class MainWindow(wx.Frame):
         without requiring the user to open the options dialog.
         """
         self.games_list = packet.get("games", [])
-        self.lang_codes = packet.get("languages", [])
+        languages = packet.get("languages", {})
+        # Server may send list (codes) or dict (code->name). Normalize to dict.
+        if isinstance(languages, list):
+            languages = {code: code for code in languages}
+        self.lang_codes = languages
         if not self.config_manager or not self.server_id:
             return
 

@@ -330,6 +330,17 @@ class NetworkManager:
     ) -> CertificateInfo:
         """Convert Python's SSL cert dict into CertificateInfo."""
         cert_dict = cert_dict or {}
+        # Enrich metadata with fields parsed from PEM if they were missing
+        if pem and (not cert_dict or "notBefore" not in cert_dict or "notAfter" not in cert_dict):
+            decoded = self._decode_certificate_dict(pem)
+            if decoded:
+                merged = dict(decoded)
+                # Preserve any values we already have, such as SAN entries that _test_decode_cert lacks
+                for key, value in cert_dict.items():
+                    if value:
+                        merged[key] = value
+                cert_dict = merged
+
         subject = cert_dict.get("subject", [])
         common_name = ""
         for entry in subject:

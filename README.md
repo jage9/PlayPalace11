@@ -106,6 +106,19 @@ Values are in bytes and map directly to the `max_size` setting used by the under
 Set `allow_insecure_ws` to `true` only for trusted development setups where TLS certificates are unavailable; the server will refuse to start without TLS when this flag is `false`, and it will print a loud warning whenever it runs in plaintext mode.
 `[auth.rate_limits]` caps how many login attempts each IP can make per minute, how many failed attempts a specific username can accrue, and how many registrations are allowed per minute from the same IP. Setting any of the limits to `0` disables that particular throttle.
 
+#### Bootstrapping the First Admin
+
+Fresh databases contain zero users. The server still allows the first remote registration for backwards compatibility, but production deployments should explicitly seed the owner account before exposing the port. Use the CLI helper:
+
+```bash
+cd server
+uv run python -m server.cli bootstrap-owner --username admin
+```
+
+The command prompts for a password (or accept `--password-file/--password-stdin`) and creates an approved `SERVER_OWNER` user. Passing `--force` lets you update an existing account’s password/trust level if you’re repairing a database.
+
+When the server starts and finds zero users, it now prints a warning reminding you to run the bootstrap command. Automated test environments can silence the message by setting `PLAYPALACE_SUPPRESS_BOOTSTRAP_WARNING=1`, but this is not recommended for real deployments.
+
 ## Project Structure
 
 The server and client are separate codebases with different philosophies.

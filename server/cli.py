@@ -33,6 +33,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from getpass import getpass
+
 # Allow running as standalone script (uv run cli.py)
 _MODULE_DIR = Path(__file__).parent
 if __name__ == "__main__":
@@ -45,8 +47,10 @@ Localization.init(_MODULE_DIR / "locales")
 
 from server.games.registry import GameRegistry, get_game_class  # noqa: E402
 from server.games.base import Game, BOT_NAMES  # noqa: E402
-from server.users.base import User, generate_uuid  # noqa: E402
+from server.users.base import User, TrustLevel, generate_uuid  # noqa: E402
 from server.users.bot import Bot  # noqa: E402
+from server.persistence.database import Database  # noqa: E402
+from server.auth.auth import AuthManager  # noqa: E402
 
 
 @dataclass
@@ -476,6 +480,112 @@ def cmd_simulate(args):
                     print(f"  {line}")
 
 
+def _prompt_for_password() -> str:
+    """Interactively prompt for a password twice."""
+    while True:
+        pw = getpass("New owner password: ")
+        confirm = getpass("Confirm password: ")
+        if pw != confirm:
+            print("Passwords do not match. Try again.")
+            continue
+        if not pw:
+            print("Password cannot be empty.")
+            continue
+        return pw
+
+
+def _resolve_bootstrap_password(args: argparse.Namespace) -> str:
+    """Resolve password from CLI arguments."""
+    if args.password is not None:
+        return args.password
+    if args.password_file:
+        path = Path(args.password_file)
+        return path.read_text(encoding="utf-8").rstrip("\r\n")
+    if args.password_stdin:
+        data = sys.stdin.read()
+        return data.rstrip("\r\n")
+    return _prompt_for_password()
+
+
+def bootstrap_owner(
+    *,
+    db_path: str,
+    username: str,
+    password: str,
+    locale: str = "en",
+    force: bool = False,
+    quiet: bool = False,
+) -> str:
+    """
+    Create or update the initial server owner account.
+
+    Returns a short status string describing the action performed.
+    Raises RuntimeError if the operation is not permitted.
+    """
+    if not password:
+        raise RuntimeError("Password cannot be empty.")
+
+    database = Database(db_path)
+    database.connect()
+
+    try:
+        auth = AuthManager(database)
+        user_count = database.get_user_count()
+        password_hash = auth.hash_password(password)
+
+        if user_count > 0 and not force:
+            raise RuntimeError(
+                "Database already contains users. Use --force if you intend to replace or update an existing account."
+            )
+
+        if database.user_exists(username):
+            if not force:
+                raise RuntimeError(
+                    f"User '{username}' already exists. Use --force to elevate/update the account."
+                )
+            database.update_user_password(username, password_hash)
+            database.update_user_trust_level(username, TrustLevel.SERVER_OWNER)
+            database.approve_user(username)
+            action = "Updated"
+        else:
+            database.create_user(
+                username=username,
+                password_hash=password_hash,
+                locale=locale,
+                trust_level=TrustLevel.SERVER_OWNER,
+                approved=True,
+            )
+            action = "Created"
+
+        if not quiet:
+            print(f"{action} server owner '{username}' in {db_path}.")
+        return action
+    finally:
+        database.close()
+
+
+def cmd_bootstrap_owner(args: argparse.Namespace) -> None:
+    """Handle the bootstrap-owner CLI command."""
+    try:
+        password = _resolve_bootstrap_password(args)
+    except Exception as exc:  # pragma: no cover - defensive
+        print(f"Error reading password: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        bootstrap_owner(
+            db_path=args.db_path,
+            username=args.username,
+            password=password,
+            locale=args.locale,
+            force=args.force,
+            quiet=args.quiet,
+        )
+    except RuntimeError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="PlayPalace CLI for AI agents",
@@ -528,6 +638,50 @@ def main():
         help="Save and restore game state after each tick to test serialization",
     )
 
+    # bootstrap-owner command
+    bootstrap_parser = subparsers.add_parser(
+        "bootstrap-owner",
+        help="Create or update the initial server owner account",
+    )
+    bootstrap_parser.add_argument(
+        "--username",
+        required=True,
+        help="Username for the server owner account",
+    )
+    bootstrap_parser.add_argument(
+        "--password",
+        help="Password for the server owner (use with caution; prefer --password-file or interactive prompt)",
+    )
+    bootstrap_parser.add_argument(
+        "--password-file",
+        help="File containing the password (first line used)",
+    )
+    bootstrap_parser.add_argument(
+        "--password-stdin",
+        action="store_true",
+        help="Read password from stdin (useful for automation)",
+    )
+    bootstrap_parser.add_argument(
+        "--db-path",
+        default="playpalace.db",
+        help="Path to the server database (default: playpalace.db)",
+    )
+    bootstrap_parser.add_argument(
+        "--locale",
+        default="en",
+        help="Locale to assign to the owner account (default: en)",
+    )
+    bootstrap_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow operation when users already exist or when replacing an account",
+    )
+    bootstrap_parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress success output (useful for CI)",
+    )
+
     args = parser.parse_args()
 
     if args.command == "list-games":
@@ -536,6 +690,8 @@ def main():
         cmd_show_options(args)
     elif args.command == "simulate":
         cmd_simulate(args)
+    elif args.command == "bootstrap-owner":
+        cmd_bootstrap_owner(args)
     else:
         parser.print_help()
         sys.exit(1)

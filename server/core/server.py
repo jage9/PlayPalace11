@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import os
 import sys
 import time
 from collections import deque
@@ -41,6 +42,7 @@ DEFAULT_LOGIN_FAILURES_PER_MINUTE = 3
 DEFAULT_REGISTRATION_ATTEMPTS_PER_MINUTE = 2
 LOGIN_RATE_WINDOW_SECONDS = 60
 REGISTRATION_RATE_WINDOW_SECONDS = 60
+BOOTSTRAP_WARNING_ENV = "PLAYPALACE_SUPPRESS_BOOTSTRAP_WARNING"
 
 
 def _coerce_bool(value: Any, default: bool) -> bool:
@@ -138,6 +140,7 @@ class Server(AdministrationMixin):
         promoted_user = self._db.initialize_trust_levels()
         if promoted_user:
             print(f"User '{promoted_user}' has been promoted to server owner (trust level 3).")
+        self._warn_if_no_users()
 
         # Load existing tables
         self._load_tables()
@@ -271,6 +274,23 @@ class Server(AdministrationMixin):
             raise RuntimeError(
                 "TLS is required. Provide --ssl-cert/--ssl-key or set [network].allow_insecure_ws to true."
             )
+
+    def _warn_if_no_users(self) -> None:
+        """Print a warning if no user accounts exist yet."""
+        if os.environ.get(BOOTSTRAP_WARNING_ENV):
+            return
+        try:
+            if self._db.get_user_count() > 0:
+                return
+        except Exception:  # pragma: no cover - defensive
+            return
+
+        print(
+            "WARNING: No user accounts exist. Run "
+            "`uv run python -m server.cli bootstrap-owner --username <name>` "
+            "to create an initial administrator before exposing this server on the network. "
+            f"Set {BOOTSTRAP_WARNING_ENV}=1 to suppress this warning for CI or local testing."
+        )
 
     @staticmethod
     def _get_client_ip(client: ClientConnection) -> str:

@@ -30,8 +30,8 @@ draw-not-draw-phase = It is not time to draw.
 draw-not-betting = You cannot bet during the draw phase.
 
 draw-toggle-discard = Toggle discard for card { $index }
-draw-card-keep = Keep { $card }
-draw-card-discard = Discard { $card }
+draw-card-keep = { $card }, held
+draw-card-discard = { $card }, will be discarded
 draw-card-kept = Keep { $card }.
 draw-card-discarded = Discard { $card }.
 draw-draw-cards = Draw cards

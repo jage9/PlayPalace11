@@ -30,8 +30,8 @@ draw-not-draw-phase = Chưa đến lúc rút bài.
 draw-not-betting = Bạn không thể cược trong giai đoạn đổi bài.
 
 draw-toggle-discard = Chọn bỏ lá bài thứ { $index }
-draw-card-keep = Giữ { $card }
-draw-card-discard = Bỏ { $card }
+draw-card-keep = { $card }, giữ lại
+draw-card-discard = { $card }, sẽ bị bỏ
 draw-card-kept = Giữ { $card }.
 draw-card-discarded = Bỏ { $card }.
 draw-draw-cards = Đổi bài

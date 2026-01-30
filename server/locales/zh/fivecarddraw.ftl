@@ -30,8 +30,8 @@ draw-not-draw-phase = 现在不能抽牌。
 draw-not-betting = 抽牌阶段不能下注。
 
 draw-toggle-discard = Toggle discard for card { $index }
-draw-card-keep = 保留{ $card }
-draw-card-discard = 弃掉{ $card }
+draw-card-keep = { $card }，保留
+draw-card-discard = { $card }，将被弃掉
 draw-card-kept = 保留{ $card }。
 draw-card-discarded = 弃掉{ $card }。
 draw-draw-cards = Draw cards

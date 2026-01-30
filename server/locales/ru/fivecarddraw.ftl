@@ -30,8 +30,8 @@ draw-not-draw-phase = Сейчас не время для обмена карт.
 draw-not-betting = Вы не можете делать ставки в фазе обмена.
 
 draw-toggle-discard = Переключить сброс карты { $index }
-draw-card-keep = Оставить { $card }
-draw-card-discard = Сбросить { $card }
+draw-card-keep = { $card }, оставлена
+draw-card-discard = { $card }, будет сброшена
 draw-card-kept = Оставить карту: { $card }.
 draw-card-discarded = Сбросить карту: { $card }.
 draw-draw-cards = Обменять карты

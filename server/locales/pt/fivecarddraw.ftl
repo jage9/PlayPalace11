@@ -30,8 +30,8 @@ draw-not-draw-phase = Não é hora de comprar cartas.
 draw-not-betting = Você não pode apostar durante a fase de troca.
 
 draw-toggle-discard = Toggle discard for card { $index }
-draw-card-keep = Manter { $card }
-draw-card-discard = Descartar { $card }
+draw-card-keep = { $card }, mantida
+draw-card-discard = { $card }, será descartada
 draw-card-kept = Manter { $card }.
 draw-card-discarded = Descartar { $card }.
 draw-draw-cards = Draw cards

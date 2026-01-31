@@ -2990,6 +2990,11 @@ async def run_server(
     if needs_owner:
         from server.cli import bootstrap_owner
 
+        if db_created:
+            print(f"Creating database at '{db_path}'.")
+        else:
+            print("No server owner found in the database. Creating one now.")
+
         while True:
             username = input("Server owner username: ").strip()
             if username:

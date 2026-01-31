@@ -2995,6 +2995,15 @@ async def run_server(
         else:
             print("No server owner found in the database. Creating one now.")
 
+        if not sys.stdin.isatty():
+            print(
+                "ERROR: Cannot prompt for a server owner in a non-interactive session. "
+                "Run `uv run python -m server.cli bootstrap-owner --username <name>` "
+                "to create the initial owner.",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+
         min_user_len = DEFAULT_USERNAME_MIN_LENGTH
         max_user_len = DEFAULT_USERNAME_MAX_LENGTH
         min_pass_len = DEFAULT_PASSWORD_MIN_LENGTH

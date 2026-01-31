@@ -23,6 +23,11 @@ class GameRegistry:
         return cls._games.get(game_type)
 
     @classmethod
+    def get_game_class(cls, game_type: str) -> Type["Game"] | None:
+        """Backward compatible alias for getting a game class by type."""
+        return cls.get(game_type)
+
+    @classmethod
     def get_all(cls) -> list[Type["Game"]]:
         """Get all registered game classes."""
         return list(cls._games.values())

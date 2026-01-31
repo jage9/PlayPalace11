@@ -7,6 +7,7 @@ import shutil
 import sys
 import time
 from collections import deque
+from getpass import getpass
 from pathlib import Path
 
 import json
@@ -33,6 +34,7 @@ from ..messages.localization import Localization
 
 VERSION = "11.0.0"
 BOOTSTRAP_WARNING_ENV = "PLAYPALACE_SUPPRESS_BOOTSTRAP_WARNING"
+TICK_INFO_SUPPRESS_ENV = "PLAYPALACE_SUPPRESS_TICK_INFO"
 
 DEFAULT_USERNAME_MIN_LENGTH = 3
 DEFAULT_USERNAME_MAX_LENGTH = 32
@@ -137,12 +139,6 @@ class Server(AdministrationMixin):
         """Start the server."""
         print(f"Starting PlayPalace v{VERSION} server...")
 
-        # Ensure config is present before loading any subsystems
-        self._ensure_config_file()
-
-        # Refresh config-driven settings now that config exists
-        self._load_config_settings()
-
         # Load server configuration early to surface config errors before DB/network init
         server_config = load_server_config(self._config_path)
         tick_interval_ms = server_config.get("tick_interval_ms")
@@ -210,7 +206,7 @@ class Server(AdministrationMixin):
         # Start tick scheduler
         self._tick_scheduler = TickScheduler(self._on_tick, tick_interval_ms)
         await self._tick_scheduler.start()
-        if tick_interval_ms:
+        if tick_interval_ms and not os.environ.get(TICK_INFO_SUPPRESS_ENV):
             print(f"Tick interval: {tick_interval_ms}ms ({1000 // tick_interval_ms} ticks/sec)")
 
         protocol = "wss" if self._ssl_cert else "ws"
@@ -309,35 +305,6 @@ class Server(AdministrationMixin):
                 rate_cfg, "registration_window_seconds", self._registration_ip_window, minimum=1
             )
 
-    def _ensure_config_file(self) -> None:
-        if self._config_path is None:
-            return
-        path_obj = Path(self._config_path)
-        if path_obj.exists():
-            return
-        if path_obj.name != "config.toml":
-            print(
-                f"ERROR: Configuration file '{path_obj}' was not found.",
-                file=sys.stderr,
-            )
-            raise SystemExit(1)
-        example_path = path_obj.with_name("config.example.toml")
-        if not example_path.exists():
-            print(
-                f"ERROR: Missing configuration template '{example_path}'.",
-                file=sys.stderr,
-            )
-            raise SystemExit(1)
-        try:
-            shutil.copyfile(example_path, path_obj)
-        except OSError as exc:
-            print(
-                f"ERROR: Failed to create '{path_obj}' from template: {exc}",
-                file=sys.stderr,
-            )
-            raise SystemExit(1) from exc
-        print(
-            f"Created '{path_obj}' from '{example_path}'. Edit this file to configure the server.")
 
     def _validate_transport_security(self) -> None:
         if self._allow_insecure_ws and (self._ssl_cert or self._ssl_key):
@@ -2973,6 +2940,67 @@ async def run_server(
             )
 
     loop.set_exception_handler(_asyncio_exception_handler)
+
+    config_path = _MODULE_DIR / "config.toml"
+    example_path = _MODULE_DIR / "config.example.toml"
+    db_path = _MODULE_DIR / "playpalace.db"
+
+    if not config_path.exists():
+        if not example_path.exists():
+            print(
+                f"ERROR: Missing configuration template '{example_path}'.",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+        try:
+            shutil.copyfile(example_path, config_path)
+        except OSError as exc:
+            print(
+                f"ERROR: Failed to create '{config_path}' from template: {exc}",
+                file=sys.stderr,
+            )
+            raise SystemExit(1) from exc
+        print(f"Created '{config_path}' from '{example_path}'.")
+
+        if not db_path.exists():
+            from server.cli import bootstrap_owner
+
+            while True:
+                username = input("Server owner username: ").strip()
+                if username:
+                    break
+                print("Username cannot be empty.")
+            while True:
+                password = getpass("Server owner password: ")
+                confirm = getpass("Confirm password: ")
+                if password != confirm:
+                    print("Passwords do not match. Try again.")
+                    continue
+                if not password:
+                    print("Password cannot be empty.")
+                    continue
+                break
+
+            try:
+                bootstrap_owner(
+                    db_path=str(db_path),
+                    username=username,
+                    password=password,
+                    quiet=True,
+                )
+                print(f"Created server owner '{username}'.")
+            except RuntimeError as exc:
+                print(f"ERROR: {exc}", file=sys.stderr)
+                raise SystemExit(1) from exc
+
+        print(
+            "Review server/config.toml before running in production. "
+            "TLS is required unless you explicitly allow insecure mode.\n"
+            "Run the server with:\n"
+            "  uv run python main.py --ssl-cert <cert> --ssl-key <key>\n"
+            "or set [network].allow_insecure_ws=true for local development."
+        )
+        return
 
     server = Server(host=host, port=port, ssl_cert=ssl_cert, ssl_key=ssl_key)
     await server.start()

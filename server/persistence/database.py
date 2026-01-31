@@ -190,13 +190,27 @@ class Database:
             )
             self._conn.commit()
 
+        try:
+            cursor.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users(lower(username))"
+            )
+            self._conn.commit()
+        except sqlite3.IntegrityError as exc:
+            print(
+                "ERROR: Duplicate usernames exist when compared case-insensitively. "
+                "Please resolve duplicates before restarting the server.",
+                file=sys.stderr,
+            )
+            raise SystemExit(1) from exc
+
     # User operations
 
     def get_user(self, username: str) -> UserRecord | None:
         """Get a user by username."""
         cursor = self._conn.cursor()
         cursor.execute(
-            "SELECT id, username, password_hash, uuid, locale, preferences_json, trust_level, approved FROM users WHERE username = ?",
+            "SELECT id, username, password_hash, uuid, locale, preferences_json, trust_level, approved "
+            "FROM users WHERE lower(username) = lower(?)",
             (username,),
         )
         row = cursor.fetchone()
@@ -239,14 +253,14 @@ class Database:
     def user_exists(self, username: str) -> bool:
         """Check if a user exists."""
         cursor = self._conn.cursor()
-        cursor.execute("SELECT 1 FROM users WHERE username = ?", (username,))
+        cursor.execute("SELECT 1 FROM users WHERE lower(username) = lower(?)", (username,))
         return cursor.fetchone() is not None
 
     def update_user_locale(self, username: str, locale: str) -> None:
         """Update a user's locale."""
         cursor = self._conn.cursor()
         cursor.execute(
-            "UPDATE users SET locale = ? WHERE username = ?", (locale, username)
+            "UPDATE users SET locale = ? WHERE lower(username) = lower(?)", (locale, username)
         )
         self._conn.commit()
 
@@ -254,7 +268,7 @@ class Database:
         """Update a user's preferences."""
         cursor = self._conn.cursor()
         cursor.execute(
-            "UPDATE users SET preferences_json = ? WHERE username = ?",
+            "UPDATE users SET preferences_json = ? WHERE lower(username) = lower(?)",
             (preferences_json, username),
         )
         self._conn.commit()
@@ -263,7 +277,7 @@ class Database:
         """Update a user's password hash."""
         cursor = self._conn.cursor()
         cursor.execute(
-            "UPDATE users SET password_hash = ? WHERE username = ?",
+            "UPDATE users SET password_hash = ? WHERE lower(username) = lower(?)",
             (password_hash, username),
         )
         self._conn.commit()
@@ -316,7 +330,7 @@ class Database:
         """Update a user's trust level."""
         cursor = self._conn.cursor()
         cursor.execute(
-            "UPDATE users SET trust_level = ? WHERE username = ?",
+            "UPDATE users SET trust_level = ? WHERE lower(username) = lower(?)",
             (trust_level.value, username),
         )
         self._conn.commit()
@@ -377,7 +391,7 @@ class Database:
         """Approve a user account. Returns True if user was found and approved."""
         cursor = self._conn.cursor()
         cursor.execute(
-            "UPDATE users SET approved = 1 WHERE username = ?",
+            "UPDATE users SET approved = 1 WHERE lower(username) = lower(?)",
             (username,),
         )
         self._conn.commit()
@@ -386,7 +400,7 @@ class Database:
     def delete_user(self, username: str) -> bool:
         """Delete a user account. Returns True if user was found and deleted."""
         cursor = self._conn.cursor()
-        cursor.execute("DELETE FROM users WHERE username = ?", (username,))
+        cursor.execute("DELETE FROM users WHERE lower(username) = lower(?)", (username,))
         self._conn.commit()
         return cursor.rowcount > 0
 
@@ -598,7 +612,7 @@ class Database:
         """Get all saved tables for a user."""
         cursor = self._conn.cursor()
         cursor.execute(
-            "SELECT * FROM saved_tables WHERE username = ? ORDER BY saved_at DESC",
+            "SELECT * FROM saved_tables WHERE lower(username) = lower(?) ORDER BY saved_at DESC",
             (username,),
         )
         records = []

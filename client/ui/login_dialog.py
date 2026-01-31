@@ -7,6 +7,7 @@ from pathlib import Path
 # Add parent directory to path to import config_manager
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from config_manager import ConfigManager
+from constants import DEFAULT_CREDENTIAL_HINT
 
 
 class LoginDialog(wx.Dialog):
@@ -43,6 +44,12 @@ class LoginDialog(wx.Dialog):
         title_font = title_font.Bold()
         title.SetFont(title_font)
         sizer.Add(title, 0, wx.ALL | wx.CENTER, 10)
+
+        # Credential hint
+        hint = wx.StaticText(self.panel, label=DEFAULT_CREDENTIAL_HINT)
+        hint.Wrap(380)
+        hint.SetForegroundColour(wx.Colour(90, 90, 90))
+        sizer.Add(hint, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
 
         # Server Manager button
         self.server_manager_btn = wx.Button(self.panel, label="Server &Manager")

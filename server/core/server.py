@@ -4,9 +4,17 @@ import asyncio
 import logging
 import os
 import sys
+import time
+from collections import deque
 from pathlib import Path
 
 import json
+from typing import Any
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - Python <3.11 fallback when available
+    import tomli as tomllib  # type: ignore[import]
 
 from .tick import TickScheduler, load_server_config
 from .administration import AdministrationMixin
@@ -24,6 +32,31 @@ from ..messages.localization import Localization
 
 VERSION = "11.0.0"
 BOOTSTRAP_WARNING_ENV = "PLAYPALACE_SUPPRESS_BOOTSTRAP_WARNING"
+
+DEFAULT_USERNAME_MIN_LENGTH = 3
+DEFAULT_USERNAME_MAX_LENGTH = 32
+DEFAULT_PASSWORD_MIN_LENGTH = 8
+DEFAULT_PASSWORD_MAX_LENGTH = 128
+DEFAULT_WS_MAX_MESSAGE_BYTES = 1_048_576  # 1 MB
+DEFAULT_LOGIN_ATTEMPTS_PER_MINUTE = 5
+DEFAULT_LOGIN_FAILURES_PER_MINUTE = 3
+DEFAULT_REGISTRATION_ATTEMPTS_PER_MINUTE = 2
+LOGIN_RATE_WINDOW_SECONDS = 60
+REGISTRATION_RATE_WINDOW_SECONDS = 60
+
+
+def _coerce_bool(value: Any, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"1", "true", "yes", "on"}:
+            return True
+        if lowered in {"0", "false", "no", "off"}:
+            return False
+    if isinstance(value, (int, float)):
+        return bool(value)
+    return default
 
 # Default paths based on module location
 _MODULE_DIR = Path(__file__).parent.parent
@@ -45,6 +78,7 @@ class Server(AdministrationMixin):
         locales_dir: str | Path | None = None,
         ssl_cert: str | Path | None = None,
         ssl_key: str | Path | None = None,
+        config_path: str | Path | None = None,
     ):
         self.host = host
         self.port = port
@@ -66,6 +100,25 @@ class Server(AdministrationMixin):
         # Virtual bot manager
         self._virtual_bots = VirtualBotManager(self)
 
+        # Credential limits (overridable via config)
+        self._username_min_length = DEFAULT_USERNAME_MIN_LENGTH
+        self._username_max_length = DEFAULT_USERNAME_MAX_LENGTH
+        self._password_min_length = DEFAULT_PASSWORD_MIN_LENGTH
+        self._password_max_length = DEFAULT_PASSWORD_MAX_LENGTH
+        self._ws_max_message_size = DEFAULT_WS_MAX_MESSAGE_BYTES
+        self._config_path = Path(config_path) if config_path else _MODULE_DIR / "config.toml"
+        self._allow_insecure_ws = False
+        self._login_ip_limit = DEFAULT_LOGIN_ATTEMPTS_PER_MINUTE
+        self._login_user_limit = DEFAULT_LOGIN_FAILURES_PER_MINUTE
+        self._registration_ip_limit = DEFAULT_REGISTRATION_ATTEMPTS_PER_MINUTE
+        self._login_ip_window = LOGIN_RATE_WINDOW_SECONDS
+        self._login_user_window = LOGIN_RATE_WINDOW_SECONDS
+        self._registration_ip_window = REGISTRATION_RATE_WINDOW_SECONDS
+        self._login_attempts_ip: dict[str, deque[float]] = {}
+        self._login_attempts_user: dict[str, deque[float]] = {}
+        self._registration_attempts_ip: dict[str, deque[float]] = {}
+        self._load_config_settings()
+
         # Initialize localization
         if locales_dir is None:
             locales_dir = _DEFAULT_LOCALES_DIR
@@ -75,6 +128,9 @@ class Server(AdministrationMixin):
     async def start(self) -> None:
         """Start the server."""
         print(f"Starting PlayPalace v{VERSION} server...")
+
+        # Enforce transport requirements before bringing up listeners
+        self._validate_transport_security()
 
         # Connect to database
         self._db.connect()
@@ -108,8 +164,14 @@ class Server(AdministrationMixin):
             on_message=self._on_client_message,
             ssl_cert=self._ssl_cert,
             ssl_key=self._ssl_key,
+            max_message_size=self._ws_max_message_size,
         )
         await self._ws_server.start()
+        if not self._ssl_cert:
+            print(
+                "WARNING: Running without TLS (ws://). Credentials will be sent in plaintext."
+            )
+        print(f"Max inbound websocket message size: {self._ws_max_message_size} bytes")
 
         # Start tick scheduler
         self._tick_scheduler = TickScheduler(self._on_tick, tick_interval_ms)
@@ -142,6 +204,182 @@ class Server(AdministrationMixin):
         self._db.close()
 
         print("Server stopped.")
+
+    def _load_config_settings(self) -> None:
+        """Load credential and network limits from config.toml if available."""
+        path_obj = Path(self._config_path) if self._config_path is not None else None
+        if path_obj is None or not path_obj.exists():
+            return
+
+        try:
+            with open(path_obj, "rb") as f:
+                config: dict[str, Any] = tomllib.load(f)
+        except (OSError, tomllib.TOMLDecodeError) as exc:  # pragma: no cover - logging only
+            print(f"Failed to load config from {path_obj}: {exc}")
+            return
+
+        auth_cfg = config.get("auth")
+        if not isinstance(auth_cfg, dict):
+            auth_cfg = {}
+
+        def _read_limit(source: dict[str, Any], key: str, current: int, minimum: int = 1) -> int:
+            value = source.get(key)
+            if value is None:
+                return current
+            try:
+                value_int = int(value)
+            except (TypeError, ValueError):
+                return current
+            return max(minimum, value_int)
+
+        if auth_cfg:
+            self._username_min_length = _read_limit(auth_cfg, "username_min_length", self._username_min_length)
+            self._username_max_length = _read_limit(
+                auth_cfg, "username_max_length", self._username_max_length, self._username_min_length
+            )
+            self._password_min_length = _read_limit(auth_cfg, "password_min_length", self._password_min_length)
+            self._password_max_length = _read_limit(
+                auth_cfg, "password_max_length", self._password_max_length, self._password_min_length
+            )
+
+            # Ensure ranges are sane
+            if self._username_min_length > self._username_max_length:
+                self._username_max_length = self._username_min_length
+            if self._password_min_length > self._password_max_length:
+                self._password_max_length = self._password_min_length
+
+        net_cfg = config.get("network")
+        if isinstance(net_cfg, dict):
+            max_bytes = _read_limit(net_cfg, "max_message_bytes", self._ws_max_message_size, minimum=1)
+            self._ws_max_message_size = max_bytes
+            self._allow_insecure_ws = _coerce_bool(
+                net_cfg.get("allow_insecure_ws"), self._allow_insecure_ws
+            )
+
+        rate_cfg = auth_cfg.get("rate_limits") if isinstance(auth_cfg, dict) else None
+        if isinstance(rate_cfg, dict):
+            self._login_ip_limit = _read_limit(rate_cfg, "login_per_minute", self._login_ip_limit, minimum=0)
+            self._login_user_limit = _read_limit(
+                rate_cfg, "login_failures_per_minute", self._login_user_limit, minimum=0
+            )
+            self._registration_ip_limit = _read_limit(
+                rate_cfg, "registration_per_minute", self._registration_ip_limit, minimum=0
+            )
+            self._login_ip_window = _read_limit(
+                rate_cfg, "login_window_seconds", self._login_ip_window, minimum=1
+            )
+            self._login_user_window = _read_limit(
+                rate_cfg, "login_failure_window_seconds", self._login_user_window, minimum=1
+            )
+            self._registration_ip_window = _read_limit(
+                rate_cfg, "registration_window_seconds", self._registration_ip_window, minimum=1
+            )
+
+    def _validate_transport_security(self) -> None:
+        if not self._ssl_cert and not self._allow_insecure_ws:
+            raise RuntimeError(
+                "TLS is required. Provide --ssl-cert/--ssl-key or set [network].allow_insecure_ws to true."
+            )
+
+    @staticmethod
+    def _get_client_ip(client: ClientConnection) -> str:
+        if not client.address:
+            return "unknown"
+        return client.address.split(":")[0]
+
+    @staticmethod
+    def _sanitize_credentials(username: str | None, password: str | None) -> tuple[str, str]:
+        """Normalize credential fields before validation."""
+        username = (username or "").strip()
+        password = password or ""
+        return username, password
+
+    def _validate_credentials(self, username: str, password: str) -> tuple[str, str, str | None]:
+        """Validate username/password lengths and return an error message if invalid."""
+        username, password = self._sanitize_credentials(username, password)
+
+        if len(username) < self._username_min_length or len(username) > self._username_max_length:
+            return username, password, (
+                f"Username must be between {self._username_min_length} and {self._username_max_length} characters."
+            )
+
+        if len(password) < self._password_min_length or len(password) > self._password_max_length:
+            return username, password, (
+                f"Password must be between {self._password_min_length} and {self._password_max_length} characters."
+            )
+
+        return username, password, None
+
+    @staticmethod
+    async def _send_credential_error(client: ClientConnection, message: str) -> None:
+        """Send a credential validation error and disconnect the client."""
+        await client.send({"type": "play_sound", "name": "accounterror.ogg"})
+        await client.send({"type": "speak", "text": message})
+        await client.send(
+            {
+                "type": "disconnect",
+                "reconnect": False,
+                "show_message": True,
+                "return_to_login": True,
+            }
+        )
+
+    def _allow_attempt(self, bucket: dict[str, deque[float]], key: str, limit: int, window: float, now: float) -> bool:
+        if limit <= 0:
+            return True
+        dq = bucket.setdefault(key, deque())
+        while dq and now - dq[0] > window:
+            dq.popleft()
+        if len(dq) >= limit:
+            return False
+        dq.append(now)
+        return True
+
+    def _get_attempt_count(self, bucket: dict[str, deque[float]], key: str, window: float, now: float) -> int:
+        dq = bucket.get(key)
+        if not dq:
+            return 0
+        while dq and now - dq[0] > window:
+            dq.popleft()
+        if not dq:
+            bucket.pop(key, None)
+            return 0
+        return len(dq)
+
+    def _record_attempt(self, bucket: dict[str, deque[float]], key: str, now: float) -> None:
+        dq = bucket.setdefault(key, deque())
+        dq.append(now)
+
+    def _check_login_rate_limit(self, client_ip: str, username: str) -> str | None:
+        now = time.monotonic()
+        if not self._allow_attempt(
+            self._login_attempts_ip, client_ip, self._login_ip_limit, self._login_ip_window, now
+        ):
+            return "Too many login attempts from this address. Please wait and try again."
+        if username:
+            failures = self._get_attempt_count(self._login_attempts_user, username, self._login_user_window, now)
+            if self._login_user_limit > 0 and failures >= self._login_user_limit:
+                return "Too many failed login attempts for this username. Please wait and try again."
+        return None
+
+    def _record_login_failure(self, username: str) -> None:
+        if not username or self._login_user_limit <= 0:
+            return
+        now = time.monotonic()
+        self._get_attempt_count(self._login_attempts_user, username, self._login_user_window, now)
+        self._record_attempt(self._login_attempts_user, username, now)
+
+    def _check_registration_rate_limit(self, client_ip: str) -> str | None:
+        now = time.monotonic()
+        if not self._allow_attempt(
+            self._registration_attempts_ip,
+            client_ip,
+            self._registration_ip_limit,
+            self._registration_ip_window,
+            now,
+        ):
+            return "Too many registration attempts from this address. Please wait and try again."
+        return None
 
     def _warn_if_no_users(self) -> None:
         """Print a warning if no user accounts exist yet."""
@@ -325,14 +563,26 @@ class Server(AdministrationMixin):
 
     async def _handle_authorize(self, client: ClientConnection, packet: dict) -> None:
         """Handle authorization packet."""
-        username = packet.get("username", "")
-        password = packet.get("password", "")
+        username_raw = packet.get("username", "")
+        password_raw = packet.get("password", "")
         locale = packet.get("locale", "en")
+
+        username, password, error = self._validate_credentials(username_raw, password_raw)
+        if error:
+            await self._send_credential_error(client, error)
+            return
+
+        client_ip = self._get_client_ip(client)
+        throttle_message = self._check_login_rate_limit(client_ip, username)
+        if throttle_message:
+            await self._send_credential_error(client, throttle_message)
+            return
 
         # Try to authenticate or register
         auth_result = self._auth.authenticate(username, password)
         if auth_result != AuthResult.SUCCESS:
             if auth_result == AuthResult.WRONG_PASSWORD:
+                self._record_login_failure(username)
                 # Username exists but password is wrong - show error dialog
                 error_message = Localization.get(locale, "incorrect-password")
                 await client.send({"type": "play_sound", "name": "accounterror.ogg"})
@@ -350,6 +600,7 @@ class Server(AdministrationMixin):
 
             # Try to register
             if not self._auth.register(username, password):
+                self._record_login_failure(username)
                 # Registration failed (shouldn't happen if user not found, but handle anyway)
                 error_message = Localization.get(locale, "incorrect-username")
                 await client.send({"type": "play_sound", "name": "accounterror.ogg"})
@@ -479,15 +730,19 @@ class Server(AdministrationMixin):
 
     async def _handle_register(self, client: ClientConnection, packet: dict) -> None:
         """Handle registration packet from registration dialog."""
-        username = packet.get("username", "")
-        password = packet.get("password", "")
+        username_raw = packet.get("username", "")
+        password_raw = packet.get("password", "")
         # email and bio are sent but not stored yet
 
-        if not username or not password:
-            await client.send({
-                "type": "speak",
-                "text": "Username and password are required."
-            })
+        username, password, error = self._validate_credentials(username_raw, password_raw)
+        if error:
+            await client.send({"type": "speak", "text": error})
+            return
+
+        client_ip = self._get_client_ip(client)
+        throttle_message = self._check_registration_rate_limit(client_ip)
+        if throttle_message:
+            await client.send({"type": "speak", "text": throttle_message})
             return
 
         # Check if this will be a user that needs approval (not the first user)
@@ -951,19 +1206,39 @@ class Server(AdministrationMixin):
         elif current_menu == "virtual_bots_clear_confirm_menu":
             await self._handle_virtual_bots_clear_confirm_selection(user, selection_id)
 
+    def _ensure_user_approved(self, user: NetworkUser) -> bool:
+        """Return True if user is approved or admin/server owner; otherwise show approval notice."""
+        if user.approved:
+            return True
+        if user.trust_level.value >= TrustLevel.ADMIN.value:
+            return True
+        user.speak_l("waiting-for-approval", buffer="activity")
+        self._show_main_menu(user)
+        return False
+
     async def _handle_main_menu_selection(
         self, user: NetworkUser, selection_id: str
     ) -> None:
         """Handle main menu selection."""
         if selection_id == "play":
+            if not self._ensure_user_approved(user):
+                return
             self._show_categories_menu(user)
         elif selection_id == "active_tables":
+            if not self._ensure_user_approved(user):
+                return
             self._show_active_tables_menu(user)
         elif selection_id == "saved_tables":
+            if not self._ensure_user_approved(user):
+                return
             self._show_saved_tables_menu(user)
         elif selection_id == "leaderboards":
+            if not self._ensure_user_approved(user):
+                return
             self._show_leaderboards_menu(user)
         elif selection_id == "my_stats":
+            if not self._ensure_user_approved(user):
+                return
             self._show_my_stats_menu(user)
         elif selection_id == "options":
             self._show_options_menu(user)

@@ -464,6 +464,18 @@ class AdministrationMixin:
                 text=Localization.get(user.locale, "virtual-bots-status"),
                 id="status",
             ),
+            MenuItem(
+                text=Localization.get(user.locale, "virtual-bots-guided-overview"),
+                id="guided",
+            ),
+            MenuItem(
+                text=Localization.get(user.locale, "virtual-bots-groups-overview"),
+                id="groups",
+            ),
+            MenuItem(
+                text=Localization.get(user.locale, "virtual-bots-profiles-overview"),
+                id="profiles",
+            ),
             MenuItem(text=Localization.get(user.locale, "back"), id="back"),
         ]
         user.show_menu(
@@ -769,6 +781,12 @@ class AdministrationMixin:
             self._show_virtual_bots_clear_confirm_menu(user)
         elif selection_id == "status":
             await self._show_virtual_bots_status(user)
+        elif selection_id == "guided":
+            await self._show_virtual_bots_guided_overview(user)
+        elif selection_id == "groups":
+            await self._show_virtual_bots_groups_overview(user)
+        elif selection_id == "profiles":
+            await self._show_virtual_bots_profiles_overview(user)
         elif selection_id == "back":
             self._show_admin_menu(user)
 
@@ -1113,4 +1131,197 @@ class AdministrationMixin:
             offline=status["offline"],
             in_game=status["in_game"],
         )
+        self._show_virtual_bots_menu(owner)
+
+    @require_server_owner
+    async def _show_virtual_bots_guided_overview(self, owner: NetworkUser) -> None:
+        """Show guided table overview."""
+        manager = getattr(self, "_virtual_bots", None)
+        if not manager:
+            _speak_activity(owner, "virtual-bots-not-available")
+            self._show_virtual_bots_menu(owner)
+            return
+
+        snapshot = manager.get_admin_snapshot()
+        locale = owner.locale
+        config = snapshot["config"]
+        lines = [
+            Localization.get(
+                locale,
+                "virtual-bots-guided-header",
+                count=len(snapshot["guided_tables"]),
+                allocation=config["allocation_mode"],
+                fallback=config["fallback_behavior"],
+                default_profile=config["default_profile"],
+            )
+        ]
+        tables = snapshot["guided_tables"]
+        if not tables:
+            lines.append(Localization.get(locale, "virtual-bots-guided-empty"))
+        else:
+            status_keys = {
+                True: "virtual-bots-guided-status-active",
+                False: "virtual-bots-guided-status-inactive",
+            }
+            table_state_keys = {
+                "linked": "virtual-bots-guided-table-linked",
+                "stale": "virtual-bots-guided-table-stale",
+                "unassigned": "virtual-bots-guided-table-unassigned",
+            }
+            for entry in tables:
+                status_text = Localization.get(locale, status_keys[entry["active"]])
+                table_state_text = Localization.get(
+                    locale,
+                    table_state_keys[entry["table_state"]],
+                    table_id=entry["table_id"] or "-",
+                    host=entry.get("host") or "-",
+                    players=entry.get("total_players", 0),
+                    humans=entry.get("human_players", 0),
+                )
+                if entry["ticks_until_next_change"] is None:
+                    next_change_text = Localization.get(
+                        locale, "virtual-bots-guided-no-schedule"
+                    )
+                else:
+                    next_change_text = Localization.get(
+                        locale,
+                        "virtual-bots-guided-next-change",
+                        ticks=entry["ticks_until_next_change"],
+                    )
+                warning_text = (
+                    Localization.get(locale, "virtual-bots-guided-warning")
+                    if entry["warning"]
+                    else ""
+                )
+                groups = entry["bot_groups"]
+                groups_text = (
+                    Localization.format_list_and(locale, groups)
+                    if groups
+                    else Localization.get(locale, "virtual-bots-groups-no-rules")
+                )
+                profile_text = (
+                    entry["profile"]
+                    if entry["profile"]
+                    else Localization.get(locale, "virtual-bots-profile-inherit-default")
+                )
+                max_label = entry["max_bots"] if entry["max_bots"] is not None else "∞"
+                lines.append(
+                    Localization.get(
+                        locale,
+                        "virtual-bots-guided-line",
+                        table=entry["name"],
+                        game=entry["game"],
+                        priority=entry["priority"],
+                        assigned=entry["assigned_bots"],
+                        min_bots=entry["min_bots"],
+                        max_bots=max_label,
+                        waiting=entry["waiting_bots"],
+                        unavailable=entry["unavailable_bots"],
+                        status=status_text,
+                        profile=profile_text,
+                        groups=groups_text,
+                        table_state=table_state_text,
+                        next_change=next_change_text,
+                        warning_text=warning_text,
+                    )
+                )
+
+        owner.speak("\n".join(lines), buffer="activity")
+        self._show_virtual_bots_menu(owner)
+
+    @require_server_owner
+    async def _show_virtual_bots_groups_overview(self, owner: NetworkUser) -> None:
+        """Show bot group inventory."""
+        manager = getattr(self, "_virtual_bots", None)
+        if not manager:
+            _speak_activity(owner, "virtual-bots-not-available")
+            self._show_virtual_bots_menu(owner)
+            return
+
+        snapshot = manager.get_admin_snapshot()
+        groups = snapshot["groups"]
+        locale = owner.locale
+        lines = [
+            Localization.get(
+                locale,
+                "virtual-bots-groups-header",
+                count=len(groups),
+                bots=snapshot["config"]["configured_bots"],
+            )
+        ]
+        if not groups:
+            lines.append(Localization.get(locale, "virtual-bots-groups-empty"))
+        else:
+            for entry in groups:
+                counts = entry["counts"]
+                profile_text = (
+                    entry["profile"]
+                    if entry["profile"]
+                    else Localization.get(locale, "virtual-bots-no-profile")
+                )
+                rules_text = (
+                    Localization.format_list_and(locale, entry["assigned_rules"])
+                    if entry["assigned_rules"]
+                    else Localization.get(locale, "virtual-bots-groups-no-rules")
+                )
+                lines.append(
+                    Localization.get(
+                        locale,
+                        "virtual-bots-groups-line",
+                        group=entry["name"],
+                        profile=profile_text,
+                        total=counts["total"],
+                        online=counts["online"],
+                        waiting=counts["waiting"],
+                        in_game=counts["in_game"],
+                        offline=counts["offline"],
+                        rules=rules_text,
+                    )
+                )
+
+        owner.speak("\n".join(lines), buffer="activity")
+        self._show_virtual_bots_menu(owner)
+
+    @require_server_owner
+    async def _show_virtual_bots_profiles_overview(self, owner: NetworkUser) -> None:
+        """Show profile override summary."""
+        manager = getattr(self, "_virtual_bots", None)
+        if not manager:
+            _speak_activity(owner, "virtual-bots-not-available")
+            self._show_virtual_bots_menu(owner)
+            return
+
+        snapshot = manager.get_admin_snapshot()
+        profiles = snapshot["profiles"]
+        locale = owner.locale
+        lines = [
+            Localization.get(
+                locale,
+                "virtual-bots-profiles-header",
+                count=len(profiles),
+                default_profile=snapshot["config"]["default_profile"],
+            )
+        ]
+        if not profiles:
+            lines.append(Localization.get(locale, "virtual-bots-profiles-empty"))
+        else:
+            for entry in profiles:
+                overrides = entry["overrides"]
+                if overrides:
+                    formatted = ", ".join(f"{key}={value}" for key, value in overrides.items())
+                else:
+                    formatted = Localization.get(
+                        locale, "virtual-bots-profiles-no-overrides"
+                    )
+                lines.append(
+                    Localization.get(
+                        locale,
+                        "virtual-bots-profiles-line",
+                        profile=entry["name"],
+                        bot_count=entry["bot_count"],
+                        overrides=formatted,
+                    )
+                )
+
+        owner.speak("\n".join(lines), buffer="activity")
         self._show_virtual_bots_menu(owner)

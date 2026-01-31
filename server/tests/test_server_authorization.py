@@ -7,22 +7,24 @@ from types import SimpleNamespace
 import pytest
 
 
-from server.core.server import Server
+from server.core.server import Server, DEFAULT_WS_MAX_MESSAGE_BYTES
+from server.auth.auth import AuthResult
 from server.users.base import TrustLevel
 
 
 class DummyClient:
-    def __init__(self):
+    def __init__(self, address="127.0.0.1:12345"):
         self.username = None
         self.authenticated = False
         self.sent = []
+        self.address = address
 
     async def send(self, payload):
         self.sent.append(payload)
 
 
 class DummyAuth:
-    def __init__(self, *, authenticate_result=True, register_result=True, user_record=None):
+    def __init__(self, *, authenticate_result=AuthResult.SUCCESS, register_result=True, user_record=None):
         self.authenticate_result = authenticate_result
         self.register_result = register_result
         self.calls = {"authenticate": [], "register": []}
@@ -61,7 +63,7 @@ async def test_authorize_registers_and_waits_for_approval(monkeypatch, server):
             {"play_turn_sound": False, "dice_keeping_style": "playpalace"}
         ),
     )
-    auth = DummyAuth(authenticate_result=False, register_result=True, user_record=record)
+    auth = DummyAuth(authenticate_result=AuthResult.USER_NOT_FOUND, register_result=True, user_record=record)
     server._auth = auth
     server._tables = SimpleNamespace(find_user_table=lambda username: None)
 
@@ -111,7 +113,7 @@ async def test_authorize_existing_admin_announces(monkeypatch, server):
         approved=True,
         preferences_json="{}",
     )
-    auth = DummyAuth(authenticate_result=True, user_record=record)
+    auth = DummyAuth(authenticate_result=AuthResult.SUCCESS, user_record=record)
     server._auth = auth
     server._tables = SimpleNamespace(find_user_table=lambda username: None)
 
@@ -150,8 +152,11 @@ async def test_register_requires_username_and_password(server):
 
     await server._handle_register(client, {"username": "", "password": ""})
 
+    expected = (
+        f"Username must be between {server._username_min_length} and {server._username_max_length} characters."
+    )
     assert client.sent == [
-        {"type": "speak", "text": "Username and password are required."}
+        {"type": "speak", "text": expected}
     ]
 
 
@@ -190,3 +195,115 @@ async def test_register_rejects_duplicate_username(server):
         "text": "Username already taken. Please choose a different username.",
     }
     assert auth.calls["register"] == [("taken", "pw")]
+
+
+@pytest.mark.asyncio
+async def test_authorize_rejects_invalid_username_length(server):
+    server._auth = DummyAuth()
+    client = DummyClient()
+    packet = {"username": "aa", "password": "validpass"}
+
+    await server._handle_authorize(client, packet)
+
+    assert server._auth.calls["authenticate"] == []
+    assert len(client.sent) == 3
+    assert client.sent[1]["text"].startswith("Username must be between")
+
+
+@pytest.mark.asyncio
+async def test_authorize_rejects_invalid_password_length(server):
+    server._auth = DummyAuth()
+    client = DummyClient()
+    packet = {"username": "validuser", "password": "short"}
+
+    await server._handle_authorize(client, packet)
+
+    assert server._auth.calls["authenticate"] == []
+    assert len(client.sent) == 3
+    assert client.sent[1]["text"].startswith("Password must be between")
+
+
+@pytest.mark.asyncio
+async def test_register_rejects_invalid_lengths(server):
+    server._auth = DummyAuth()
+    client = DummyClient()
+
+    await server._handle_register(client, {"username": "aa", "password": "pw"})
+
+    assert server._auth.calls["register"] == []
+    assert client.sent[-1]["text"].startswith("Username must be between")
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_login_rate_limit_by_ip(server):
+    server._auth = DummyAuth(authenticate_result=AuthResult.USER_NOT_FOUND, register_result=False)
+    server._login_ip_limit = 1
+    server._db = SimpleNamespace(get_user_count=lambda: 0)
+    client = DummyClient()
+    packet = {"username": "foo", "password": "validpass"}
+
+    await server._handle_authorize(client, packet)
+    client.sent.clear()
+    await server._handle_authorize(client, packet)
+
+    assert server._auth.calls["authenticate"] == [("foo", "validpass")]
+    assert "Too many login attempts" in client.sent[1]["text"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_login_rate_limit_by_username(server):
+    server._auth = DummyAuth(authenticate_result=AuthResult.WRONG_PASSWORD)
+    server._login_user_limit = 1
+    server._db = SimpleNamespace(get_user_count=lambda: 1)
+    client = DummyClient()
+    packet = {"username": "repeat", "password": "validpass"}
+
+    await server._handle_authorize(client, packet)
+    client.sent.clear()
+    await server._handle_authorize(client, packet)
+
+    assert "Too many failed login attempts" in client.sent[1]["text"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.slow
+async def test_registration_rate_limit_by_ip(server):
+    server._db = SimpleNamespace(get_user_count=lambda: 0)
+    server._auth = DummyAuth(register_result=True)
+    server._registration_ip_limit = 1
+    client = DummyClient()
+
+    await server._handle_register(client, {"username": "first", "password": "validpass"})
+    client.sent.clear()
+    await server._handle_register(client, {"username": "second", "password": "validpass"})
+
+    assert "Too many registration attempts" in client.sent[-1]["text"]
+
+
+def test_auth_limits_loaded_from_config(tmp_path):
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(
+        """
+[auth]
+username_min_length = 5
+username_max_length = 12
+password_min_length = 10
+password_max_length = 42
+[network]
+max_message_bytes = 2048
+"""
+    )
+    srv = Server(db_path=str(tmp_path / "auth.db"), locales_dir="locales", config_path=config_path)
+
+    assert srv._username_min_length == 5
+    assert srv._username_max_length == 12
+    assert srv._password_min_length == 10
+    assert srv._password_max_length == 42
+    assert srv._ws_max_message_size == 2048
+
+
+def test_network_max_size_defaults(tmp_path):
+    srv = Server(db_path=str(tmp_path / "auth.db"), locales_dir="locales", config_path=tmp_path / "missing.toml")
+    assert srv._ws_max_message_size == DEFAULT_WS_MAX_MESSAGE_BYTES

@@ -50,6 +50,7 @@ class WebSocketServer:
         on_message: Callable[[ClientConnection, dict], Coroutine] | None = None,
         ssl_cert: str | Path | None = None,
         ssl_key: str | Path | None = None,
+        max_message_size: int | None = None,
     ):
         self.host = host
         self.port = port
@@ -60,6 +61,7 @@ class WebSocketServer:
         self._server = None
         self._running = False
         self._ssl_context = None
+        self._max_message_size = max_message_size
 
         # Configure SSL if certificates provided
         if ssl_cert and ssl_key:
@@ -80,6 +82,7 @@ class WebSocketServer:
             self.host,
             self.port,
             ssl=self._ssl_context,
+            max_size=self._max_message_size,
         ).__aenter__()
         
         protocol = "wss" if self._ssl_context else "ws"

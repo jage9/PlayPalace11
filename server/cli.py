@@ -34,6 +34,8 @@ from getpass import getpass
 from pathlib import Path
 from typing import Any
 
+from getpass import getpass
+
 # Allow running as standalone script (uv run cli.py)
 _MODULE_DIR = Path(__file__).parent
 if __name__ == "__main__":
@@ -46,10 +48,10 @@ Localization.init(_MODULE_DIR / "locales")
 
 from server.games.registry import GameRegistry, get_game_class  # noqa: E402
 from server.games.base import Game, BOT_NAMES  # noqa: E402
+from server.users.base import User, TrustLevel, generate_uuid  # noqa: E402
+from server.users.bot import Bot  # noqa: E402
 from server.persistence.database import Database  # noqa: E402
 from server.auth.auth import AuthManager  # noqa: E402
-from server.users.base import User, generate_uuid, TrustLevel  # noqa: E402
-from server.users.bot import Bot  # noqa: E402
 
 
 @dataclass
@@ -639,20 +641,21 @@ def main():
 
     # bootstrap-owner command
     bootstrap_parser = subparsers.add_parser(
-        "bootstrap-owner", help="Create or repair the initial server owner account"
+        "bootstrap-owner",
+        help="Create or update the initial server owner account",
     )
     bootstrap_parser.add_argument(
         "--username",
         required=True,
-        help="Username for the owner account",
+        help="Username for the server owner account",
     )
     bootstrap_parser.add_argument(
         "--password",
-        help="Password for the owner account (use with caution)",
+        help="Password for the server owner (use with caution; prefer --password-file or interactive prompt)",
     )
     bootstrap_parser.add_argument(
         "--password-file",
-        help="Read password from a file (first line is used)",
+        help="File containing the password (first line used)",
     )
     bootstrap_parser.add_argument(
         "--password-stdin",
@@ -661,8 +664,8 @@ def main():
     )
     bootstrap_parser.add_argument(
         "--db-path",
-        default="server/playpalace.db",
-        help="Path to the PlayPalace database (default: server/playpalace.db)",
+        default="playpalace.db",
+        help="Path to the server database (default: playpalace.db)",
     )
     bootstrap_parser.add_argument(
         "--locale",
@@ -672,7 +675,7 @@ def main():
     bootstrap_parser.add_argument(
         "--force",
         action="store_true",
-        help="Allow replacing or updating an existing account even if other users exist",
+        help="Allow operation when users already exist or when replacing an account",
     )
     bootstrap_parser.add_argument(
         "--quiet",

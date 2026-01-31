@@ -2,6 +2,7 @@
 
 import pytest
 
+from server.network import websocket_server
 from server.network.websocket_server import ClientConnection, WebSocketServer
 
 
@@ -65,3 +66,35 @@ async def test_websocket_server_broadcast_and_send_to_user():
     assert not await server.send_to_user("unknown", {"type": "noop"})
     assert server.get_client_by_username("carol") is c3
     assert server.get_client_by_username("nobody") is None
+
+
+@pytest.mark.asyncio
+async def test_websocket_server_passes_max_size(monkeypatch):
+    recorded_kwargs = {}
+
+    class DummyContext:
+        def __init__(self):
+            self.closed = False
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        def close(self):
+            self.closed = True
+
+        async def wait_closed(self):
+            return
+
+    def fake_serve(*args, **kwargs):
+        recorded_kwargs.update(kwargs)
+        return DummyContext()
+
+    monkeypatch.setattr(websocket_server, "serve", fake_serve)
+
+    ws_server = WebSocketServer(max_message_size=2048)
+    await ws_server.start()
+    assert recorded_kwargs.get("max_size") == 2048
+    await ws_server.stop()

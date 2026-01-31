@@ -71,6 +71,92 @@ The client requires wxPython and a few other dependencies from v10.
 The client supports both `ws://` and `wss://` connections. When connecting to a server with SSL enabled, enter the server address with the `wss://` prefix (e.g., `wss://example.com`). The client will handle SSL certificate validation automatically.
 Use the **Server Manager** button on the login screen to add/edit servers (name, host, port, notes) and manage saved accounts for each server. You can add `localhost` for local testing.
 
+#### TLS Verification
+
+PlayPalace now enforces TLS hostname and certificate verification for all `wss://` connections. When the server presents an unknown or self-signed certificate, the client shows the certificate details (CN, SANs, issuer, validity window, and SHA-256 fingerprint) and lets you explicitly trust it. Trusted certificates are pinned per server entry—subsequent connections will only succeed if the fingerprint matches, and you can remove a stored certificate from the Server Manager dialog at any time.
+
+### Server Configuration
+
+Copy `server/config.example.toml` to `server/config.toml` to tweak runtime behavior. Alongside the existing `[virtual_bots]` settings, the `[auth]` section lets you clamp username and password lengths that the server will accept:
+
+```toml
+[auth]
+username_min_length = 3
+username_max_length = 32
+password_min_length = 8
+password_max_length = 128
+
+[auth.rate_limits]
+login_per_minute = 5
+login_failures_per_minute = 3
+registration_per_minute = 2
+```
+
+If the `[auth]` table is omitted, PlayPalace falls back to the defaults shown above. Adjust these values to match your policies (for example, force longer passwords on public deployments).
+
+To limit the maximum inbound websocket payload size (guarding against giant packets), add a `[network]` section:
+
+```toml
+[network]
+max_message_bytes = 1_048_576  # 1 MB default
+allow_insecure_ws = false      # force TLS by default
+```
+
+Values are in bytes and map directly to the `max_size` setting used by the underlying websockets server.
+Set `allow_insecure_ws` to `true` only for trusted development setups where TLS certificates are unavailable; the server will refuse to start without TLS when this flag is `false`, and it will print a loud warning whenever it runs in plaintext mode.
+`[auth.rate_limits]` caps how many login attempts each IP can make per minute, how many failed attempts a specific username can accrue, and how many registrations are allowed per minute from the same IP. Setting any of the limits to `0` disables that particular throttle.
+
+#### Guided Virtual Bots
+
+The `[virtual_bots]` section now supports deterministic "guided tables" for staging named bot groups into specific games:
+
+- `fallback_behavior` controls whether unassigned bots continue using the legacy probabilistic matchmaking (`"default"`) or stay offline until a guided rule needs them (`"disabled"`). `allocation_mode` (`"best_effort"` vs `"strict"`) dictates what happens when there aren't enough tagged bots to meet every `min_bots` target.
+- `[virtual_bots.profiles.<name>]` let you override any timing/behavior knob (idle/online/offline windows, join/create/offline probabilities, logout delays, plus the new `min_bots_per_table`, `max_bots_per_table`, and `waiting_*` guards) per persona—e.g., `host`, `patron`, `mixer`.
+- `[virtual_bots.bot_groups.<tag>]` enumerates which bot usernames belong to each tag and optionally pins them to a profile. Guided tables refer to these tags instead of raw names, so you can reassign bots without editing every rule.
+- `[[virtual_bots.guided_tables]]` entries describe each "channel": set the unique `table` label, the single allowed `game`, deterministic `priority`, desired bot counts (`min_bots`/`max_bots`), and the `bot_groups` allowed to fill the seats. Optional `profile` overrides force all bots in that rule to adopt one profile, and optional `cycle_ticks` + `active_ticks = [start, end]` windows provide tick-based scheduling without referencing wall-clock time.
+- Server owners can review the live guided-table plan from the admin → Virtual Bots menu: **Guided Tables** shows rule health (active, shortages, current table IDs), **Bot Groups** lists inventory per tag, and **Profiles** dumps the effective overrides so you can audit behavior without opening `config.toml`.
+
+See `server/config.example.toml` for a complete annotated sample that keeps four bots glued to a Crazy Eights table while rotating a mixer profile across a Scopa lounge during half of each scheduling cycle.
+
+#### Example: Single-Game Stress Test With Bots
+
+To hammer a single game with an always-on crew of bots (useful for load testing rules, UI, or translations), drop a minimal config like this into `server/config.toml`:
+
+```toml
+[virtual_bots]
+names = ["Alex", "Jordan", "Taylor", "Morgan"]
+min_idle_ticks = 20      # 1s
+max_idle_ticks = 60      # 3s
+min_online_ticks = 1000000
+max_online_ticks = 1000000
+go_offline_chance = 0.0
+logout_after_game_chance = 0.0
+max_tables_per_game = 1
+fallback_behavior = "disabled"
+
+[virtual_bots.profiles.default]
+min_bots_per_table = 0
+max_bots_per_table = 4
+
+[virtual_bots.bot_groups.all_bots]
+bots = ["Alex", "Jordan", "Taylor", "Morgan"]
+
+[[virtual_bots.guided_tables]]
+table = "Crazy Table"
+game = "crazyeights"
+bot_groups = ["all_bots"]
+min_bots = 4
+max_bots = 4
+priority = 10
+```
+
+Key behaviors:
+- Bots make a decision every 1–3 seconds and never voluntarily log off, so the lobby and table stay hot.
+- `max_tables_per_game = 1` plus a single guided-table entry pins every bot to Crazy Eights; nothing else can spawn.
+- `fallback_behavior = "disabled"` keeps any unassigned bots offline, eliminating random tables when testing.
+
+This setup is ideal when you want to observe repeated starts/finishes of one game (e.g., Crazy Eights) without human supervision.
+
 ## Project Structure
 
 The server and client are separate codebases with different philosophies.

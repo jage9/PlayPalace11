@@ -6,7 +6,16 @@ import asyncio
 import threading
 import websockets
 import ssl
+import sys
+from pathlib import Path
 from websockets.asyncio.client import connect
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from constants import (
+    USERNAME_LENGTH_HINT,
+    PASSWORD_LENGTH_HINT,
+    DEFAULT_CREDENTIAL_HINT,
+)
 
 
 class RegistrationDialog(wx.Dialog):
@@ -40,6 +49,11 @@ class RegistrationDialog(wx.Dialog):
         )
         sizer.Add(info_text, 0, wx.ALL | wx.CENTER, 5)
 
+        policy_text = wx.StaticText(panel, label=DEFAULT_CREDENTIAL_HINT)
+        policy_text.Wrap(440)
+        policy_text.SetForegroundColour(wx.Colour(90, 90, 90))
+        sizer.Add(policy_text, 0, wx.ALL | wx.LEFT | wx.RIGHT, 10)
+
         # Username
         username_label = wx.StaticText(panel, label="&Username:")
         sizer.Add(username_label, 0, wx.LEFT | wx.TOP, 10)
@@ -48,7 +62,9 @@ class RegistrationDialog(wx.Dialog):
         sizer.Add(self.username_input, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
 
         username_help = wx.StaticText(
-            panel, label="Letters, numbers, underscores, and dashes only"
+            panel,
+            label="Letters, numbers, underscores, and dashes only. "
+            + USERNAME_LENGTH_HINT,
         )
         username_help.SetForegroundColour(wx.Colour(100, 100, 100))
         sizer.Add(username_help, 0, wx.LEFT | wx.RIGHT, 10)
@@ -66,6 +82,10 @@ class RegistrationDialog(wx.Dialog):
 
         self.password_input = wx.TextCtrl(panel, style=wx.TE_PASSWORD)
         sizer.Add(self.password_input, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+
+        password_help = wx.StaticText(panel, label=PASSWORD_LENGTH_HINT)
+        password_help.SetForegroundColour(wx.Colour(100, 100, 100))
+        sizer.Add(password_help, 0, wx.LEFT | wx.RIGHT, 10)
 
         # Confirm Password
         confirm_label = wx.StaticText(panel, label="&Confirm Password:")

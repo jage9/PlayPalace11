@@ -405,6 +405,7 @@ class ConfigManager:
             "port": port,
             "notes": notes,
             "accounts": {},  # account_id -> account info
+            "trusted_certificate": None,
         }
         self.save_identities()
         return server_id
@@ -499,6 +500,32 @@ class ConfigManager:
         """
         self.identities["last_server_id"] = server_id
         self.save_identities()
+
+    # ========== Certificate Trust Management ==========
+
+    def get_trusted_certificate(self, server_id: str) -> Optional[Dict[str, Any]]:
+        """Return trusted certificate metadata for a server."""
+        server = self.get_server_by_id(server_id)
+        if server:
+            return server.get("trusted_certificate")
+        return None
+
+    def set_trusted_certificate(self, server_id: str, cert_info: Dict[str, Any]) -> None:
+        """Store trusted certificate metadata for a server."""
+        server = self.get_server_by_id(server_id)
+        if not server:
+            return
+        server["trusted_certificate"] = cert_info
+        self.save_identities()
+
+    def clear_trusted_certificate(self, server_id: str) -> None:
+        """Remove stored certificate metadata for a server."""
+        server = self.get_server_by_id(server_id)
+        if not server:
+            return
+        if "trusted_certificate" in server:
+            server["trusted_certificate"] = None
+            self.save_identities()
 
     # ========== Account Management ==========
 
@@ -690,4 +717,3 @@ class ConfigManager:
             return [self._deep_copy(item) for item in obj]
         else:
             return obj
-

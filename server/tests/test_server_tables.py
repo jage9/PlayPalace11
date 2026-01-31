@@ -62,7 +62,7 @@ class DummyGame:
 @pytest.fixture
 def server(tmp_path):
     db_path = tmp_path / "tables.db"
-    srv = Server(db_path=str(db_path), locales_dir="locales")
+    srv = Server(db_path=str(db_path), locales_dir="locales", config_path=tmp_path / "missing.toml")
     return srv
 
 

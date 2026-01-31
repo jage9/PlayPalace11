@@ -328,7 +328,6 @@ class PigGame(Game):
         player = self.current_player
         if not player:
             return
-        self.ensure_turn_started()
 
         player.round_score = 0
 
@@ -523,7 +522,5 @@ class PigGame(Game):
 
     def end_turn(self, jolt_min: int = 20, jolt_max: int = 30) -> None:
         """Override to use Pig's turn advancement logic."""
-        # Jolt all bots to pause for the turn change
-        self.on_turn_end()
         BotHelper.jolt_bots(self, ticks=random.randint(jolt_min, jolt_max))
         self._on_turn_end()

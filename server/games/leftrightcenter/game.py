@@ -201,7 +201,6 @@ class LeftRightCenterGame(Game):
 
         if self._check_for_winner():
             return
-        self.ensure_turn_started()
 
         self.announce_turn()
         if isinstance(player, LeftRightCenterPlayer) and player.chips == 0:
@@ -214,7 +213,6 @@ class LeftRightCenterGame(Game):
         self.rebuild_all_menus()
 
     def _end_turn(self) -> None:
-        self.on_turn_end()
         if self._check_for_winner():
             return
         self.advance_turn(announce=False)

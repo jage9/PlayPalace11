@@ -75,7 +75,6 @@ class TurnManagementMixin:
 
         # Normal advance
         self.turn_index = (self.turn_index + self.turn_direction) % len(self.turn_player_ids)
-        self.on_turn_start()
         if announce:
             self.announce_turn()
         self.rebuild_all_menus()

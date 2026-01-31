@@ -29,7 +29,7 @@ from ...game_utils.options import (
     option_field,
 )
 from ...game_utils.teams import TeamManager
-from ...game_utils.turn_system import RoundTransitionTimer
+from ...game_utils.round_timer import RoundTransitionTimer
 from ...messages.localization import Localization
 from ...ui.keybinds import KeybindState
 
@@ -618,7 +618,6 @@ class ScopaGame(Game):
         player = self.current_player
         if not player:
             return
-        self.ensure_turn_started()
 
         # Announce turn (plays sound and broadcasts message)
         self.announce_turn()
@@ -742,7 +741,6 @@ class ScopaGame(Game):
 
     def _end_turn(self) -> None:
         """Handle end of a player's turn."""
-        self.on_turn_end()
         active_players = self.get_active_players()
 
         # Check if all players are out of cards

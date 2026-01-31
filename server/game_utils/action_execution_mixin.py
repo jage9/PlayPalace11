@@ -195,6 +195,4 @@ class ActionExecutionMixin:
 
     def end_turn(self) -> None:
         """End the current player's turn. Call this from action handlers."""
-        # Default behavior - can be overridden by games
-        self.on_turn_end()
         self.advance_turn()

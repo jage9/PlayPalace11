@@ -531,7 +531,6 @@ class PiratesGame(Game):
         current = self.current_player
         if not current or not isinstance(current, PiratesPlayer):
             return
-        self.on_turn_end()
 
         # Check for gem at current position
         self._check_gem_collection(current)

@@ -23,7 +23,6 @@ from ..game_utils.duration_estimate_mixin import DurationEstimateMixin
 from ..game_utils.game_scores_mixin import GameScoresMixin
 from ..game_utils.game_prediction_mixin import GamePredictionMixin
 from ..game_utils.turn_management_mixin import TurnManagementMixin
-from ..game_utils.turn_system import TurnTrackerMixin
 from ..game_utils.menu_management_mixin import MenuManagementMixin
 from ..game_utils.action_visibility_mixin import ActionVisibilityMixin
 from ..game_utils.lobby_actions_mixin import LobbyActionsMixin, BOT_NAMES
@@ -80,7 +79,6 @@ class Game(
     GameScoresMixin,
     GamePredictionMixin,
     TurnManagementMixin,
-    TurnTrackerMixin,
     MenuManagementMixin,
     ActionVisibilityMixin,
     LobbyActionsMixin,
@@ -277,7 +275,6 @@ class Game(
 
         Subclasses should call super().on_tick() to ensure base functionality runs.
         """
-        self.tick_turn_tracker()
         # Check if duration estimation has completed
         self.check_estimate_completion()
 

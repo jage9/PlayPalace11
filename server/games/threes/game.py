@@ -339,7 +339,6 @@ class ThreesGame(Game, DiceGameMixin):
 
     def _end_turn(self) -> None:
         """End current player's turn."""
-        self.on_turn_end()
         # Check if round is over
         if self.turn_index >= len(self.turn_players) - 1:
             self._end_round()
@@ -385,7 +384,6 @@ class ThreesGame(Game, DiceGameMixin):
         player = self.current_player
         if not player or not isinstance(player, ThreesPlayer):
             return
-        self.ensure_turn_started()
 
         # Reset turn state
         player.dice.reset()

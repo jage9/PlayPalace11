@@ -597,7 +597,6 @@ class NinetyNineGame(Game):
         player = self.current_player
         if not player:
             return
-        self.ensure_turn_started()
 
         # Check if player has cards
         if not player.hand:
@@ -655,7 +654,6 @@ class NinetyNineGame(Game):
         """Advance to the next player's turn."""
         if not self.alive_players:
             return
-        self.on_turn_end()
 
         # Handle skip using base class mechanism
         while self.turn_skip_count > 0:

@@ -938,7 +938,6 @@ class FarkleGame(Game):
         player = self.current_player
         if not player:
             return
-        self.ensure_turn_started()
 
         farkle_player: FarklePlayer = player  # type: ignore
 
@@ -1148,6 +1147,5 @@ class FarkleGame(Game):
 
     def end_turn(self, jolt_min: int = 20, jolt_max: int = 30) -> None:
         """End the current player's turn."""
-        self.on_turn_end()
         BotHelper.jolt_bots(self, ticks=random.randint(jolt_min, jolt_max))
         self._on_turn_end()

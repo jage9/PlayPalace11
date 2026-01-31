@@ -385,7 +385,6 @@ class MidnightGame(Game, DiceGameMixin):
         player = self.current_player
         if not player:
             return
-        self.ensure_turn_started()
 
         midnight_player: MidnightPlayer = player  # type: ignore
         midnight_player.dice.reset()

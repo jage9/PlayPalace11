@@ -421,7 +421,7 @@ class LeftRightCenterGame(Game):
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "center_pot": self.center_pot,
-                "final_chips": {p.name: p.chips for p in self.players},
+                "final_chips": {p.name: p.chips for p in active_players},
             },
         )
 

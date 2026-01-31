@@ -152,7 +152,9 @@ class ActionVisibilityMixin:
         return None
 
     def _is_show_actions_hidden(self, player: "Player") -> Visibility:
-        """Show actions is always hidden (keybind only)."""
+        """Show actions is hidden for players but visible to spectators."""
+        if player.is_spectator:
+            return Visibility.VISIBLE
         return Visibility.HIDDEN
 
     def _is_save_table_enabled(self, player: "Player") -> str | None:

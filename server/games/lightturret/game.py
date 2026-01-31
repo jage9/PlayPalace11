@@ -448,22 +448,26 @@ class LightTurretGame(Game):
         max_light = 0
         winners = []
         for p in self.players:
-            if isinstance(p, LightTurretPlayer):
-                # Announce each player's result
-                if p.alive:
-                    self.broadcast_l(
-                        "lightturret-final-alive", player=p.name, light=p.light
-                    )
-                else:
-                    self.broadcast_l(
-                        "lightturret-final-eliminated", player=p.name, light=p.light
-                    )
+            if (
+                not isinstance(p, LightTurretPlayer)
+                or p.is_spectator
+            ):
+                continue
+            # Announce each player's result
+            if p.alive:
+                self.broadcast_l(
+                    "lightturret-final-alive", player=p.name, light=p.light
+                )
+            else:
+                self.broadcast_l(
+                    "lightturret-final-eliminated", player=p.name, light=p.light
+                )
 
-                if p.light > max_light:
-                    max_light = p.light
-                    winners = [p]
-                elif p.light == max_light:
-                    winners.append(p)
+            if p.light > max_light:
+                max_light = p.light
+                winners = [p]
+            elif p.light == max_light:
+                winners.append(p)
 
         # Announce winner or tie
         if len(winners) > 1:
@@ -492,7 +496,11 @@ class LightTurretGame(Game):
     def build_game_result(self) -> GameResult:
         """Build the game result with LightTurret-specific data."""
         sorted_players = sorted(
-            [p for p in self.players if isinstance(p, LightTurretPlayer)],
+            [
+                p
+                for p in self.players
+                if isinstance(p, LightTurretPlayer) and not p.is_spectator
+            ],
             key=lambda p: p.light,
             reverse=True,
         )

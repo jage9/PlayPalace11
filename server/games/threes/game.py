@@ -401,10 +401,17 @@ class ThreesGame(Game, DiceGameMixin):
 
     def _end_game(self) -> None:
         """End the game and announce winner."""
-        # Find winner(s) (lowest score)
-        players_with_scores = [
-            (p, p.total_score) for p in self.players if isinstance(p, ThreesPlayer)
+        # Only consider active (non-spectator) players when picking winners
+        active_players = [
+            p
+            for p in self.players
+            if isinstance(p, ThreesPlayer) and not p.is_spectator
         ]
+        if not active_players:
+            return
+
+        # Find winner(s) (lowest score)
+        players_with_scores = [(p, p.total_score) for p in active_players]
         players_with_scores.sort(key=lambda x: x[1])
 
         lowest_score = players_with_scores[0][1]
@@ -425,7 +432,11 @@ class ThreesGame(Game, DiceGameMixin):
         """Build the game result with Threes-specific data."""
         # Sorted by score ascending (lowest wins)
         sorted_players = sorted(
-            [p for p in self.players if isinstance(p, ThreesPlayer)],
+            [
+                p
+                for p in self.players
+                if isinstance(p, ThreesPlayer) and not p.is_spectator
+            ],
             key=lambda p: p.total_score,
         )
 

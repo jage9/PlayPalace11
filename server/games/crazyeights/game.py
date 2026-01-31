@@ -1121,7 +1121,7 @@ class CrazyEightsGame(Game):
         points_from: list[tuple[CrazyEightsPlayer, int]] = []
         total = 0
         for p in self.players:
-            if not isinstance(p, CrazyEightsPlayer):
+            if not isinstance(p, CrazyEightsPlayer) or p.is_spectator:
                 continue
             if p.id == winner.id:
                 continue
@@ -1283,7 +1283,11 @@ class CrazyEightsGame(Game):
 
         for p in self.players:
             user = self.get_user(p)
-            if not user or not isinstance(p, CrazyEightsPlayer):
+            if (
+                not user
+                or not isinstance(p, CrazyEightsPlayer)
+                or p.is_spectator
+            ):
                 continue
             if p.id == winner.id:
                 user.play_sound(win_sound)

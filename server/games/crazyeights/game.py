@@ -1193,6 +1193,7 @@ class CrazyEightsGame(Game):
                     "crazyeights-you-win-round",
                     details=details,
                     total=total,
+                    buffer="table",
                 )
             else:
                 user.speak_l(
@@ -1200,6 +1201,7 @@ class CrazyEightsGame(Game):
                     player=winner.name,
                     details=details,
                     total=total,
+                    buffer="table",
                 )
 
     def _broadcast_start_card(self) -> None:
@@ -1215,12 +1217,13 @@ class CrazyEightsGame(Game):
                 continue
             card_text = self.format_top_card(user.locale)
             if dealer and p.id == dealer.id:
-                user.speak_l("crazyeights-you-turn-up", card=card_text)
+                user.speak_l("crazyeights-you-turn-up", card=card_text, buffer="table")
             else:
                 user.speak_l(
                     "crazyeights-start-card",
                     player=dealer_name,
                     card=card_text,
+                    buffer="table",
                 )
 
     def _broadcast_suit_chosen(self, suit: int) -> None:
@@ -1229,7 +1232,7 @@ class CrazyEightsGame(Game):
             if not user:
                 continue
             suit_name = self._suit_name(suit, user.locale)
-            user.speak_l("crazyeights-suit-chosen", suit=suit_name)
+            user.speak_l("crazyeights-suit-chosen", suit=suit_name, buffer="table")
 
     def _broadcast_play(self, player: CrazyEightsPlayer, card: Card) -> None:
         for p in self.players:
@@ -1245,9 +1248,9 @@ class CrazyEightsGame(Game):
                 msg = Localization.get(user.locale, "crazyeights-player-plays", player=player.name, card=card_text)
             
             if one_card_text:
-                user.speak(f"{msg} {one_card_text}")
+                user.speak(f"{msg} {one_card_text}", buffer="table")
             else:
-                user.speak(msg)
+                user.speak(msg, buffer="table")
 
     def _broadcast_draw(self, player: CrazyEightsPlayer, count: int) -> None:
         if count == 1:

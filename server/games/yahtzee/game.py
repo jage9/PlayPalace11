@@ -749,7 +749,7 @@ class YahtzeeGame(Game, DiceGameMixin):
                 user = self.get_user(p)
                 if user:
                     names_str = Localization.format_list_and(user.locale, winner_names)
-                    user.speak_l("yahtzee-winners-tie", players=names_str, score=high_score)
+                    user.speak_l("yahtzee-winners-tie", players=names_str, score=high_score, buffer="table")
 
         # Commit round scores to total
         self._team_manager.commit_round_scores()

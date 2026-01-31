@@ -536,7 +536,7 @@ class MidnightGame(Game, DiceGameMixin):
                 user = self.get_user(player)
                 if user:
                     names_str = Localization.format_list_and(user.locale, names)
-                    user.speak_l("midnight-game-tie", players=names_str, wins=max_wins)
+                    user.speak_l("midnight-game-tie", players=names_str, wins=max_wins, buffer="table")
 
         self.finish_game()
 

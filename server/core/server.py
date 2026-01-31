@@ -627,7 +627,7 @@ class Server(AdministrationMixin):
                 # Username exists but password is wrong - show error dialog
                 error_message = Localization.get(locale, "incorrect-password")
                 await client.send({"type": "play_sound", "name": "accounterror.ogg"})
-                await client.send({"type": "speak", "text": error_message})
+                await client.send({"type": "speak", "text": error_message, "buffer": "activity"})
                 await client.send({
                     "type": "disconnect",
                     "reconnect": False,
@@ -645,7 +645,7 @@ class Server(AdministrationMixin):
                 # Registration failed (shouldn't happen if user not found, but handle anyway)
                 error_message = Localization.get(locale, "incorrect-username")
                 await client.send({"type": "play_sound", "name": "accounterror.ogg"})
-                await client.send({"type": "speak", "text": error_message})
+                await client.send({"type": "speak", "text": error_message, "buffer": "activity"})
                 await client.send({
                     "type": "disconnect",
                     "reconnect": False,
@@ -662,7 +662,7 @@ class Server(AdministrationMixin):
         if username in self._users:
             error_message = Localization.get(locale, "already-logged-in")
             await client.send({"type": "play_sound", "name": "accounterror.ogg"})
-            await client.send({"type": "speak", "text": error_message})
+            await client.send({"type": "speak", "text": error_message, "buffer": "activity"})
             await client.send({
                 "type": "disconnect",
                 "reconnect": False,
@@ -777,13 +777,13 @@ class Server(AdministrationMixin):
 
         username, password, error = self._validate_credentials(username_raw, password_raw)
         if error:
-            await client.send({"type": "speak", "text": error})
+            await client.send({"type": "speak", "text": error, "buffer": "activity"})
             return
 
         client_ip = self._get_client_ip(client)
         throttle_message = self._check_registration_rate_limit(client_ip)
         if throttle_message:
-            await client.send({"type": "speak", "text": throttle_message})
+            await client.send({"type": "speak", "text": throttle_message, "buffer": "activity"})
             return
 
         # All self-registered users require approval.
@@ -793,7 +793,8 @@ class Server(AdministrationMixin):
         if self._auth.register(username, password):
             await client.send({
                 "type": "speak",
-                "text": "Registration successful! Your account is waiting for approval."
+                "text": "Registration successful! Your account is waiting for approval.",
+                "buffer": "activity",
             })
             # Notify admins of new account request (only if user needs approval)
             if needs_approval:
@@ -801,7 +802,8 @@ class Server(AdministrationMixin):
         else:
             await client.send({
                 "type": "speak",
-                "text": "Username already taken. Please choose a different username."
+                "text": "Username already taken. Please choose a different username.",
+                "buffer": "activity",
             })
 
     async def _send_game_list(self, client: ClientConnection) -> None:
@@ -1416,6 +1418,7 @@ class Server(AdministrationMixin):
                     current=len(game.players),
                     min=min_players,
                     max=max_players,
+                    buffer="table",
                 )
             self._user_states[user.username] = {
                 "menu": "in_game",

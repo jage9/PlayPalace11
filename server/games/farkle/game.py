@@ -1076,7 +1076,7 @@ class FarkleGame(Game):
                 user = self.get_user(p)
                 if user:
                     names_str = Localization.format_list_and(user.locale, names)
-                    user.speak_l("farkle-winners-tie", players=names_str)
+                    user.speak_l("farkle-winners-tie", players=names_str, buffer="table")
 
             # Mark non-winners as spectators for tiebreaker
             winner_names = [w.name for w in winners]

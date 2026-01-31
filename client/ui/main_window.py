@@ -115,6 +115,7 @@ class MainWindow(wx.Frame):
         # Initialize buffer system
         self.buffer_system = BufferSystem()
         self.buffer_system.create_buffer("all")
+        self.buffer_system.create_buffer("table")
         self.buffer_system.create_buffer("chats")
         self.buffer_system.create_buffer("activity")
         self.buffer_system.create_buffer("misc")

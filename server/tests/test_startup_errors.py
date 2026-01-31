@@ -27,6 +27,7 @@ def test_localization_missing_directory(tmp_path, capsys):
 async def test_tls_certificate_load_failure(tmp_path, capsys):
     server = Server(
         db_path=str(tmp_path / "db.sqlite"),
+        config_path=tmp_path / "missing.toml",
         ssl_cert=tmp_path / "missing_cert.pem",
         ssl_key=tmp_path / "missing_key.pem",
     )

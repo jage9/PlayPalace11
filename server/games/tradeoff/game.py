@@ -1157,7 +1157,7 @@ class TradeoffGame(Game):
                 user = self.get_user(p)
                 if user:
                     names_str = Localization.format_list_and(user.locale, winner_names)
-                    user.speak_l("tradeoff-winners-tie", players=names_str, score=high_score)
+                    user.speak_l("tradeoff-winners-tie", players=names_str, score=high_score, buffer="table")
 
         self.finish_game()
 

@@ -460,7 +460,7 @@ class PigGame(Game):
                 user = self.get_user(player)
                 if user:
                     names_str = Localization.format_list_and(user.locale, team_names)
-                    user.speak_l("game-tiebreaker-players", players=names_str)
+                    user.speak_l("game-tiebreaker-players", players=names_str, buffer="table")
 
             # Mark players not on winning teams as spectators for the tiebreaker
             winning_team_indices = {t.index for t in winning_teams}

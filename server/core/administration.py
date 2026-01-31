@@ -169,7 +169,7 @@ class AdministrationMixin:
         non_admins = self._db.get_non_admin_users()
 
         if not non_admins:
-            _speak_activity(user, "no-users-to-promote")
+            user.speak_l("no-users-to-promote", buffer="misc")
             self._show_admin_menu(user)
             return
 
@@ -195,7 +195,7 @@ class AdministrationMixin:
         admins = [a for a in admins if a.username != user.username]
 
         if not admins:
-            _speak_activity(user, "no-admins-to-demote")
+            user.speak_l("no-admins-to-demote", buffer="misc")
             self._show_admin_menu(user)
             return
 
@@ -273,7 +273,7 @@ class AdministrationMixin:
         admins = self._db.get_admin_users(include_server_owner=False)
 
         if not admins:
-            _speak_activity(user, "no-admins-for-transfer")
+            user.speak_l("no-admins-for-transfer", buffer="misc")
             self._show_admin_menu(user)
             return
 
@@ -332,7 +332,7 @@ class AdministrationMixin:
         bannable_users = self._db.get_non_admin_users(exclude_banned=True)
 
         if not bannable_users:
-            _speak_activity(user, "no-users-to-ban")
+            user.speak_l("no-users-to-ban", buffer="misc")
             self._show_admin_menu(user)
             return
 
@@ -354,7 +354,7 @@ class AdministrationMixin:
         banned_users = self._db.get_banned_users()
 
         if not banned_users:
-            _speak_activity(user, "no-users-to-unban")
+            user.speak_l("no-users-to-unban", buffer="misc")
             self._show_admin_menu(user)
             return
 
@@ -488,7 +488,7 @@ class AdministrationMixin:
 
     def _show_virtual_bots_clear_confirm_menu(self, user: NetworkUser) -> None:
         """Show confirmation menu for clearing all virtual bots."""
-        _speak_activity(user, "virtual-bots-clear-confirm")
+        user.speak_l("virtual-bots-clear-confirm", buffer="misc")
         items = [
             MenuItem(text=Localization.get(user.locale, "confirm-yes"), id="yes"),
             MenuItem(text=Localization.get(user.locale, "confirm-no"), id="no"),
@@ -1081,17 +1081,17 @@ class AdministrationMixin:
     async def _fill_virtual_bots(self, owner: NetworkUser) -> None:
         """Fill the server with virtual bots from config."""
         if not hasattr(self, "_virtual_bots") or not self._virtual_bots:
-            _speak_activity(owner, "virtual-bots-not-available")
+            owner.speak_l("virtual-bots-not-available", buffer="misc")
             self._show_virtual_bots_menu(owner)
             return
 
         added, online = self._virtual_bots.fill_server()
         if added > 0:
-            _speak_activity(owner, "virtual-bots-filled", added=added, online=online)
+            owner.speak_l("virtual-bots-filled", added=added, online=online, buffer="misc")
             # Save state after filling
             self._virtual_bots.save_state()
         else:
-            _speak_activity(owner, "virtual-bots-already-filled")
+            owner.speak_l("virtual-bots-already-filled", buffer="misc")
 
         self._show_virtual_bots_menu(owner)
 
@@ -1099,19 +1099,20 @@ class AdministrationMixin:
     async def _clear_virtual_bots(self, owner: NetworkUser) -> None:
         """Clear all virtual bots from the server."""
         if not hasattr(self, "_virtual_bots") or not self._virtual_bots:
-            _speak_activity(owner, "virtual-bots-not-available")
+            owner.speak_l("virtual-bots-not-available", buffer="misc")
             self._show_virtual_bots_menu(owner)
             return
 
         bots_cleared, tables_killed = self._virtual_bots.clear_bots()
         if bots_cleared > 0:
-            _speak_activity(owner, 
+            owner.speak_l( 
                 "virtual-bots-cleared",
                 bots=bots_cleared,
                 tables=tables_killed,
+                buffer="misc",
             )
         else:
-            _speak_activity(owner, "virtual-bots-none-to-clear")
+            owner.speak_l("virtual-bots-none-to-clear", buffer="misc")
 
         self._show_virtual_bots_menu(owner)
 
@@ -1119,17 +1120,18 @@ class AdministrationMixin:
     async def _show_virtual_bots_status(self, owner: NetworkUser) -> None:
         """Show virtual bots status."""
         if not hasattr(self, "_virtual_bots") or not self._virtual_bots:
-            _speak_activity(owner, "virtual-bots-not-available")
+            owner.speak_l("virtual-bots-not-available", buffer="misc")
             self._show_virtual_bots_menu(owner)
             return
 
         status = self._virtual_bots.get_status()
-        _speak_activity(owner, 
+        owner.speak_l( 
             "virtual-bots-status-report",
             total=status["total"],
             online=status["online"],
             offline=status["offline"],
             in_game=status["in_game"],
+            buffer="misc",
         )
         self._show_virtual_bots_menu(owner)
 
@@ -1226,7 +1228,7 @@ class AdministrationMixin:
                     )
                 )
 
-        owner.speak("\n".join(lines), buffer="activity")
+        owner.speak("\n".join(lines), buffer="misc")
         self._show_virtual_bots_menu(owner)
 
     @require_server_owner
@@ -1279,7 +1281,7 @@ class AdministrationMixin:
                     )
                 )
 
-        owner.speak("\n".join(lines), buffer="activity")
+        owner.speak("\n".join(lines), buffer="misc")
         self._show_virtual_bots_menu(owner)
 
     @require_server_owner
@@ -1323,5 +1325,5 @@ class AdministrationMixin:
                     )
                 )
 
-        owner.speak("\n".join(lines), buffer="activity")
+        owner.speak("\n".join(lines), buffer="misc")
         self._show_virtual_bots_menu(owner)

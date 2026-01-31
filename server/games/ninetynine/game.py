@@ -948,9 +948,9 @@ class NinetyNineGame(Game):
                 continue
 
             if listener == player:
-                user.speak_l("ninetynine-you-lose-tokens", amount=amount)
+                user.speak_l("ninetynine-you-lose-tokens", amount=amount, buffer="table")
             else:
-                user.speak_l("ninetynine-player-loses-tokens", player=player.name, amount=amount)
+                user.speak_l("ninetynine-player-loses-tokens", player=player.name, amount=amount, buffer="table")
         self._sync_team_scores()
 
     def _sync_team_scores(self) -> None:

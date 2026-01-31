@@ -33,6 +33,8 @@ Before writing any game code, create the English localization file with all mess
 This step is not optional. Writing messages first forces you to think through the game flow: what happens on each turn, what feedback players receive, how scores are announced, what the win condition looks like. The localization file becomes your plan.
 
 Think carefully about what information players need at each moment. Screen reader users rely entirely on these messages to understand the game state.
+Use the **table** buffer for game flow so it reads as a table transcript: prefer `broadcast()` / `broadcast_l()` and `broadcast_personal_l()` for gameplay output (including “you” vs “player” split messages).
+Reserve `user.speak()` / `user.speak_l()` for direct command responses (e.g., "read top card", "no saved tables").
 
 ### Writing Good Messages
 
@@ -81,6 +83,8 @@ Look at the existing games for the structure you need. The key constraints are:
 - Games communicate through the User abstraction, never directly to the network
 - Use the action system for player choices
 - Follow the patterns you saw in step 1
+
+**Buffer rule of thumb:** if a message advances game state or narrates table action, route it to the **table** buffer. Use `broadcast()` / `broadcast_l()` and `broadcast_personal_l()` for “you” vs “player” messages. Reserve `user.speak()` / `user.speak_l()` for direct command responses (e.g., “read top card”, “no saved tables”).
 
 ## Step 4: Test with the CLI
 

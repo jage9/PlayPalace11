@@ -64,6 +64,11 @@ class MainWindow(wx.Frame):
         self.server_id = self.credentials.get("server_id")
         self.config_manager = self.credentials.get("config_manager")
 
+        # Attributes mocked in headless tests (avoid accessing real widgets before they exist)
+        self.menu_list = None
+        self.chat_input = None
+        self.history_text = None
+
         # Initialize TTS speaker
         self.speaker = auto_output.Auto()
 

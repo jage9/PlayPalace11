@@ -88,6 +88,12 @@ def callafter_immediate(monkeypatch):
     monkeypatch.setattr(nm_mod.wx, "CallAfter", lambda func, *a, **k: func(*a, **k))
 
 
+@pytest.fixture(autouse=True)
+def skip_packet_validation(monkeypatch):
+    monkeypatch.setattr(nm_mod, "validate_incoming", lambda packet: None)
+    monkeypatch.setattr(nm_mod, "validate_outgoing", lambda packet: None)
+
+
 def make_certificate_info(**overrides):
     defaults = dict(
         host="example.com",

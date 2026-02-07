@@ -12,9 +12,7 @@
     in {
       devShells = forAllSystems (system:
         let
-          pkgs = import nixpkgs {
-            inherit system;
-          };
+          pkgs = import nixpkgs { inherit system; };
           python = pkgs.python311;
           pyPkgs = pkgs.python311Packages;
           hatchVcs = pyPkgs."hatch-vcs";
@@ -102,46 +100,48 @@
             libloader
           ]);
 
-          runtimeLibs = with pkgs; [
-            gtk3
-            portaudio
-            libsndfile
-            openal
-            speechd
-            alsa-lib
-          ];
+          runtimeLibs = with pkgs; [ gtk3 portaudio libsndfile openal speechd alsa-lib ];
+
+          mkDevShell = extraHook:
+            pkgs.mkShell {
+              name = "playpalace-devshell";
+              packages = with pkgs; [
+                pythonEnv
+                uv
+                gcc
+                pkg-config
+                xorg.xorgserver
+                dbus
+                pulseaudio
+                espeak
+              ];
+
+              buildInputs = runtimeLibs;
+              LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath runtimeLibs;
+
+              shellHook = ''
+                export UV_SYSTEM_PYTHON=1
+                export PLAYPALACE_NIX=1
+                echo "PlayPalace Development Environment (flakes)"
+                echo "========================================="
+                echo "Python: $(python --version 2>/dev/null)"
+                echo "uv: $(uv --version 2>/dev/null)"
+                echo ""
+                echo "Common commands:"
+                echo "  nix develop . --command bash"
+                echo "  ./run_server.sh"
+                echo "  ./run_client.sh"
+                ${extraHook}
+              '';
+            };
         in {
-          default = pkgs.mkShell {
-            name = "playpalace-devshell";
-            packages = with pkgs; [
-              pythonEnv
-              uv
-              gcc
-              pkg-config
-              xorg.xorgserver
-              dbus
-              pulseaudio
-              espeak
-            ];
-
-            buildInputs = runtimeLibs;
-
-            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath runtimeLibs;
-
-            shellHook = ''
-              export UV_SYSTEM_PYTHON=1
-              export PLAYPALACE_NIX=1
-              echo "PlayPalace Development Environment (flakes)"
-              echo "========================================="
-              echo "Python: $(python --version 2>/dev/null)"
-              echo "uv: $(uv --version 2>/dev/null)"
-              echo ""
-              echo "Common commands:"
-              echo "  nix develop . --command bash"
-              echo "  ./run_server.sh"
-              echo "  ./run_client.sh"
-            '';
-          };
+          default = mkDevShell "";
+          server = mkDevShell ''
+            echo "Tip: run ./scripts/nix_server_pytest.sh for server tests."
+          '';
+          client = mkDevShell ''
+            echo "Tip: run ./scripts/nix_client_pytest.sh for client tests."
+          '';
         });
     };
 }

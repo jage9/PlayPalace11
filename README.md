@@ -12,6 +12,21 @@ This is the primary place for discussion about the project.
 
 You need Python 3.11 or later. We use [uv](https://docs.astral.sh/uv/) for dependency management on the server and client.
 
+### Developing with nix
+
+If you have nix installed, the repository ships a ready-to-use flake dev shell:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' develop .
+```
+
+There are also task-oriented shells:
+
+- `nix --extra-experimental-features 'nix-command flakes' develop .#server`
+- `nix --extra-experimental-features 'nix-command flakes' develop .#client`
+
+Once inside the shell, use the helper scripts under `scripts/` (documented below) for repeatable test runs without additional setup.
+
 ### Running the Server
 
 ```bash
@@ -202,6 +217,60 @@ uv run pytest -v
 The test suite includes unit tests, integration tests, and "play tests" that run complete games with bots. Play tests save and reload game state periodically to verify persistence works correctly.
 
 See also: CLI tool.
+
+### Server tests inside `nix develop`
+
+Inside any of the dev shells you can run the server tests without remembering the `uv` incantation:
+
+```bash
+./scripts/nix_server_pytest.sh            # from repo root
+# or pass extra arguments
+./scripts/nix_server_pytest.sh -k network
+```
+
+Under the hood the script changes into `server/` and runs `uv run pytest`, ensuring the correct environment variables from the nix shell are honored.
+
+### Client tests inside `nix develop`
+
+Running the wxPython-based client tests under `nix develop` needs a small amount of extra Python tooling (pytest + pydantic). To make that repeatable, use the helper script below from the repo root:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' develop . --command ./scripts/nix_client_pytest.sh
+```
+
+The script installs the required Python packages under `.nix-python/` (per-repo, not system-wide), exports the appropriate `PYTHONPATH`, and executes:
+
+```
+client/tests/test_network_manager.py
+client/tests/test_main_window_packets.py
+client/tests/test_main_window_startup.py
+```
+
+Pass additional pytest arguments to target different files, e.g.:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' develop . --command ./scripts/nix_client_pytest.sh -k network
+```
+
+The helper will reuse the cached `.nix-python/` prefix on subsequent runs, so once the packages download the first time, later test runs are instant.
+
+If you ever want to reclaim disk space, just remove the prefix:
+
+```bash
+rm -rf .nix-python
+```
+
+#### Cache space tips
+
+Building wxPython pulls in a substantial toolchain. If your default `$HOME` volume is small, point uv’s cache and temporary files at a larger mount before invoking the helper:
+
+```bash
+export UV_CACHE_DIR=/podman/uv-cache
+export TMPDIR=/podman
+nix --extra-experimental-features 'nix-command flakes' develop .#client --command ./scripts/nix_client_pytest.sh
+```
+
+Those environment variables persist only for the current command, so you can tailor them per machine without editing repo files.
 
 #### Bootstrapping the First Admin
 

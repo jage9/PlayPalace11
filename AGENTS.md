@@ -19,6 +19,9 @@ This repo uses Python 3.11+ and `uv` for dependency management.
 - Tests:
   - `cd server && uv run pytest` — run all server tests.
   - `cd server && uv run pytest -v` — verbose output.
+  - Inside `nix develop .`, helper scripts are available from repo root:
+    - `./scripts/nix_server_pytest.sh`
+    - `./scripts/nix_client_pytest.sh` (installs pytest/pydantic into `.nix-python/` automatically)
 
 ## Coding Style & Naming Conventions
 - Python uses 4-space indentation and standard PEP 8 naming: `snake_case` for functions/vars, `CapWords` for classes, `UPPER_SNAKE_CASE` for constants.

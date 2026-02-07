@@ -14,6 +14,9 @@ Both modes will have almost identical controls, however there will be slight dif
 To import or export data, the main server manager screen will have a button for each operation.
 All checkboxes in the dialog start unchecked by default in both modes, including servers in the available servers list. The "included types" visibility filter is the exception — all its items are checked by default (showing all control types).
 
+## Important Temporary Note
+Option profiles at the current moment are empty. This is expected at the time of adding these features. It should still behave as normal, since exporting / importing things like option profiles and user accounts just coppies the object.
+
 ## Updated server manager main layout
 After the default options profile button, add the "import server profiles" and "export server profiles" buttons.
 

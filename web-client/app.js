@@ -12,8 +12,8 @@ const MUSIC_VOLUME_KEY = "playpalace.web.music_volume";
 const AMBIENCE_VOLUME_KEY = "playpalace.web.ambience_volume";
 const DEFAULT_MUSIC_VOLUME = 20;
 const DEFAULT_AMBIENCE_VOLUME = 100;
+const DEFAULT_APP_VERSION = "2026.02.08.1";
 const DEFAULT_WEB_CLIENT_CONFIG = {
-  appVersion: "2026.02.08.1",
   serverUrl: "",
   serverPort: null,
   soundBaseUrl: "./sounds",
@@ -23,7 +23,7 @@ const WEB_CLIENT_CONFIG = {
   ...(window.WEB_CLIENT_CONFIG || {}),
 };
 const APP_VERSION = String(
-  window.PLAYPALACE_WEB_VERSION || WEB_CLIENT_CONFIG.appVersion || DEFAULT_WEB_CLIENT_CONFIG.appVersion
+  window.PLAYPALACE_WEB_VERSION || DEFAULT_APP_VERSION
 ).trim();
 
 function getDefaultServerUrl() {

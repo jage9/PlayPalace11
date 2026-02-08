@@ -1,10 +1,6 @@
 // Copy this file to config.js and edit for your environment.
 // config.js is intended to be local/deployment-specific and not committed.
 window.WEB_CLIENT_CONFIG = {
-  // Web client release/build version.
-  // Used for cache busting and shown in the footer.
-  appVersion: "2026.02.08.1",
-
   // Optional full override (scheme + host + optional port), e.g.:
   // serverUrl: "wss://playpalace.example.com:7000",
   serverUrl: "",

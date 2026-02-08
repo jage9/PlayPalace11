@@ -200,13 +200,12 @@
       </footer>
     </main>
 
+    <script src="./version.js"></script>
     <script src="./config.sample.js"></script>
     <script src="./config.js"></script>
     <script>
       (() => {
-        const cfg = window.WEB_CLIENT_CONFIG || {};
-        const version = String(cfg.appVersion || "2026.02.08.1").trim();
-        window.PLAYPALACE_WEB_VERSION = version;
+        const version = String(window.PLAYPALACE_WEB_VERSION || "2026.02.08.1").trim();
         const script = document.createElement("script");
         script.type = "module";
         script.src = `./app.js?v=${encodeURIComponent(version)}`;

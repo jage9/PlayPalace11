@@ -419,6 +419,7 @@ class Server(AdministrationMixin):
                 "reconnect": False,
                 "show_message": True,
                 "return_to_login": True,
+                "message": message,
             }
         )
 
@@ -603,6 +604,7 @@ class Server(AdministrationMixin):
 
     def _build_status_disconnect(self, snapshot: ModeSnapshot, retry_after: int) -> dict[str, object]:
         """Construct the disconnect payload paired with a lifecycle notification."""
+        message_text = self._format_status_message(snapshot)
         return {
             "type": "disconnect",
             "reconnect": False,
@@ -610,7 +612,17 @@ class Server(AdministrationMixin):
             "return_to_login": True,
             "status_mode": snapshot.mode.value,
             "retry_after": retry_after,
+            "message": message_text,
         }
+
+    @staticmethod
+    def _format_status_message(snapshot: ModeSnapshot) -> str:
+        """Build a human-readable lifecycle status summary."""
+        message = snapshot.message or "Server is temporarily unavailable."
+        if snapshot.resume_at:
+            resume_text = Server._format_datetime(snapshot.resume_at)
+            message = f"{message} Expected availability: {resume_text}."
+        return message
 
     def _calculate_retry_after(self, snapshot: ModeSnapshot) -> int:
         """Compute a recommended retry delay for clients."""
@@ -854,6 +866,7 @@ class Server(AdministrationMixin):
                     "reconnect": False,
                     "show_message": True,
                     "return_to_login": True,
+                    "message": error_message,
                 })
                 return
 
@@ -872,6 +885,7 @@ class Server(AdministrationMixin):
                     "reconnect": False,
                     "show_message": True,
                     "return_to_login": True,
+                    "message": error_message,
                 })
                 return
 
@@ -889,6 +903,7 @@ class Server(AdministrationMixin):
                 "reconnect": False,
                 "show_message": True,
                 "return_to_login": True,
+                "message": error_message,
             })
             return
 
@@ -930,6 +945,7 @@ class Server(AdministrationMixin):
 
         # Check if user is banned
         if user.trust_level == TrustLevel.BANNED:
+            ban_message = Localization.get(user.locale, "account-banned")
             user.play_sound("accountban.ogg")
             user.speak_l("account-banned", buffer="activity")
             for msg in user.get_queued_messages():
@@ -938,6 +954,7 @@ class Server(AdministrationMixin):
                 "type": "disconnect",
                 "reconnect": False,
                 "show_message": True,
+                "message": ban_message,
             })
             return
 

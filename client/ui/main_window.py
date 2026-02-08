@@ -1231,9 +1231,12 @@ class MainWindow(wx.Frame):
         return_to_login = packet.get("return_to_login", False)
         status_mode = packet.get("status_mode")
         retry_after = packet.get("retry_after")
+        disconnect_message = packet.get("message")
 
         if status_mode:
-            message = self._format_status_text(self.last_server_status_packet or {})
+            message = disconnect_message or self._format_status_text(
+                self.last_server_status_packet or {}
+            )
             self._show_connection_error(message, return_to_login=True)
             if retry_after:
                 delay = max(1, int(retry_after))
@@ -1251,7 +1254,8 @@ class MainWindow(wx.Frame):
             )
         elif show_message:
             # Explicit disconnect with message dialog (e.g., account declined)
-            self._show_connection_error("Disconnected by server.", return_to_login=return_to_login)
+            message = disconnect_message or self.last_server_message or "Disconnected by server."
+            self._show_connection_error(message, return_to_login=return_to_login)
         else:
             # Explicit disconnect, close quietly (e.g., user logout)
             self.speaker.speak("Disconnected.", interrupt=False)
@@ -1362,7 +1366,7 @@ class MainWindow(wx.Frame):
 
         # Build error message, including last server message if available
         error_body = message
-        if self.last_server_message:
+        if self.last_server_message and self.last_server_message not in error_body:
             error_body += f"\n\nServer message: {self.last_server_message}"
 
         if return_to_login:

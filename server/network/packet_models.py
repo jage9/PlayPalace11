@@ -260,6 +260,9 @@ class DisconnectPacket(BasePacket):
     reconnect: bool = False
     show_message: bool = False
     return_to_login: bool = False
+    message: str | None = None
+    status_mode: Literal["initializing", "maintenance", "running"] | None = None
+    retry_after: Annotated[int, Field(ge=1)] | None = None
 
 
 class ServerStatusPacket(BasePacket):

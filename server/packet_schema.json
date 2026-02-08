@@ -826,10 +826,35 @@
       "DisconnectPacket": {
         "additionalProperties": false,
         "properties": {
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Message"
+          },
           "reconnect": {
             "default": false,
             "title": "Reconnect",
             "type": "boolean"
+          },
+          "retry_after": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Retry After"
           },
           "return_to_login": {
             "default": false,
@@ -840,6 +865,23 @@
             "default": false,
             "title": "Show Message",
             "type": "boolean"
+          },
+          "status_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "initializing",
+                  "maintenance",
+                  "running"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status Mode"
           },
           "type": {
             "const": "disconnect",

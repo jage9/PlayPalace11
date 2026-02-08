@@ -41,6 +41,7 @@ async def test_client_blocked_while_initializing(server):
     assert status_packet["mode"] == "initializing"
     assert status_packet["retry_after"] >= 1
     assert client.sent[1]["status_mode"] == "initializing"
+    assert "Warming up" in client.sent[1]["message"]
     assert client.closed is True
 
 
@@ -68,4 +69,5 @@ async def test_maintenance_mode_disconnects_clients(server):
     assert [packet["type"] for packet in client.sent] == ["server_status", "disconnect"]
     assert client.sent[0]["mode"] == "maintenance"
     assert client.sent[1]["retry_after"] >= 1
+    assert "Applying updates" in client.sent[1]["message"]
     assert client.closed is True

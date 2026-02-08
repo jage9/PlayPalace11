@@ -866,6 +866,7 @@ class AdministrationMixin:
                     "reconnect": False,
                     "show_message": True,
                     "return_to_login": True,
+                    "message": full_message,
                 })
 
         self._show_account_approval_menu(admin)
@@ -1046,6 +1047,7 @@ class AdministrationMixin:
                 "type": "disconnect",
                 "reconnect": False,
                 "show_message": True,
+                "message": full_message,
             })
 
         self._show_ban_user_menu(admin)

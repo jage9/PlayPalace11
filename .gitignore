@@ -16,3 +16,6 @@ client/*.spec
 # Test report coverage files
 server/.coverage
 server/coverage-report.txt
+
+# Web client local deployment config
+web-client/config.js

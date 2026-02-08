@@ -6,9 +6,17 @@ import { createMenuView } from "./ui/menus.js";
 import { createChat } from "./ui/chat.js";
 import { installKeybinds } from "./keybinds.js";
 import { createNetworkClient, loadPacketValidator } from "./network.js";
-import { WEB_CLIENT_CONFIG } from "./config.js";
 
 const REMEMBERED_USERNAME_KEY = "playpalace.web.remembered_username";
+const DEFAULT_WEB_CLIENT_CONFIG = {
+  serverUrl: "",
+  serverPort: null,
+  soundBaseUrl: "./sounds",
+};
+const WEB_CLIENT_CONFIG = {
+  ...DEFAULT_WEB_CLIENT_CONFIG,
+  ...(window.WEB_CLIENT_CONFIG || {}),
+};
 
 function getDefaultServerUrl() {
   if (WEB_CLIENT_CONFIG.serverUrl) {
@@ -80,7 +88,9 @@ const a11y = createA11y({
   politeEl: elements.politeLive,
   assertiveEl: elements.assertiveLive,
 });
-const audio = createAudioEngine();
+const audio = createAudioEngine({
+  soundBaseUrl: WEB_CLIENT_CONFIG.soundBaseUrl || "./sounds",
+});
 
 const historyView = createHistoryView({
   store,

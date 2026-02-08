@@ -2,17 +2,19 @@ function isAbsoluteUrl(path) {
   return /^https?:\/\//i.test(path);
 }
 
-function toSoundUrl(name) {
+function toSoundUrl(name, soundBaseUrl) {
   if (!name) {
     return "";
   }
   if (isAbsoluteUrl(name) || name.startsWith("/")) {
     return name;
   }
-  return `/client/sounds/${name}`;
+  const base = String(soundBaseUrl || "./sounds").replace(/\/+$/, "");
+  return `${base}/${name}`;
 }
 
-export function createAudioEngine() {
+export function createAudioEngine(options = {}) {
+  const soundBaseUrl = options.soundBaseUrl || "./sounds";
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   const context = AudioCtx ? new AudioCtx() : null;
 
@@ -66,7 +68,7 @@ export function createAudioEngine() {
 
   function playSound(packet) {
     const name = packet.name || packet.sound || "";
-    const url = toSoundUrl(name);
+    const url = toSoundUrl(name, soundBaseUrl);
     if (!url) {
       return;
     }
@@ -96,7 +98,7 @@ export function createAudioEngine() {
 
   function playMusic(packet) {
     const name = packet.name || packet.music || "";
-    const url = toSoundUrl(name);
+    const url = toSoundUrl(name, soundBaseUrl);
     if (!url) {
       return;
     }

@@ -3,6 +3,7 @@
 # Game categories
 category-card-games = Card Games
 category-dice-games = Dice Games
+category-word-games = Word Games
 category-board-games = Board Games
 category-rb-play-center = RB Play Center
 category-poker = Poker

@@ -235,7 +235,7 @@ export function installKeybinds({
     }
 
     if (event.key === "Escape" || (event.key === "Backspace" && menuFocused && !editing)) {
-      if (event.key === "Backspace" && menu.menuId === "main_menu") {
+      if ((event.key === "Escape" || event.key === "Backspace") && menu.menuId === "main_menu") {
         event.preventDefault();
         return;
       }

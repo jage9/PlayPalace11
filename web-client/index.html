@@ -116,6 +116,27 @@
         resize: none;
       }
       .history-entry { margin: 0 0 6px; }
+      .history-log {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        min-height: 480px;
+        height: 62vh;
+        overflow-y: auto;
+        padding: 8px;
+        background: #fbfdff;
+      }
+      .history-line {
+        margin: 0 0 6px 0;
+        white-space: pre-wrap;
+      }
+      .history-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .history-toggle {
+        display: none;
+      }
       dialog {
         border: 1px solid var(--border);
         border-radius: 10px;
@@ -139,6 +160,17 @@
       }
       @media (max-width: 900px) {
         .grid { grid-template-columns: 1fr; }
+        .history {
+          display: none;
+        }
+        .history-log {
+          display: block;
+          min-height: 300px;
+          height: 42vh;
+        }
+        .history-toggle {
+          display: inline-block;
+        }
       }
     </style>
   </head>
@@ -181,8 +213,23 @@
         </section>
 
         <section class="panel">
-          <h2>History</h2>
-          <textarea id="history" class="history" readonly tabindex="0" aria-label="History"></textarea>
+          <div class="history-header">
+            <h2>History</h2>
+            <button id="history-toggle" class="history-toggle secondary" type="button">Collapse</button>
+          </div>
+          <div id="history-content">
+            <textarea id="history" class="history" readonly tabindex="0" aria-label="History"></textarea>
+            <div
+              id="history-log"
+              class="history-log"
+              role="log"
+              aria-label="History"
+              aria-live="polite"
+              aria-relevant="additions text"
+              aria-atomic="false"
+              hidden
+            ></div>
+          </div>
 
           <h2 style="margin-top: 10px;">Chat</h2>
           <form id="chat-form" class="row" style="margin-top: 10px;">

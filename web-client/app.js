@@ -108,6 +108,9 @@ const elements = {
   inlineInputCancel: document.getElementById("inline-input-cancel"),
 
   history: document.getElementById("history"),
+  historyLog: document.getElementById("history-log"),
+  historyContent: document.getElementById("history-content"),
+  historyToggle: document.getElementById("history-toggle"),
   historyBuffer: document.getElementById("history-buffer"),
 
   chatForm: document.getElementById("chat-form"),
@@ -139,6 +142,9 @@ audio.setAmbienceVolumePercent(loadStoredPercent(AMBIENCE_VOLUME_KEY, DEFAULT_AM
 const historyView = createHistoryView({
   store,
   historyEl: elements.history,
+  historyLogEl: elements.historyLog,
+  historyContentEl: elements.historyContent,
+  historyToggleEl: elements.historyToggle,
   bufferSelectEl: elements.historyBuffer,
   a11y,
 });
@@ -762,7 +768,7 @@ async function bootstrap() {
   });
   elements.musicVolume?.addEventListener("change", async (event) => {
     const value = event.target?.value ?? "0";
-    setMusicVolumePercent(value, { announce: true });
+    setMusicVolumePercent(value, { announce: false });
     await audio.unlock();
   });
   elements.ambienceVolume?.addEventListener("input", (event) => {
@@ -771,7 +777,7 @@ async function bootstrap() {
   });
   elements.ambienceVolume?.addEventListener("change", async (event) => {
     const value = event.target?.value ?? "0";
-    setAmbienceVolumePercent(value, { announce: true });
+    setAmbienceVolumePercent(value, { announce: false });
     await audio.unlock();
   });
 

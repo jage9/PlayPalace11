@@ -48,6 +48,8 @@ export function createAudioEngine(options = {}) {
   let currentAmbienceLoop = null;
   let currentAmbienceLoopName = "";
   let pendingAmbiencePacket = null;
+  const pendingEffectPackets = [];
+  const MAX_PENDING_EFFECTS = 24;
   const activeEffects = new Set();
 
   if (context) {
@@ -148,7 +150,19 @@ export function createAudioEngine(options = {}) {
       if (!attached && effectsGain) {
         audio.volume *= effectsGain.gain.value;
       }
-      safePlay(audio);
+      safePlay(audio, {
+        onRejected: () => {
+          if (pendingEffectPackets.length >= MAX_PENDING_EFFECTS) {
+            pendingEffectPackets.shift();
+          }
+          pendingEffectPackets.push({
+            name,
+            volume: packet.volume ?? 100,
+            pan: packet.pan ?? 0,
+            pitch: packet.pitch ?? 100,
+          });
+        },
+      });
     } catch {
       // Ignore autoplay/stream failures before unlock.
     }
@@ -328,6 +342,12 @@ export function createAudioEngine(options = {}) {
       const packet = pendingAmbiencePacket;
       pendingAmbiencePacket = null;
       playAmbience(packet);
+    }
+    if (pendingEffectPackets.length > 0) {
+      const packets = pendingEffectPackets.splice(0, pendingEffectPackets.length);
+      for (const packet of packets) {
+        playSound(packet);
+      }
     }
   }
 

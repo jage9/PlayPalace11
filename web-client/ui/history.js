@@ -1,6 +1,16 @@
-export function createHistoryView({ store, historyEl, bufferSelectEl, a11y }) {
+export function createHistoryView({
+  store,
+  historyEl,
+  historyLogEl,
+  historyContentEl,
+  historyToggleEl,
+  bufferSelectEl,
+  a11y,
+}) {
   const mutedBuffers = new Set();
   const bufferPositions = {};
+  const isMobileLike = window.matchMedia("(pointer: coarse)").matches;
+  let mobileCollapsed = false;
 
   function ensureBufferPosition(bufferName) {
     if (!Object.hasOwn(bufferPositions, bufferName)) {
@@ -68,6 +78,33 @@ export function createHistoryView({ store, historyEl, bufferSelectEl, a11y }) {
     const lines = store.state.historyBuffers[bufferName] || [];
     historyEl.value = lines.join("\n");
     historyEl.scrollTop = historyEl.scrollHeight;
+
+    if (historyLogEl) {
+      historyLogEl.replaceChildren();
+      for (const line of lines) {
+        const row = document.createElement("p");
+        row.className = "history-line";
+        row.textContent = line;
+        historyLogEl.appendChild(row);
+      }
+      historyLogEl.scrollTop = historyLogEl.scrollHeight;
+    }
+  }
+
+  function renderMobileVisibility() {
+    if (!historyContentEl || !historyToggleEl || !historyLogEl) {
+      return;
+    }
+    if (!isMobileLike) {
+      historyToggleEl.hidden = true;
+      historyContentEl.hidden = false;
+      historyLogEl.hidden = true;
+      return;
+    }
+    historyToggleEl.hidden = false;
+    historyContentEl.hidden = mobileCollapsed;
+    historyLogEl.hidden = false;
+    historyToggleEl.textContent = mobileCollapsed ? "Expand" : "Collapse";
   }
 
   function addEntry(text, options = {}) {
@@ -140,8 +177,15 @@ export function createHistoryView({ store, historyEl, bufferSelectEl, a11y }) {
       store.setHistoryBuffer(bufferSelectEl.value);
     });
   }
+  if (historyToggleEl) {
+    historyToggleEl.addEventListener("click", () => {
+      mobileCollapsed = !mobileCollapsed;
+      renderMobileVisibility();
+    });
+  }
 
   store.subscribe(render);
+  renderMobileVisibility();
   render();
 
   return {
@@ -172,5 +216,9 @@ export function createHistoryView({ store, historyEl, bufferSelectEl, a11y }) {
       moveInCurrentBuffer("newest");
     },
     toggleCurrentBufferMute: toggleMuteCurrentBuffer,
+    setCollapsed(collapsed) {
+      mobileCollapsed = Boolean(collapsed);
+      renderMobileVisibility();
+    },
   };
 }

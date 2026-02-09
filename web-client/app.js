@@ -501,6 +501,23 @@ function closeLoginDialog() {
 }
 
 function installInGameTabTrap() {
+  function isElementVisible(el) {
+    if (!el || el.hidden) {
+      return false;
+    }
+    return el.getClientRects().length > 0;
+  }
+
+  function getHistoryFocusTarget() {
+    if (isElementVisible(elements.history)) {
+      return elements.history;
+    }
+    if (isElementVisible(elements.historyLog)) {
+      return elements.historyLog;
+    }
+    return null;
+  }
+
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Tab") {
       return;
@@ -512,17 +529,19 @@ function installInGameTabTrap() {
       return;
     }
 
+    const historyTarget = getHistoryFocusTarget();
     const targets = pendingInlineInput
-      ? [elements.menuList, elements.history, elements.chatInput, elements.inlineInputValue]
-      : [elements.menuList, elements.history, elements.chatInput];
-    const activeIndex = targets.indexOf(document.activeElement);
+      ? [elements.menuList, historyTarget, elements.chatInput, elements.inlineInputValue]
+      : [elements.menuList, historyTarget, elements.chatInput];
+    const focusableTargets = targets.filter(Boolean);
+    const activeIndex = focusableTargets.indexOf(document.activeElement);
     if (activeIndex === -1) {
       return;
     }
     event.preventDefault();
     const delta = event.shiftKey ? -1 : 1;
-    const nextIndex = (activeIndex + delta + targets.length) % targets.length;
-    targets[nextIndex].focus();
+    const nextIndex = (activeIndex + delta + focusableTargets.length) % focusableTargets.length;
+    focusableTargets[nextIndex].focus();
   });
 }
 
@@ -551,7 +570,11 @@ function installFocusHotkeys() {
     }
     if (key === "h") {
       event.preventDefault();
-      elements.history.focus();
+      if (elements.history?.getClientRects().length) {
+        elements.history.focus();
+      } else if (elements.historyLog?.getClientRects().length) {
+        elements.historyLog.focus();
+      }
     }
   });
 }

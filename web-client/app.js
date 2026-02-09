@@ -340,10 +340,13 @@ function canOpenActionsPopup() {
     return false;
   }
   const menu = store.state.currentMenu;
-  if (!menu || menu.menuId === "main_menu") {
+  if (!menu || !menu.menuId || menu.menuId === "main_menu") {
     return false;
   }
-  return menu.menuId === "turn_menu" && menu.items.length > 0;
+  if (!menu.items.length) {
+    return false;
+  }
+  return menu.menuId === "turn_menu" || menu.escapeBehavior === "keybind";
 }
 
 function updateActionsButtonVisibility() {

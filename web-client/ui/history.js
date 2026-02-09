@@ -11,29 +11,6 @@ export function createHistoryView({
   const bufferPositions = {};
   const isMobileLike = window.matchMedia("(pointer: coarse)").matches;
   let mobileCollapsed = false;
-  let renderedLogBuffer = null;
-  let renderedLogCount = 0;
-  let renderedLogLastLine = "";
-
-  function appendHistoryLogLine(line) {
-    if (!historyLogEl) {
-      return;
-    }
-    const row = document.createElement("p");
-    row.className = "history-line";
-    row.textContent = line;
-    historyLogEl.appendChild(row);
-  }
-
-  function rebuildHistoryLog(lines) {
-    if (!historyLogEl) {
-      return;
-    }
-    historyLogEl.replaceChildren();
-    for (const line of lines) {
-      appendHistoryLogLine(line);
-    }
-  }
 
   function ensureBufferPosition(bufferName) {
     if (!Object.hasOwn(bufferPositions, bufferName)) {
@@ -103,21 +80,13 @@ export function createHistoryView({
     historyEl.scrollTop = historyEl.scrollHeight;
 
     if (historyLogEl) {
-      const shouldRebuild = (
-        renderedLogBuffer !== bufferName
-        || lines.length < renderedLogCount
-        || (lines.length === renderedLogCount && (lines[lines.length - 1] || "") !== renderedLogLastLine)
-      );
-      if (shouldRebuild) {
-        rebuildHistoryLog(lines);
-      } else if (lines.length > renderedLogCount) {
-        for (let i = renderedLogCount; i < lines.length; i += 1) {
-          appendHistoryLogLine(lines[i]);
-        }
+      historyLogEl.replaceChildren();
+      for (const line of lines) {
+        const row = document.createElement("p");
+        row.className = "history-line";
+        row.textContent = line;
+        historyLogEl.appendChild(row);
       }
-      renderedLogBuffer = bufferName;
-      renderedLogCount = lines.length;
-      renderedLogLastLine = lines[lines.length - 1] || "";
       historyLogEl.scrollTop = historyLogEl.scrollHeight;
     }
   }
@@ -130,10 +99,12 @@ export function createHistoryView({
       historyToggleEl.hidden = false;
       historyToggleEl.setAttribute("aria-expanded", "true");
       historyContentEl.hidden = false;
+      historyLogEl.setAttribute("aria-live", "off");
       historyLogEl.hidden = true;
       return;
     }
     historyContentEl.hidden = mobileCollapsed;
+    historyLogEl.setAttribute("aria-live", "off");
     historyLogEl.hidden = false;
     historyToggleEl.setAttribute("aria-expanded", mobileCollapsed ? "false" : "true");
   }

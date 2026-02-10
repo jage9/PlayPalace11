@@ -27,59 +27,79 @@ class GamePredictionMixin:
         if not user:
             return
 
-        if not self._table or not self._table._db:
-            user.speak_l("predict-unavailable")
+        rating_helper = self._get_prediction_helper(user)
+        if not rating_helper:
             return
 
-        rating_helper = RatingHelper(self._table._db, self.get_type())
-
-        # Get human players only (exclude spectators)
-        human_players = [
-            p for p in self.players if not p.is_bot and not p.is_spectator
-        ]
-
+        human_players = self._get_predictable_players()
         if len(human_players) < 2:
             user.speak_l("predict-need-players")
             return
 
-        # Get ratings for all players
-        player_ratings = []
-        for p in human_players:
-            rating = rating_helper.get_rating(p.id)
-            player_ratings.append((p, rating))
-
-        # Sort by ordinal (conservative skill estimate) descending
-        player_ratings.sort(key=lambda x: x[1].ordinal, reverse=True)
-
-        # Format predictions
-        lines = [Localization.get(user.locale, "predict-header")]
-
-        for rank, (p, rating) in enumerate(player_ratings, 1):
-            # Calculate win probability against the field
-            if len(player_ratings) == 2:
-                # 2 players: show head-to-head probability
-                other = player_ratings[1] if rank == 1 else player_ratings[0]
-                win_prob = rating_helper.predict_win_probability(p.id, other[0].id)
-                lines.append(
-                    Localization.get(
-                        user.locale,
-                        "predict-entry-2p",
-                        rank=rank,
-                        player=p.name,
-                        rating=round(rating.ordinal),
-                        probability=round(win_prob * 100),
-                    )
-                )
-            else:
-                # 3+ players: show rating only (probabilities get complex)
-                lines.append(
-                    Localization.get(
-                        user.locale,
-                        "predict-entry",
-                        rank=rank,
-                        player=p.name,
-                        rating=round(rating.ordinal),
-                    )
-                )
-
+        player_ratings = self._collect_player_ratings(rating_helper, human_players)
+        lines = self._build_prediction_lines(user, rating_helper, player_ratings)
         self.status_box(player, lines)
+
+    def _get_prediction_helper(self, user: "User") -> RatingHelper | None:
+        """Build the rating helper if DB is available."""
+        if not self._table or not self._table._db:
+            user.speak_l("predict-unavailable")
+            return None
+        return RatingHelper(self._table._db, self.get_type())
+
+    def _get_predictable_players(self) -> list["Player"]:
+        """Return human, non-spectator players."""
+        return [p for p in self.players if not p.is_bot and not p.is_spectator]
+
+    def _collect_player_ratings(
+        self, rating_helper: RatingHelper, players: list["Player"]
+    ) -> list[tuple["Player", Any]]:
+        """Collect and sort ratings for the provided players."""
+        player_ratings = [(p, rating_helper.get_rating(p.id)) for p in players]
+        player_ratings.sort(key=lambda x: x[1].ordinal, reverse=True)
+        return player_ratings
+
+    def _build_prediction_lines(
+        self,
+        user: "User",
+        rating_helper: RatingHelper,
+        player_ratings: list[tuple["Player", Any]],
+    ) -> list[str]:
+        """Format prediction lines for display."""
+        lines = [Localization.get(user.locale, "predict-header")]
+        for rank, (player, rating) in enumerate(player_ratings, 1):
+            lines.append(
+                self._format_prediction_entry(
+                    user, rating_helper, player_ratings, rank, player, rating
+                )
+            )
+        return lines
+
+    def _format_prediction_entry(
+        self,
+        user: "User",
+        rating_helper: RatingHelper,
+        player_ratings: list[tuple["Player", Any]],
+        rank: int,
+        player: "Player",
+        rating: Any,
+    ) -> str:
+        """Format a single prediction entry."""
+        if len(player_ratings) == 2:
+            other = player_ratings[1] if rank == 1 else player_ratings[0]
+            win_prob = rating_helper.predict_win_probability(player.id, other[0].id)
+            return Localization.get(
+                user.locale,
+                "predict-entry-2p",
+                rank=rank,
+                player=player.name,
+                rating=round(rating.ordinal),
+                probability=round(win_prob * 100),
+            )
+        return Localization.get(
+            user.locale,
+            "predict-entry",
+            rank=rank,
+            player=player.name,
+            rating=round(rating.ordinal),
+        )

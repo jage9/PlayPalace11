@@ -346,7 +346,7 @@ function canOpenActionsPopup() {
   if (!menu.items.length) {
     return false;
   }
-  return menu.menuId === "turn_menu" || menu.escapeBehavior === "keybind";
+  return menu.menuId === "turn_menu";
 }
 
 function updateActionsButtonVisibility() {
@@ -726,12 +726,15 @@ function handlePacket(packet) {
       const items = parseMenuItems(packet.items);
 
       if (pendingActionsMenuRequest) {
+        if (packet.menu_id === "actions_menu") {
+          pendingActionsMenuRequest = false;
+          openActionsDialogForMenu({
+            menuId: packet.menu_id,
+            items,
+          });
+          return;
+        }
         pendingActionsMenuRequest = false;
-        openActionsDialogForMenu({
-          menuId: packet.menu_id,
-          items,
-        });
-        return;
       }
 
       let selection = 0;

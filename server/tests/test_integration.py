@@ -142,7 +142,7 @@ class TestAuthIntegration:
         self.auth.register("sessionuser", "pass")
 
         # Create session
-        token = self.auth.create_session("sessionuser")
+        token, _expires_at = self.auth.create_session("sessionuser", 60)
         assert token is not None
 
         # Validate

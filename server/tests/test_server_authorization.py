@@ -41,6 +41,9 @@ class DummyAuth:
     def get_user(self, username):
         return self.user_record
 
+    def refresh_session(self, refresh_token, access_ttl_seconds, refresh_ttl_seconds):
+        return None
+
 
 @pytest.fixture
 def server(tmp_path):
@@ -282,6 +285,69 @@ async def test_registration_rate_limit_by_ip(server):
     assert "Too many registration attempts" in client.sent[-1]["text"]
 
 
+@pytest.mark.asyncio
+async def test_refresh_session_success(server):
+    record = SimpleNamespace(
+        username="alice",
+        locale="en",
+        uuid="uuid-3",
+        trust_level=TrustLevel.USER,
+        approved=True,
+        preferences_json="{}",
+    )
+
+    class RefreshAuth(DummyAuth):
+        def refresh_session(self, refresh_token, access_ttl_seconds, refresh_ttl_seconds):
+            return ("alice", "access-token", 999999, "refresh-token", 999999)
+
+    server._auth = RefreshAuth(user_record=record)
+    server._db = SimpleNamespace(get_user_count=lambda: 1)
+    server._tables = SimpleNamespace(find_user_table=lambda username: None)
+
+    sent_game_list = []
+
+    async def fake_send_game_list(client):
+        sent_game_list.append(client.username)
+
+    server._send_game_list = fake_send_game_list
+
+    client = DummyClient()
+    await server._handle_refresh_session(client, {"refresh_token": "refresh-token", "username": "alice"})
+
+    assert client.authenticated is True
+    assert client.username == "alice"
+    assert any(p.get("type") == "refresh_session_success" for p in client.sent)
+    assert sent_game_list == ["alice"]
+
+
+@pytest.mark.asyncio
+async def test_refresh_session_failure_disconnects(server):
+    class RefreshAuth(DummyAuth):
+        def refresh_session(self, refresh_token, access_ttl_seconds, refresh_ttl_seconds):
+            return None
+
+    server._auth = RefreshAuth()
+    client = DummyClient()
+
+    await server._handle_refresh_session(client, {"refresh_token": "refresh-token", "username": "alice"})
+
+    assert any(p.get("type") == "refresh_session_failure" for p in client.sent)
+    assert any(p.get("type") == "disconnect" for p in client.sent)
+
+
+@pytest.mark.asyncio
+async def test_refresh_session_rate_limited(server):
+    server._auth = DummyAuth()
+    server._refresh_ip_limit = 1
+    client = DummyClient()
+
+    await server._handle_refresh_session(client, {"refresh_token": "refresh-token", "username": "alice"})
+    client.sent.clear()
+    await server._handle_refresh_session(client, {"refresh_token": "refresh-token", "username": "alice"})
+
+    assert any(p.get("type") == "disconnect" for p in client.sent)
+
+
 def test_auth_limits_loaded_from_config(tmp_path):
     config_path = tmp_path / "config.toml"
     config_path.write_text(
@@ -291,6 +357,10 @@ username_min_length = 5
 username_max_length = 12
 password_min_length = 10
 password_max_length = 42
+refresh_token_ttl_seconds = 7200
+[auth.rate_limits]
+refresh_per_minute = 12
+refresh_window_seconds = 90
 [network]
 max_message_bytes = 2048
 """
@@ -302,6 +372,9 @@ max_message_bytes = 2048
     assert srv._password_min_length == 10
     assert srv._password_max_length == 42
     assert srv._ws_max_message_size == 2048
+    assert srv._refresh_token_ttl_seconds == 7200
+    assert srv._refresh_ip_limit == 12
+    assert srv._refresh_ip_window == 90
 
 
 def test_network_max_size_defaults(tmp_path):

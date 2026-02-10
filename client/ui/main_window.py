@@ -1188,13 +1188,15 @@ class MainWindow(wx.Frame):
         """Auto-connect to server using login credentials."""
         username = self.credentials.get("username", "Guest")
         password = self.credentials.get("password", "")
+        refresh_token = self.credentials.get("refresh_token", "")
+        refresh_expires_at = self.credentials.get("refresh_expires_at")
         server_url = self.credentials.get("server_url", "ws://localhost:8000")
 
         # Play connection loop sound
         self.sound_manager.music("connectloop.ogg")
 
         self.add_history(f"Connecting to {server_url}...", "activity")
-        if self.network.connect(server_url, username, password):
+        if self.network.connect(server_url, username, password, refresh_token, refresh_expires_at):
             self.add_history(f"Connecting as {username}...", "activity")
 
             # Set a timeout to detect if connection never succeeds
@@ -1338,7 +1340,9 @@ class MainWindow(wx.Frame):
         )
         self.network.disconnect()
 
-        if self.network.connect(server_url, username, password):
+        refresh_token = self.credentials.get("refresh_token", "")
+        refresh_expires_at = self.credentials.get("refresh_expires_at")
+        if self.network.connect(server_url, username, password, refresh_token, refresh_expires_at):
             # Wait 3 seconds then check again
             wx.CallLater(
                 3000, lambda: self._do_reconnect(server_url, username, password)
@@ -1420,10 +1424,14 @@ class MainWindow(wx.Frame):
             server_url = new_credentials.get("server_url")
             username = new_credentials.get("username")
             password = new_credentials.get("password", "")
+            refresh_token = new_credentials.get("refresh_token", "")
+            refresh_expires_at = new_credentials.get("refresh_expires_at")
 
             self.add_history(f"Connecting to {server_url} as {username}...", "activity")
             self.sound_manager.music("connectloop.ogg")
-            if self.network.connect(server_url, username, password):
+            if self.network.connect(
+                server_url, username, password, refresh_token, refresh_expires_at
+            ):
                 # Set connection timeout
                 self.connection_timeout_timer = wx.CallLater(15000, self._check_connection_timeout)
             else:
@@ -1442,6 +1450,8 @@ class MainWindow(wx.Frame):
         version = packet.get("version", "unknown")
         username = packet.get("username") or self.credentials.get("username", "Guest")
         server_url = self.credentials.get("server_url", "")
+        refresh_token = packet.get("refresh_token")
+        refresh_expires_at = packet.get("refresh_expires_at")
 
         # Cancel any pending timeout timer
         if self.connection_timeout_timer:
@@ -1462,6 +1472,18 @@ class MainWindow(wx.Frame):
                 f"Connected as {username} (server {version})",
                 "activity",
             )
+
+        if refresh_token and self.config_manager and self.server_id:
+            account_id = self.credentials.get("account_id")
+            if account_id:
+                self.config_manager.update_account(
+                    self.server_id,
+                    account_id,
+                    refresh_token=refresh_token,
+                    refresh_expires_at=refresh_expires_at,
+                )
+                self.credentials["refresh_token"] = refresh_token
+                self.credentials["refresh_expires_at"] = refresh_expires_at
 
     def on_open_server_options(self, packet):
         """Handle open server options packet from server.

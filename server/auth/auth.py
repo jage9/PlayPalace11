@@ -2,6 +2,7 @@
 
 import hashlib
 import secrets
+import time
 from enum import Enum, auto
 from typing import TYPE_CHECKING
 
@@ -32,7 +33,7 @@ class AuthManager:
     def __init__(self, database: "Database"):
         """Initialize the auth manager with a database backend."""
         self._db = database
-        self._sessions: dict[str, str] = {}  # session_token -> username
+        self._sessions: dict[str, tuple[str, int]] = {}  # token -> (username, expires_at)
         self._hasher = PasswordHasher()
 
     def hash_password(self, password: str) -> str:
@@ -129,29 +130,27 @@ class AuthManager:
         """Get a user record."""
         return self._db.get_user(username)
 
-    def create_session(self, username: str) -> str:
-        """Create a session token for a user.
-
-        Args:
-            username: Username to create a session for.
+    def create_session(self, username: str, ttl_seconds: int) -> tuple[str, int]:
+        """Create an access session token for a user.
 
         Returns:
-            Session token string.
+            (token, expires_at_epoch_seconds)
         """
         token = secrets.token_hex(32)
-        self._sessions[token] = username
-        return token
+        expires_at = int(time.time()) + ttl_seconds
+        self._sessions[token] = (username, expires_at)
+        return token, expires_at
 
     def validate_session(self, token: str) -> str | None:
-        """Validate a session token.
-
-        Args:
-            token: Session token string.
-
-        Returns:
-            Username if valid, otherwise None.
-        """
-        return self._sessions.get(token)
+        """Validate an access session token."""
+        entry = self._sessions.get(token)
+        if not entry:
+            return None
+        username, expires_at = entry
+        if expires_at <= int(time.time()):
+            self._sessions.pop(token, None)
+            return None
+        return username
 
     def invalidate_session(self, token: str) -> None:
         """Invalidate a session token.
@@ -167,6 +166,45 @@ class AuthManager:
         Args:
             username: Username whose sessions should be invalidated.
         """
-        to_remove = [t for t, u in self._sessions.items() if u == username]
+        to_remove = [t for t, (u, _expires_at) in self._sessions.items() if u == username]
         for token in to_remove:
             del self._sessions[token]
+
+    def create_refresh_token(self, username: str, ttl_seconds: int) -> tuple[str, int]:
+        """Create and persist a refresh token."""
+        token = secrets.token_hex(32)
+        now = int(time.time())
+        expires_at = now + ttl_seconds
+        self._db.store_refresh_token(username, token, expires_at, now)
+        return token, expires_at
+
+    def refresh_session(
+        self, refresh_token: str, access_ttl_seconds: int, refresh_ttl_seconds: int
+    ) -> tuple[str, str, int, str, int] | None:
+        """Rotate refresh token and issue a new access token.
+
+        Returns:
+            (username, access_token, access_expires_at, refresh_token, refresh_expires_at)
+        """
+        record = self._db.get_refresh_token(refresh_token)
+        if not record:
+            return None
+
+        username = record["username"]
+        if not self._db.user_exists(username):
+            return None
+
+        now = int(time.time())
+        if record["revoked_at"] is not None or record["replaced_by"]:
+            return None
+        if record["expires_at"] <= now:
+            self._db.revoke_refresh_token(refresh_token, now)
+            return None
+
+        new_refresh_token = secrets.token_hex(32)
+        new_refresh_expires = now + refresh_ttl_seconds
+        self._db.store_refresh_token(username, new_refresh_token, new_refresh_expires, now)
+        self._db.revoke_refresh_token(refresh_token, now, replaced_by=new_refresh_token)
+
+        access_token, access_expires = self.create_session(username, access_ttl_seconds)
+        return username, access_token, access_expires, new_refresh_token, new_refresh_expires

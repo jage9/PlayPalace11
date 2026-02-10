@@ -54,8 +54,16 @@
             "title": "Minor"
           },
           "password": {
-            "title": "Password",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Password"
           },
           "patch": {
             "anyOf": [
@@ -69,6 +77,18 @@
             "default": null,
             "title": "Patch"
           },
+          "session_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Token"
+          },
           "type": {
             "const": "authorize",
             "default": "authorize",
@@ -81,8 +101,7 @@
           }
         },
         "required": [
-          "username",
-          "password"
+          "username"
         ],
         "title": "AuthorizePacket",
         "type": "object"
@@ -454,6 +473,38 @@
         "title": "PlaylistDurationResponsePacket",
         "type": "object"
       },
+      "RefreshSessionPacket": {
+        "additionalProperties": false,
+        "properties": {
+          "refresh_token": {
+            "title": "Refresh Token",
+            "type": "string"
+          },
+          "type": {
+            "const": "refresh_session",
+            "default": "refresh_session",
+            "title": "Type",
+            "type": "string"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Username"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshSessionPacket",
+        "type": "object"
+      },
       "RegisterPacket": {
         "additionalProperties": false,
         "properties": {
@@ -616,6 +667,7 @@
         "menu": "#/$defs/MenuSelectionPacket",
         "ping": "#/$defs/PingPacket",
         "playlist_duration_response": "#/$defs/PlaylistDurationResponsePacket",
+        "refresh_session": "#/$defs/RefreshSessionPacket",
         "register": "#/$defs/RegisterPacket",
         "remove_table_pw_cmd": "#/$defs/RemoveTablePasswordCommandPacket",
         "set_table_pw_cmd": "#/$defs/SetTablePasswordCommandPacket",
@@ -630,6 +682,9 @@
       },
       {
         "$ref": "#/$defs/RegisterPacket"
+      },
+      {
+        "$ref": "#/$defs/RefreshSessionPacket"
       },
       {
         "$ref": "#/$defs/MenuSelectionPacket"
@@ -749,6 +804,54 @@
       "AuthorizeSuccessPacket": {
         "additionalProperties": false,
         "properties": {
+          "refresh_expires_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Refresh Expires At"
+          },
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Refresh Token"
+          },
+          "session_expires_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Expires At"
+          },
+          "session_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Token"
+          },
           "type": {
             "const": "authorize_success",
             "default": "authorize_success",
@@ -1324,6 +1427,78 @@
         "title": "PongPacket",
         "type": "object"
       },
+      "RefreshSessionFailurePacket": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "refresh_session_failure",
+            "default": "refresh_session_failure",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "RefreshSessionFailurePacket",
+        "type": "object"
+      },
+      "RefreshSessionSuccessPacket": {
+        "additionalProperties": false,
+        "properties": {
+          "refresh_expires_at": {
+            "title": "Refresh Expires At",
+            "type": "integer"
+          },
+          "refresh_token": {
+            "title": "Refresh Token",
+            "type": "string"
+          },
+          "session_expires_at": {
+            "title": "Session Expires At",
+            "type": "integer"
+          },
+          "session_token": {
+            "title": "Session Token",
+            "type": "string"
+          },
+          "type": {
+            "const": "refresh_session_success",
+            "default": "refresh_session_success",
+            "title": "Type",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Version"
+          }
+        },
+        "required": [
+          "username",
+          "session_token",
+          "session_expires_at",
+          "refresh_token",
+          "refresh_expires_at"
+        ],
+        "title": "RefreshSessionSuccessPacket",
+        "type": "object"
+      },
       "RemovePlaylistPacket": {
         "additionalProperties": false,
         "properties": {
@@ -1608,6 +1783,8 @@
         "play_music": "#/$defs/PlayMusicPacket",
         "play_sound": "#/$defs/PlaySoundPacket",
         "pong": "#/$defs/PongPacket",
+        "refresh_session_failure": "#/$defs/RefreshSessionFailurePacket",
+        "refresh_session_success": "#/$defs/RefreshSessionSuccessPacket",
         "remove_playlist": "#/$defs/RemovePlaylistPacket",
         "request_input": "#/$defs/RequestInputPacket",
         "server_status": "#/$defs/ServerStatusPacket",
@@ -1623,6 +1800,12 @@
     "oneOf": [
       {
         "$ref": "#/$defs/AuthorizeSuccessPacket"
+      },
+      {
+        "$ref": "#/$defs/RefreshSessionSuccessPacket"
+      },
+      {
+        "$ref": "#/$defs/RefreshSessionFailurePacket"
       },
       {
         "$ref": "#/$defs/SpeakPacket"

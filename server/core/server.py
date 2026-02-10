@@ -51,8 +51,12 @@ DEFAULT_WS_MAX_MESSAGE_BYTES = 1_048_576  # 1 MB
 DEFAULT_LOGIN_ATTEMPTS_PER_MINUTE = 5
 DEFAULT_LOGIN_FAILURES_PER_MINUTE = 3
 DEFAULT_REGISTRATION_ATTEMPTS_PER_MINUTE = 2
+DEFAULT_REFRESH_ATTEMPTS_PER_MINUTE = 10
 LOGIN_RATE_WINDOW_SECONDS = 60
 REGISTRATION_RATE_WINDOW_SECONDS = 60
+REFRESH_RATE_WINDOW_SECONDS = 60
+DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 60 * 60
+DEFAULT_REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60
 
 STARTUP_GATE_ID = "startup"
 LOCALIZATION_GATE_ID = "localization"
@@ -152,12 +156,17 @@ class Server(AdministrationMixin):
         self._login_ip_limit = DEFAULT_LOGIN_ATTEMPTS_PER_MINUTE
         self._login_user_limit = DEFAULT_LOGIN_FAILURES_PER_MINUTE
         self._registration_ip_limit = DEFAULT_REGISTRATION_ATTEMPTS_PER_MINUTE
+        self._refresh_ip_limit = DEFAULT_REFRESH_ATTEMPTS_PER_MINUTE
+        self._access_token_ttl_seconds = DEFAULT_ACCESS_TOKEN_TTL_SECONDS
+        self._refresh_token_ttl_seconds = DEFAULT_REFRESH_TOKEN_TTL_SECONDS
         self._login_ip_window = LOGIN_RATE_WINDOW_SECONDS
         self._login_user_window = LOGIN_RATE_WINDOW_SECONDS
         self._registration_ip_window = REGISTRATION_RATE_WINDOW_SECONDS
+        self._refresh_ip_window = REFRESH_RATE_WINDOW_SECONDS
         self._login_attempts_ip: dict[str, deque[float]] = {}
         self._login_attempts_user: dict[str, deque[float]] = {}
         self._registration_attempts_ip: dict[str, deque[float]] = {}
+        self._refresh_attempts_ip: dict[str, deque[float]] = {}
         self._lifecycle = ServerLifecycleState()
         self._lifecycle.add_gate(STARTUP_GATE_ID, message="Server is starting up.")
         self._localization_gate_registered = False
@@ -325,6 +334,9 @@ class Server(AdministrationMixin):
             self._password_max_length = _read_limit(
                 auth_cfg, "password_max_length", self._password_max_length, self._password_min_length
             )
+            self._refresh_token_ttl_seconds = _read_limit(
+                auth_cfg, "refresh_token_ttl_seconds", self._refresh_token_ttl_seconds, minimum=60
+            )
 
             # Ensure ranges are sane
             if self._username_min_length > self._username_max_length:
@@ -349,6 +361,9 @@ class Server(AdministrationMixin):
             self._registration_ip_limit = _read_limit(
                 rate_cfg, "registration_per_minute", self._registration_ip_limit, minimum=0
             )
+            self._refresh_ip_limit = _read_limit(
+                rate_cfg, "refresh_per_minute", self._refresh_ip_limit, minimum=0
+            )
             self._login_ip_window = _read_limit(
                 rate_cfg, "login_window_seconds", self._login_ip_window, minimum=1
             )
@@ -357,6 +372,9 @@ class Server(AdministrationMixin):
             )
             self._registration_ip_window = _read_limit(
                 rate_cfg, "registration_window_seconds", self._registration_ip_window, minimum=1
+            )
+            self._refresh_ip_window = _read_limit(
+                rate_cfg, "refresh_window_seconds", self._refresh_ip_window, minimum=1
             )
 
 
@@ -495,6 +513,19 @@ class Server(AdministrationMixin):
             now,
         ):
             return "Too many registration attempts from this address. Please wait and try again."
+        return None
+
+    def _check_refresh_rate_limit(self, client_ip: str) -> str | None:
+        """Check refresh token rate limits and return an error message if blocked."""
+        now = time.monotonic()
+        if not self._allow_attempt(
+            self._refresh_attempts_ip,
+            client_ip,
+            self._refresh_ip_limit,
+            self._refresh_ip_window,
+            now,
+        ):
+            return "Too many refresh attempts from this address. Please wait and try again."
         return None
 
     def _warn_if_no_users(self) -> None:
@@ -803,6 +834,8 @@ class Server(AdministrationMixin):
             await self._handle_authorize(client, packet)
         elif packet_type == "register":
             await self._handle_register(client, packet)
+        elif packet_type == "refresh_session":
+            await self._handle_refresh_session(client, packet)
         elif not client.authenticated:
             # Ignore non-auth packets from unauthenticated clients
             return
@@ -830,89 +863,27 @@ class Server(AdministrationMixin):
             elif packet_type == "list_online_with_games":
                 await self._handle_list_online_with_games(client)
 
-    async def _handle_authorize(self, client: ClientConnection, packet: dict) -> None:
-        """Authorize a client and attach a NetworkUser if successful.
-
-        Args:
-            client: Client connection.
-            packet: Incoming authorize payload.
-        """
-        username_raw = packet.get("username", "")
-        password_raw = packet.get("password", "")
-        locale = packet.get("locale") or self._default_locale
-
-        username, password, error = self._validate_credentials(username_raw, password_raw)
-        if error:
-            await self._send_credential_error(client, error)
-            return
-
-        client_ip = self._get_client_ip(client)
-        throttle_message = self._check_login_rate_limit(client_ip, username)
-        if throttle_message:
-            await self._send_credential_error(client, throttle_message)
-            return
-
-        # Try to authenticate or register
-        auth_result = self._auth.authenticate(username, password)
-        if auth_result != AuthResult.SUCCESS:
-            if auth_result == AuthResult.WRONG_PASSWORD:
-                self._record_login_failure(username)
-                # Username exists but password is wrong - show error dialog
-                error_message = Localization.get(locale, "incorrect-password")
-                await client.send({"type": "play_sound", "name": "accounterror.ogg"})
-                await client.send({"type": "speak", "text": error_message, "buffer": "activity"})
-                await client.send({
-                    "type": "disconnect",
-                    "reconnect": False,
-                    "show_message": True,
-                    "return_to_login": True,
-                    "message": error_message,
-                })
-                return
-
-            # User not found - check if this will be a new user that needs approval
-            needs_approval = self._db.get_user_count() > 0
-
-            # Try to register
-            if not self._auth.register(username, password, locale=locale):
-                self._record_login_failure(username)
-                # Registration failed (shouldn't happen if user not found, but handle anyway)
-                error_message = Localization.get(locale, "incorrect-username")
-                await client.send({"type": "play_sound", "name": "accounterror.ogg"})
-                await client.send({"type": "speak", "text": error_message, "buffer": "activity"})
-                await client.send({
-                    "type": "disconnect",
-                    "reconnect": False,
-                    "show_message": True,
-                    "return_to_login": True,
-                    "message": error_message,
-                })
-                return
-
-            # New user registered - notify admins if approval is needed
-            if needs_approval:
-                self._notify_admins("account-request", "accountrequest.ogg")
-
-        # Check if user is already logged in
-        if username in self._users:
-            error_message = Localization.get(locale, "already-logged-in")
-            await client.send({"type": "play_sound", "name": "accounterror.ogg"})
-            await client.send({"type": "speak", "text": error_message, "buffer": "activity"})
-            await client.send({
-                "type": "disconnect",
-                "reconnect": False,
-                "show_message": True,
-                "return_to_login": True,
-                "message": error_message,
-            })
-            return
-
+    async def _finalize_login(
+        self,
+        client: ClientConnection,
+        username: str,
+        *,
+        session_token: str,
+        session_expires_at: int,
+        refresh_token: str,
+        refresh_expires_at: int,
+        success_type: str = "authorize_success",
+    ) -> None:
+        """Attach user state and send login success packets."""
         # Authentication successful
         client.username = username
         client.authenticated = True
 
         # Create network user with preferences and persistent UUID
         user_record = self._auth.get_user(username)
+        if not user_record:
+            await self._send_credential_error(client, "Account not found.")
+            return
         locale = user_record.locale if user_record else "en"
         user_uuid = user_record.uuid if user_record else None
         trust_level = user_record.trust_level if user_record else TrustLevel.USER
@@ -931,13 +902,18 @@ class Server(AdministrationMixin):
         self._users[username] = user
 
         # Send success response
-        await client.send(
-            {
-                "type": "authorize_success",
-                "username": username,
-                "version": VERSION,
-            }
-        )
+        payload = {
+            "username": username,
+            "session_token": session_token,
+            "session_expires_at": session_expires_at,
+            "refresh_token": refresh_token,
+            "refresh_expires_at": refresh_expires_at,
+        }
+        if success_type == "authorize_success":
+            payload.update({"type": "authorize_success", "version": VERSION})
+        else:
+            payload.update({"type": "refresh_session_success", "version": VERSION})
+        await client.send(payload)
         print(f"Client authorized: {username}@{client.address}")
 
         # Send game list
@@ -1007,6 +983,114 @@ class Server(AdministrationMixin):
             # Show main menu
             self._show_main_menu(user)
 
+    async def _handle_authorize(self, client: ClientConnection, packet: dict) -> None:
+        """Authorize a client and attach a NetworkUser if successful.
+
+        Args:
+            client: Client connection.
+            packet: Incoming authorize payload.
+        """
+        username_raw = packet.get("username", "")
+        password_raw = packet.get("password", "")
+        session_token = packet.get("session_token")
+        locale = packet.get("locale") or self._default_locale
+
+        if session_token:
+            token_username = self._auth.validate_session(session_token)
+            if not token_username:
+                await self._send_credential_error(
+                    client, "Session expired. Please log in again."
+                )
+                return
+            if username_raw and token_username.lower() != username_raw.lower():
+                await self._send_credential_error(
+                    client, "Session token does not match username."
+                )
+                return
+            username = token_username
+        else:
+            username, password, error = self._validate_credentials(username_raw, password_raw)
+            if error:
+                await self._send_credential_error(client, error)
+                return
+
+            client_ip = self._get_client_ip(client)
+            throttle_message = self._check_login_rate_limit(client_ip, username)
+            if throttle_message:
+                await self._send_credential_error(client, throttle_message)
+                return
+
+            # Try to authenticate or register
+            auth_result = self._auth.authenticate(username, password)
+            if auth_result != AuthResult.SUCCESS:
+                if auth_result == AuthResult.WRONG_PASSWORD:
+                    self._record_login_failure(username)
+                    # Username exists but password is wrong - show error dialog
+                    error_message = Localization.get(locale, "incorrect-password")
+                    await client.send({"type": "play_sound", "name": "accounterror.ogg"})
+                    await client.send({"type": "speak", "text": error_message, "buffer": "activity"})
+                    await client.send({
+                        "type": "disconnect",
+                        "reconnect": False,
+                        "show_message": True,
+                        "return_to_login": True,
+                        "message": error_message,
+                    })
+                    return
+
+                # User not found - check if this will be a new user that needs approval
+                needs_approval = self._db.get_user_count() > 0
+
+                # Try to register
+                if not self._auth.register(username, password, locale=locale):
+                    self._record_login_failure(username)
+                    # Registration failed (shouldn't happen if user not found, but handle anyway)
+                    error_message = Localization.get(locale, "incorrect-username")
+                    await client.send({"type": "play_sound", "name": "accounterror.ogg"})
+                    await client.send({"type": "speak", "text": error_message, "buffer": "activity"})
+                    await client.send({
+                        "type": "disconnect",
+                        "reconnect": False,
+                        "show_message": True,
+                        "return_to_login": True,
+                        "message": error_message,
+                    })
+                    return
+
+                # New user registered - notify admins if approval is needed
+                if needs_approval:
+                    self._notify_admins("account-request", "accountrequest.ogg")
+
+        # Check if user is already logged in
+        if username in self._users:
+            error_message = Localization.get(locale, "already-logged-in")
+            await client.send({"type": "play_sound", "name": "accounterror.ogg"})
+            await client.send({"type": "speak", "text": error_message, "buffer": "activity"})
+            await client.send({
+                "type": "disconnect",
+                "reconnect": False,
+                "show_message": True,
+                "return_to_login": True,
+                "message": error_message,
+            })
+            return
+
+        access_token, access_expires = self._auth.create_session(
+            username, self._access_token_ttl_seconds
+        )
+        refresh_token, refresh_expires = self._auth.create_refresh_token(
+            username, self._refresh_token_ttl_seconds
+        )
+
+        await self._finalize_login(
+            client,
+            username,
+            session_token=access_token,
+            session_expires_at=access_expires,
+            refresh_token=refresh_token,
+            refresh_expires_at=refresh_expires,
+            success_type="authorize_success",
+        )
     async def _handle_register(self, client: ClientConnection, packet: dict) -> None:
         """Register a new user from the registration dialog.
 
@@ -1049,6 +1133,71 @@ class Server(AdministrationMixin):
                 "text": "Username already taken. Please choose a different username.",
                 "buffer": "activity",
             })
+
+    async def _handle_refresh_session(self, client: ClientConnection, packet: dict) -> None:
+        """Refresh an access session using a refresh token."""
+        refresh_token = packet.get("refresh_token", "")
+        username_hint = packet.get("username", "")
+        client_ip = self._get_client_ip(client)
+        throttle_message = self._check_refresh_rate_limit(client_ip)
+        if throttle_message:
+            await self._send_credential_error(client, throttle_message)
+            return
+
+        result = self._auth.refresh_session(
+            refresh_token, self._access_token_ttl_seconds, self._refresh_token_ttl_seconds
+        )
+        if not result:
+            await client.send({
+                "type": "refresh_session_failure",
+                "message": "Refresh token expired. Please log in again.",
+            })
+            await client.send({
+                "type": "disconnect",
+                "reconnect": False,
+                "show_message": True,
+                "return_to_login": True,
+                "message": "Session expired. Please log in again.",
+            })
+            return
+
+        username, access_token, access_expires, new_refresh_token, refresh_expires = result
+        if username_hint and username_hint.lower() != username.lower():
+            await client.send({
+                "type": "refresh_session_failure",
+                "message": "Refresh token does not match username.",
+            })
+            await client.send({
+                "type": "disconnect",
+                "reconnect": False,
+                "show_message": True,
+                "return_to_login": True,
+                "message": "Session expired. Please log in again.",
+            })
+            return
+
+        if username in self._users:
+            error_message = Localization.get(self._default_locale, "already-logged-in")
+            await client.send({"type": "play_sound", "name": "accounterror.ogg"})
+            await client.send({"type": "speak", "text": error_message, "buffer": "activity"})
+            await client.send({
+                "type": "disconnect",
+                "reconnect": False,
+                "show_message": True,
+                "return_to_login": True,
+                "message": error_message,
+            })
+            return
+
+        await self._finalize_login(
+            client,
+            username,
+            session_token=access_token,
+            session_expires_at=access_expires,
+            refresh_token=new_refresh_token,
+            refresh_expires_at=refresh_expires,
+            success_type="refresh_session_success",
+        )
 
     async def _send_game_list(self, client: ClientConnection) -> None:
         """Send the list of available games to the client."""

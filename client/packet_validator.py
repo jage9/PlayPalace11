@@ -45,6 +45,9 @@ class PacketValidator:
         if not self._available or not self._client_validator:
             return
         self._client_validator.validate(packet)
+        if packet.get("type") == "authorize":
+            if not (packet.get("password") or packet.get("session_token")):
+                raise ValidationError("authorize requires password or session_token")
 
     def validate_incoming(self, packet: dict[str, Any]) -> None:
         if not self._available or not self._server_validator:

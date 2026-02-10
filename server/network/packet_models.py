@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal, Union
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 # ---------------------------------------------------------------------------
 # Helper field types
@@ -41,11 +41,18 @@ MenuItem = Annotated[Union[str, MenuItemPayload], Field(union_mode="left_to_righ
 class AuthorizePacket(BasePacket):
     type: Literal["authorize"] = "authorize"
     username: str
-    password: str
+    password: str | None = None
+    session_token: str | None = None
     locale: str | None = None
     major: int | None = None
     minor: int | None = None
     patch: int | None = None
+
+    @model_validator(mode="after")
+    def _ensure_credentials(self) -> "AuthorizePacket":
+        if not (self.password or self.session_token):
+            raise ValueError("authorize requires password or session_token")
+        return self
 
 
 class RegisterPacket(BasePacket):
@@ -55,6 +62,12 @@ class RegisterPacket(BasePacket):
     email: str | None = None
     bio: str | None = None
     locale: str | None = None
+
+
+class RefreshSessionPacket(BasePacket):
+    type: Literal["refresh_session"] = "refresh_session"
+    refresh_token: str
+    username: str | None = None
 
 
 class MenuSelectionPacket(BasePacket):
@@ -159,6 +172,7 @@ ClientToServerPacket = Annotated[
     Union[
         AuthorizePacket,
         RegisterPacket,
+        RefreshSessionPacket,
         MenuSelectionPacket,
         KeybindPacket,
         EscapePacket,
@@ -192,6 +206,25 @@ class AuthorizeSuccessPacket(BasePacket):
     type: Literal["authorize_success"] = "authorize_success"
     username: str
     version: str
+    session_token: str | None = None
+    session_expires_at: int | None = None
+    refresh_token: str | None = None
+    refresh_expires_at: int | None = None
+
+
+class RefreshSessionSuccessPacket(BasePacket):
+    type: Literal["refresh_session_success"] = "refresh_session_success"
+    username: str
+    version: str | None = None
+    session_token: str
+    session_expires_at: int
+    refresh_token: str
+    refresh_expires_at: int
+
+
+class RefreshSessionFailurePacket(BasePacket):
+    type: Literal["refresh_session_failure"] = "refresh_session_failure"
+    message: str
 
 
 class SpeakPacket(BasePacket):
@@ -357,6 +390,8 @@ class OpenServerOptionsPacket(BasePacket):
 ServerToClientPacket = Annotated[
     Union[
         AuthorizeSuccessPacket,
+        RefreshSessionSuccessPacket,
+        RefreshSessionFailurePacket,
         SpeakPacket,
         PlaySoundPacket,
         PlayMusicPacket,

@@ -564,6 +564,8 @@ class ConfigManager:
         password: str,
         email: str = "",
         notes: str = "",
+        refresh_token: str = "",
+        refresh_expires_at: Optional[int] = None,
     ) -> Optional[str]:
         """Add a new account to a server.
 
@@ -581,7 +583,12 @@ class ConfigManager:
             return None
 
         account = UserAccount(
-            username=username, password=password, email=email, notes=notes
+            username=username,
+            password=password,
+            refresh_token=refresh_token,
+            refresh_expires_at=refresh_expires_at,
+            email=email,
+            notes=notes,
         )
         account_id = account.account_id
         if "accounts" not in self.identities["servers"][server_id]:
@@ -597,6 +604,8 @@ class ConfigManager:
         account_id: str,
         username: Optional[str] = None,
         password: Optional[str] = None,
+        refresh_token: Optional[str] = None,
+        refresh_expires_at: Optional[int] = None,
         email: Optional[str] = None,
         notes: Optional[str] = None,
     ):
@@ -618,6 +627,10 @@ class ConfigManager:
             account["username"] = username
         if password is not None:
             account["password"] = password
+        if refresh_token is not None:
+            account["refresh_token"] = refresh_token
+        if refresh_expires_at is not None:
+            account["refresh_expires_at"] = refresh_expires_at
         if email is not None:
             account["email"] = email
         if notes is not None:

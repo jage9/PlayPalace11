@@ -18,6 +18,21 @@ class DummyWebsocket:
         self.closed = True
 
 
+class DummyAsyncWebsocket(DummyWebsocket):
+    def __init__(self):
+        super().__init__()
+        self.sent = []
+
+    async def send(self, message):
+        self.sent.append(message)
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        raise websockets.exceptions.ConnectionClosed(1000, "closed")
+
+
 class DummyConfigManager:
     def __init__(self):
         self.set_calls = []
@@ -39,6 +54,7 @@ class DummyMainWindow:
 
 PACKET_TO_HANDLER = {
     "authorize_success": "on_authorize_success",
+    "refresh_session_success": "on_authorize_success",
     "speak": "on_server_speak",
     "play_sound": "on_server_play_sound",
     "play_music": "on_server_play_music",
@@ -334,3 +350,49 @@ def test_disconnect_without_thread(monkeypatch):
         manager.loop.close()
 
     assert manager.thread is None
+
+
+def test_connect_uses_refresh_when_access_expired(monkeypatch):
+    window = RecordingMainWindow()
+    nm = NetworkManager(main_window=window)
+    ws = DummyAsyncWebsocket()
+
+    async def fake_open_connection(_):
+        return ws
+
+    monkeypatch.setattr(nm, "_open_connection", fake_open_connection)
+
+    nm.session_token = "expired-token"
+    nm.session_expires_at = 1
+    nm.refresh_token = "refresh-token"
+    nm.refresh_expires_at = 9999999999
+
+    asyncio.run(nm._connect_and_listen("wss://example", "alice", "pw"))
+
+    assert ws.sent, "Expected refresh packet to be sent"
+    packet = json.loads(ws.sent[0])
+    assert packet["type"] == "refresh_session"
+    assert packet["refresh_token"] == "refresh-token"
+
+
+def test_connect_falls_back_to_password_when_refresh_expired(monkeypatch):
+    window = RecordingMainWindow()
+    nm = NetworkManager(main_window=window)
+    ws = DummyAsyncWebsocket()
+
+    async def fake_open_connection(_):
+        return ws
+
+    monkeypatch.setattr(nm, "_open_connection", fake_open_connection)
+
+    nm.session_token = "expired-token"
+    nm.session_expires_at = 1
+    nm.refresh_token = "refresh-token"
+    nm.refresh_expires_at = 1
+
+    asyncio.run(nm._connect_and_listen("wss://example", "alice", "pw"))
+
+    assert ws.sent, "Expected authorize packet to be sent"
+    packet = json.loads(ws.sent[0])
+    assert packet["type"] == "authorize"
+    assert packet["password"] == "pw"

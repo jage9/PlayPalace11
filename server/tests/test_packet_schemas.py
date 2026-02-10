@@ -19,7 +19,9 @@ from server.network.packet_models import (
 
 CLIENT_TO_SERVER_SAMPLES = [
     {"type": "authorize", "username": "user", "password": "pw"},
+    {"type": "authorize", "username": "user", "session_token": "token"},
     {"type": "register", "username": "user", "password": "pw", "email": "e@example.com"},
+    {"type": "refresh_session", "refresh_token": "rtok", "username": "user"},
     {"type": "menu", "menu_id": "main", "selection": 1},
     {"type": "keybind", "key": "f1"},
     {"type": "escape", "menu_id": "main"},
@@ -48,7 +50,25 @@ CLIENT_TO_SERVER_SAMPLES = [
 
 
 SERVER_TO_CLIENT_SAMPLES = [
-    {"type": "authorize_success", "username": "user", "version": "11.0.0"},
+    {
+        "type": "authorize_success",
+        "username": "user",
+        "version": "11.0.0",
+        "session_token": "atok",
+        "session_expires_at": 999999,
+        "refresh_token": "rtok",
+        "refresh_expires_at": 999999,
+    },
+    {
+        "type": "refresh_session_success",
+        "username": "user",
+        "version": "11.0.0",
+        "session_token": "atok",
+        "session_expires_at": 999999,
+        "refresh_token": "rtok",
+        "refresh_expires_at": 999999,
+    },
+    {"type": "refresh_session_failure", "message": "Session expired"},
     {"type": "speak", "text": "hello", "buffer": "activity"},
     {"type": "play_sound", "name": "ding", "volume": 80, "pan": 0, "pitch": 90},
     {"type": "play_music", "name": "theme", "looping": False},

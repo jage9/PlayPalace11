@@ -6,6 +6,7 @@ import threading
 import hashlib
 import os
 import tempfile
+import time
 from urllib.parse import urlparse
 
 import wx
@@ -43,6 +44,10 @@ class NetworkManager:
         self.should_stop = False
         self.server_url = None
         self.server_id = None
+        self.session_token = None
+        self.session_expires_at = None
+        self.refresh_token = None
+        self.refresh_expires_at = None
         self._validation_errors = 0
 
     def _validate_outgoing_packet(self, packet: dict) -> bool:
@@ -73,7 +78,7 @@ class NetworkManager:
             )
             return False
 
-    def connect(self, server_url, username, password):
+    def connect(self, server_url, username, password, refresh_token=None, refresh_expires_at=None):
         """
         Connect to server.
 
@@ -81,6 +86,8 @@ class NetworkManager:
             server_url: WebSocket URL (e.g., "ws://localhost:8000")
             username: Username for authorization
             password: Password for authorization
+            refresh_token: Refresh token for session renewal
+            refresh_expires_at: Refresh token expiration (epoch seconds)
         """
         try:
             # Wait for old thread to finish if it exists
@@ -89,10 +96,19 @@ class NetworkManager:
                 # Wait up to 2 seconds for thread to finish
                 self.thread.join(timeout=2.0)
 
+            if self.server_url and (self.server_url != server_url or self.username != username):
+                self.session_token = None
+                self.session_expires_at = None
+                self.refresh_token = None
+                self.refresh_expires_at = None
+
             self.username = username
             self.should_stop = False
             self.server_url = server_url
             self.server_id = getattr(self.main_window, "server_id", None)
+            if refresh_token:
+                self.refresh_token = refresh_token
+                self.refresh_expires_at = refresh_expires_at
 
             # Start async thread
             self.thread = threading.Thread(
@@ -135,7 +151,14 @@ class NetworkManager:
             self.ws = websocket
             self.connected = True
 
-            await self._send_authorize(websocket, username, password)
+            if self._session_valid():
+                await self._send_authorize(websocket, username, password)
+            elif self._refresh_valid():
+                await self._send_refresh_session(websocket, username)
+            else:
+                self.session_token = None
+                self.session_expires_at = None
+                await self._send_authorize(websocket, username, password)
 
             while not self.should_stop:
                 try:
@@ -172,14 +195,42 @@ class NetworkManager:
         packet = {
             "type": "authorize",
             "username": username,
-            "password": password,
             "major": 11,
             "minor": 0,
             "patch": 0,
         }
+        if self.session_token and self._session_valid():
+            packet["session_token"] = self.session_token
+        else:
+            packet["password"] = password
         if not self._validate_outgoing_packet(packet):
             raise RuntimeError("Client refused to send invalid authorize packet.")
         await websocket.send(json.dumps(packet))
+
+    async def _send_refresh_session(self, websocket, username):
+        """Send a refresh token packet after connecting."""
+        packet = {
+            "type": "refresh_session",
+            "refresh_token": self.refresh_token,
+            "username": username,
+        }
+        if not self._validate_outgoing_packet(packet):
+            raise RuntimeError("Client refused to send invalid refresh packet.")
+        await websocket.send(json.dumps(packet))
+
+    def _session_valid(self) -> bool:
+        if not self.session_token:
+            return False
+        if not self.session_expires_at:
+            return True
+        return time.time() < (self.session_expires_at - 5)
+
+    def _refresh_valid(self) -> bool:
+        if not self.refresh_token:
+            return False
+        if not self.refresh_expires_at:
+            return True
+        return time.time() < (self.refresh_expires_at - 5)
 
     async def _open_connection(self, server_url: str):
         """Open a websocket connection, handling TLS verification."""
@@ -476,7 +527,32 @@ class NetworkManager:
         packet_type = packet.get("type")
 
         if packet_type == "authorize_success":
+            session_token = packet.get("session_token")
+            if session_token:
+                self.session_token = session_token
+            session_expires_at = packet.get("session_expires_at")
+            if session_expires_at:
+                self.session_expires_at = session_expires_at
+            refresh_token = packet.get("refresh_token")
+            if refresh_token:
+                self.refresh_token = refresh_token
+            refresh_expires_at = packet.get("refresh_expires_at")
+            if refresh_expires_at:
+                self.refresh_expires_at = refresh_expires_at
             self.main_window.on_authorize_success(packet)
+        elif packet_type == "refresh_session_success":
+            self.session_token = packet.get("session_token")
+            self.session_expires_at = packet.get("session_expires_at")
+            self.refresh_token = packet.get("refresh_token")
+            self.refresh_expires_at = packet.get("refresh_expires_at")
+            self.main_window.on_authorize_success(packet)
+        elif packet_type == "refresh_session_failure":
+            self.session_token = None
+            self.session_expires_at = None
+            self.refresh_token = None
+            self.refresh_expires_at = None
+            message = packet.get("message", "Session expired. Please log in again.")
+            wx.CallAfter(self.main_window.add_history, message, "activity")
         elif packet_type == "speak":
             self.main_window.on_server_speak(packet)
         elif packet_type == "play_sound":

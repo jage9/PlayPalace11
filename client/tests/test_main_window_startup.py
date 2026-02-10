@@ -34,8 +34,8 @@ class DummyNetworkManager:
         self.disconnect_calls = []
         self.connect_calls = 0
 
-    def connect(self, url, username, password):
-        self.calls.append((url, username, password))
+    def connect(self, url, username, password, refresh_token=None, refresh_expires_at=None):
+        self.calls.append((url, username, password, refresh_token, refresh_expires_at))
         self.connect_calls += 1
         return self.should_connect
 
@@ -104,7 +104,7 @@ def test_auto_connect_uses_credentials(monkeypatch, stub_call_later):
 
     assert window.sound_manager.music_calls == ["connectloop.ogg"]
     assert window.add_history_calls[0][0].startswith("Connecting to wss://demo.example:443")
-    assert ("wss://demo.example:443", "alice", "secret") in window.network.calls
+    assert ("wss://demo.example:443", "alice", "secret", None, None) in window.network.calls
     assert stub_call_later, "CallLater should schedule timeout"
     assert stub_call_later[0].delay == 10000
 

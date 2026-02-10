@@ -178,6 +178,27 @@ class Database:
             )
         """)
 
+        # Refresh tokens for session renewal
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS refresh_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                expires_at INTEGER NOT NULL,
+                created_at INTEGER NOT NULL,
+                revoked_at INTEGER,
+                replaced_by TEXT
+            )
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_refresh_tokens_username
+            ON refresh_tokens(username)
+        """)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires
+            ON refresh_tokens(expires_at)
+        """)
+
         self._conn.commit()
 
         # Run migrations for existing databases
@@ -223,6 +244,32 @@ class Database:
                 file=sys.stderr,
             )
             raise SystemExit(1) from exc
+
+        # Ensure refresh_tokens table exists for older databases
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='refresh_tokens'"
+        )
+        if not cursor.fetchone():
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS refresh_tokens (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    token TEXT UNIQUE NOT NULL,
+                    expires_at INTEGER NOT NULL,
+                    created_at INTEGER NOT NULL,
+                    revoked_at INTEGER,
+                    replaced_by TEXT
+                )
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_refresh_tokens_username
+                ON refresh_tokens(username)
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires
+                ON refresh_tokens(expires_at)
+            """)
+            self._conn.commit()
 
     # User operations
 
@@ -316,6 +363,36 @@ class Database:
         cursor.execute(
             "UPDATE users SET password_hash = ? WHERE lower(username) = lower(?)",
             (password_hash, username),
+        )
+        self._conn.commit()
+
+    # Refresh token operations
+
+    def store_refresh_token(self, username: str, token: str, expires_at: int, created_at: int) -> None:
+        """Store a new refresh token."""
+        cursor = self._conn.cursor()
+        cursor.execute(
+            "INSERT INTO refresh_tokens (username, token, expires_at, created_at) VALUES (?, ?, ?, ?)",
+            (username, token, expires_at, created_at),
+        )
+        self._conn.commit()
+
+    def get_refresh_token(self, token: str) -> sqlite3.Row | None:
+        """Fetch a refresh token record by token."""
+        cursor = self._conn.cursor()
+        cursor.execute(
+            "SELECT username, token, expires_at, created_at, revoked_at, replaced_by "
+            "FROM refresh_tokens WHERE token = ?",
+            (token,),
+        )
+        return cursor.fetchone()
+
+    def revoke_refresh_token(self, token: str, revoked_at: int, replaced_by: str | None = None) -> None:
+        """Revoke a refresh token and optionally link its replacement."""
+        cursor = self._conn.cursor()
+        cursor.execute(
+            "UPDATE refresh_tokens SET revoked_at = ?, replaced_by = ? WHERE token = ?",
+            (revoked_at, replaced_by, token),
         )
         self._conn.commit()
 

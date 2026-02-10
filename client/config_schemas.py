@@ -48,6 +48,8 @@ class UserAccount(BaseModel):
     account_id: str = ""
     username: str = ""
     password: str = ""
+    refresh_token: str = ""
+    refresh_expires_at: int | None = None
     email: str = ""
     notes: str = ""
 

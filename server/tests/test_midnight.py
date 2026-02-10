@@ -16,6 +16,49 @@ from server.users.test_user import MockUser
 from server.users.bot import Bot
 
 
+def _play_human_turn(game: MidnightGame, player) -> None:
+    """Execute a simple human turn strategy."""
+    if not player.dice.has_rolled:
+        game.execute_action(player, "roll")
+        return
+    if player.dice.kept_unlocked_count > 0:
+        game.execute_action(player, "roll")
+        return
+
+    locked_values = [player.dice.values[i] for i in player.dice.locked]
+    action = (
+        _find_keep_action(player.dice, locked_values, 1)
+        or _find_keep_action(player.dice, locked_values, 4)
+        or _find_keep_highest_action(player.dice)
+    )
+    game.execute_action(player, action or "bank")
+
+
+def _find_keep_action(dice, locked_values, target_value: int) -> str | None:
+    """Find the action to keep a specific die value."""
+    if target_value in locked_values:
+        return None
+    for i in range(6):
+        if not dice.is_locked(i) and dice.values[i] == target_value:
+            return f"toggle_die_{i}"
+    return None
+
+
+def _find_keep_highest_action(dice) -> str | None:
+    """Find the action to keep the highest available die."""
+    best_i = -1
+    best_v = 0
+    for i in range(6):
+        if dice.is_locked(i) or dice.is_kept(i):
+            continue
+        if dice.values[i] > best_v:
+            best_v = dice.values[i]
+            best_i = i
+    if best_i >= 0:
+        return f"toggle_die_{best_i}"
+    return None
+
+
 class TestMidnightGameUnit:
     """Unit tests for Midnight game functions."""
 
@@ -362,49 +405,7 @@ class TestMidnightPlayTest:
 
             current = game.current_player
             if current and current.name == "Human":
-                # Simple human strategy: roll, keep 1 and 4, keep highest dice, roll or stop
-                if not current.dice.has_rolled:
-                    game.execute_action(current, "roll")
-                elif current.dice.kept_unlocked_count > 0:
-                    # Have kept dice, roll to lock them
-                    game.execute_action(current, "roll")
-                else:
-                    # Check if we should keep something
-                    found_action = False
-
-                    # Keep 1 if we don't have it
-                    locked_values = [current.dice.values[i] for i in current.dice.locked]
-                    if 1 not in locked_values:
-                        for i in range(6):
-                            if not current.dice.is_locked(i) and current.dice.values[i] == 1:
-                                game.execute_action(current, f"toggle_die_{i}")
-                                found_action = True
-                                break
-
-                    # Keep 4 if we don't have it
-                    if not found_action and 4 not in locked_values:
-                        for i in range(6):
-                            if not current.dice.is_locked(i) and current.dice.values[i] == 4:
-                                game.execute_action(current, f"toggle_die_{i}")
-                                found_action = True
-                                break
-
-                    # Keep highest
-                    if not found_action:
-                        best_i = -1
-                        best_v = 0
-                        for i in range(6):
-                            if not current.dice.is_locked(i) and not current.dice.is_kept(i):
-                                if current.dice.values[i] > best_v:
-                                    best_v = current.dice.values[i]
-                                    best_i = i
-                        if best_i >= 0:
-                            game.execute_action(current, f"toggle_die_{best_i}")
-                            found_action = True
-
-                    # Bank if nothing to do
-                    if not found_action:
-                        game.execute_action(current, "bank")
+                _play_human_turn(game, current)
             else:
                 game.on_tick()
 

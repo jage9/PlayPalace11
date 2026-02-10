@@ -10,7 +10,7 @@ export function createHistoryView({
   const mutedBuffers = new Set();
   const bufferPositions = {};
   const isMobileLike = window.matchMedia("(pointer: coarse)").matches;
-  let mobileCollapsed = isMobileLike;
+  let mobileCollapsed = false;
   let renderedLogBuffer = "";
   let renderedLogCount = 0;
 

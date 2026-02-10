@@ -1,22 +1,14 @@
 """Localization system using Mozilla Fluent."""
 
-import builtins
 import hashlib
+import json
 import os
-import pickle
 import sys
 from pathlib import Path
 
-from babel import Locale, plural
-from babel.core import UnknownLocaleError
 from babel.lists import format_list
-from fluent_compiler import runtime
 from fluent_compiler.bundle import FluentBundle
-from fluent_compiler.compiler import (
-    LOCALE_NAME,
-    PLURAL_FORM_FOR_NUMBER_NAME,
-    compile_messages,
-)
+from fluent_compiler.compiler import compile_messages
 from fluent_compiler.resource import FtlResource
 
 
@@ -143,19 +135,21 @@ class Localization:
         if cache_root is None:
             return None
 
-        cache_path = cache_root / actual_locale / f"{fingerprint}.pkl"
+        cache_path = cache_root / actual_locale / f"{fingerprint}.json"
         if not cache_path.exists():
             return None
 
         try:
-            with cache_path.open("rb") as fh:
-                payload = pickle.load(fh)
+            payload = json.loads(cache_path.read_text(encoding="utf-8"))
             if payload.get("version") != cls._CACHE_VERSION:
                 raise ValueError("Cache version mismatch")
-            module_ast = payload["module_ast"]
-            function_names = payload["function_names"]
-            errors = payload.get("errors", [])
-            compiled_messages = cls._rebuild_compiled_messages(actual_locale, module_ast, function_names)
+            if payload.get("fingerprint") != fingerprint:
+                raise ValueError("Cache fingerprint mismatch")
+            if payload.get("locale") != actual_locale:
+                raise ValueError("Cache locale mismatch")
+            payloads = payload["payloads"]
+            if not isinstance(payloads, list):
+                raise ValueError("Cache payloads missing")
         except Exception:
             try:
                 cache_path.unlink()
@@ -163,33 +157,17 @@ class Localization:
                 pass
             return None
 
-        bundle = object.__new__(FluentBundle)
-        bundle.locale = actual_locale
-        bundle._compiled_messages = compiled_messages
-        bundle._compilation_errors = errors
-        return bundle
+        return cls._compile_bundle(actual_locale, payloads, fingerprint, write_cache=False)
 
     @classmethod
-    def _rebuild_compiled_messages(
+    def _compile_bundle(
         cls,
         actual_locale: str,
-        module_ast,
-        function_names: dict[str, str],
-    ) -> dict[str, object]:
-        """Rebuild compiled message functions from cached AST."""
-        module_globals = cls._build_module_globals(actual_locale)
-        code_obj = compile(module_ast, f"<fluent:{actual_locale}>", "exec")
-        exec(code_obj, module_globals)
-        compiled_messages: dict[str, object] = {}
-        for message_id, function_name in function_names.items():
-            func = module_globals.get(function_name)
-            if func is None:
-                raise RuntimeError(f"Missing cached function '{function_name}' for locale '{actual_locale}'.")
-            compiled_messages[message_id] = func
-        return compiled_messages
-
-    @classmethod
-    def _compile_bundle(cls, actual_locale: str, payloads: list[str], fingerprint: str) -> FluentBundle:
+        payloads: list[str],
+        fingerprint: str,
+        *,
+        write_cache: bool = True,
+    ) -> FluentBundle:
         """Compile locale files and persist cache entry."""
         resources = [FtlResource.from_string(text) for text in payloads]
         compiled = compile_messages(actual_locale, resources)
@@ -197,7 +175,8 @@ class Localization:
         bundle.locale = actual_locale
         bundle._compiled_messages = compiled.message_functions
         bundle._compilation_errors = compiled.errors
-        cls._write_cache_entry(actual_locale, fingerprint, compiled)
+        if write_cache:
+            cls._write_cache_entry(actual_locale, fingerprint, payloads)
         return bundle
 
     @classmethod
@@ -219,10 +198,8 @@ class Localization:
         return cls._cache_dir
 
     @classmethod
-    def _write_cache_entry(cls, actual_locale: str, fingerprint: str, compiled) -> None:
+    def _write_cache_entry(cls, actual_locale: str, fingerprint: str, payloads: list[str]) -> None:
         """Persist compiled bundle artifacts for reuse."""
-        if compiled.module_ast is None:
-            return
         cache_root = cls._resolve_cache_dir()
         if cache_root is None:
             return
@@ -232,52 +209,19 @@ class Localization:
             "version": cls._CACHE_VERSION,
             "fingerprint": fingerprint,
             "locale": actual_locale,
-            "function_names": {msg_id: func.__name__ for msg_id, func in compiled.message_functions.items()},
-            "module_ast": compiled.module_ast,
-            "errors": compiled.errors,
+            "payloads": payloads,
         }
         tmp_path = entry_dir / f"{fingerprint}.tmp"
-        final_path = entry_dir / f"{fingerprint}.pkl"
-        with tmp_path.open("wb") as fh:
-            pickle.dump(payload, fh)
+        final_path = entry_dir / f"{fingerprint}.json"
+        tmp_path.write_text(json.dumps(payload), encoding="utf-8")
         os.replace(tmp_path, final_path)
-        for cached in entry_dir.glob("*.pkl"):
+        for cached in entry_dir.glob("*.json"):
             if cached == final_path:
                 continue
             try:
                 cached.unlink()
             except OSError:
                 pass
-
-    @classmethod
-    def _build_module_globals(cls, locale_name: str) -> dict[str, object]:
-        """Recreate the runtime globals used by fluent_compiler."""
-        module_globals = {name: getattr(runtime, name) for name in runtime.__all__}
-        module_globals.update(builtins.__dict__)
-        module_globals["__builtins__"] = builtins.__dict__
-        babel_locale = cls._parse_locale(locale_name)
-        plural_func = plural.to_python(babel_locale.plural_form)
-
-        def plural_form_for_number(number):
-            try:
-                return plural_func(number)
-            except TypeError:
-                return None
-
-        module_globals[PLURAL_FORM_FOR_NUMBER_NAME] = plural_form_for_number
-        module_globals[LOCALE_NAME] = babel_locale
-        module_globals["__name__"] = f"fluent_cache_{locale_name}"
-        module_globals["__package__"] = None
-        return module_globals
-
-    @staticmethod
-    def _parse_locale(locale_name: str) -> Locale:
-        """Parse a locale string, defaulting to English on error."""
-        normalized = locale_name.replace("-", "_")
-        try:
-            return Locale.parse(normalized)
-        except (ValueError, UnknownLocaleError):
-            return Locale.parse("en")
 
     # Unicode bidi isolation characters that Fluent adds around variables
     _BIDI_CHARS = "\u2068\u2069"  # FIRST STRONG ISOLATE, POP DIRECTIONAL ISOLATE

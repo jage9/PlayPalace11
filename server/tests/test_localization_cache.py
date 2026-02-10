@@ -26,14 +26,14 @@ def test_localization_cache_refreshes_on_file_change(tmp_path, monkeypatch):
     _write_locale(locales_dir, "Hi")
     Localization.init(locales_dir)
     assert Localization.get("en", "hello") == "Hi"
-    cache_files = list((cache_dir / "en").glob("*.pkl"))
+    cache_files = list((cache_dir / "en").glob("*.json"))
     assert len(cache_files) == 1
     first_cache = cache_files[0].name
 
     _write_locale(locales_dir, "Hello again")
     Localization.init(locales_dir)
     assert Localization.get("en", "hello") == "Hello again"
-    cache_files = list((cache_dir / "en").glob("*.pkl"))
+    cache_files = list((cache_dir / "en").glob("*.json"))
     assert len(cache_files) == 1
     assert cache_files[0].name != first_cache
 

@@ -80,7 +80,7 @@ def bot_think_play_phase(
         if game.road_request_to == player_index and game.road_request_from >= 0:
             # Bot is being asked for road permission - approve most of the time
             # Could add more sophisticated logic here (e.g., deny if at war with requester)
-            if random.random() < 0.9:  # 90% approval rate
+            if random.random() < 0.9:  # 90% approval rate  # nosec B311
                 return "approve_road"
             else:
                 return "deny_road"
@@ -102,6 +102,13 @@ def bot_select_action(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> str:
     if not player.tribe_state:
         return f"action_{ActionType.DO_NOTHING.value}"
 
+    cities = player.tribe_state.cities
+    armies = player.tribe_state.get_available_armies()
+    monument = player.tribe_state.monument_progress
+
+    # Check what we can build
+    affordable = get_affordable_buildings(game, player)
+
     # Priority-based decision making:
     # 0. Play disaster cards if beneficial
     # 1. Build city if close to victory (4 cities) and can afford it
@@ -113,78 +120,118 @@ def bot_select_action(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> str:
     # 7. Tax collection for cards
     # 8. Do nothing
 
-    # Check for disaster cards to play (only in round 2+)
-    if game.current_day > 1:
-        disaster_action = bot_should_play_disaster(game, player)
-        if disaster_action:
-            return disaster_action
+    disaster_action = _bot_disaster_action(game, player)
+    if disaster_action:
+        return disaster_action
 
-    cities = player.tribe_state.cities
-    armies = player.tribe_state.get_available_armies()
-    monument = player.tribe_state.monument_progress
+    city_action = _bot_city_build_action(affordable, cities)
+    if city_action:
+        return city_action
 
-    # Check what we can build
-    affordable = get_affordable_buildings(game, player)
+    monument_action = _bot_monument_tax_action(monument)
+    if monument_action:
+        return monument_action
 
-    # Victory push - if we have 4 cities and can build another
-    if cities == 4 and BuildingType.CITY in affordable:
-        return f"action_{ActionType.CONSTRUCTION.value}"
+    war_action = _bot_war_action(game, player, armies)
+    if war_action:
+        return war_action
 
-    # Build city if possible (high priority)
-    if BuildingType.CITY in affordable and cities < 5:
-        # Strongly prefer building cities
-        if random.random() < 0.8:  # 80% chance to build
-            return f"action_{ActionType.CONSTRUCTION.value}"
+    army_action = _bot_army_build_action(affordable, armies)
+    if army_action:
+        return army_action
 
-    # Monument near completion - collect more cards via tax
-    if monument >= 3:
-        # Tax collection to get more special resources
-        return f"action_{ActionType.TAX_COLLECTION.value}"
+    other_build_action = _bot_other_build_action(affordable)
+    if other_build_action:
+        return other_build_action
 
-    # If we have armies, consider war (aggressive bot behavior)
-    if armies >= 1:
-        war_check = can_declare_war(game, player)
-        if war_check is None:
-            targets = get_valid_war_targets(game, player)
-            for target_idx, target in targets:
-                if hasattr(target, "tribe_state") and target.tribe_state:
-                    target_armies = target.tribe_state.get_available_armies()
-                    target_fortresses = target.tribe_state.fortresses
-
-                    # Calculate if war is viable
-                    # Attack if we're not too disadvantaged (allow equal or slightly weaker battles)
-                    effective_defense = target_armies + target_fortresses
-
-                    # Be more aggressive:
-                    # - Always attack if we have 2+ armies advantage
-                    # - 75% chance if equal strength
-                    # - 50% chance if 1 army disadvantage
-                    advantage = armies - effective_defense
-
-                    if advantage >= 2:
-                        return f"action_{ActionType.WAR.value}"
-                    elif advantage >= 0:  # Equal or better
-                        if random.random() < 0.75:
-                            return f"action_{ActionType.WAR.value}"
-                    elif advantage >= -1:  # Slight disadvantage
-                        if random.random() < 0.5:
-                            return f"action_{ActionType.WAR.value}"
-
-    # Build armies if we have few (aim for 3-4 for military strength)
-    if armies < 3 and BuildingType.ARMY in affordable:
-        if random.random() < 0.7:  # 70% chance to build army when low
-            return f"action_{ActionType.CONSTRUCTION.value}"
-
-    # Build other structures
-    if affordable and random.random() < 0.4:
-        return f"action_{ActionType.CONSTRUCTION.value}"
-
-    # Tax collection for cards
-    if cities >= 1:
-        return f"action_{ActionType.TAX_COLLECTION.value}"
+    tax_action = _bot_tax_action(cities)
+    if tax_action:
+        return tax_action
 
     # Default to do nothing
     return f"action_{ActionType.DO_NOTHING.value}"
+
+
+def _bot_disaster_action(
+    game: AgeOfHeroesGame, player: AgeOfHeroesPlayer
+) -> str | None:
+    """Consider playing a disaster card if the timing is right."""
+    if game.current_day <= 1:
+        return None
+    return bot_should_play_disaster(game, player)
+
+
+def _bot_city_build_action(
+    affordable: list[BuildingType], cities: int
+) -> str | None:
+    """Prefer building cities when it advances victory."""
+    if cities == 4 and BuildingType.CITY in affordable:
+        return f"action_{ActionType.CONSTRUCTION.value}"
+    if BuildingType.CITY in affordable and cities < 5:
+        if random.random() < 0.8:  # 80% chance to build  # nosec B311
+            return f"action_{ActionType.CONSTRUCTION.value}"
+    return None
+
+
+def _bot_monument_tax_action(monument: int) -> str | None:
+    """Collect cards to push monument progress."""
+    if monument >= 3:
+        return f"action_{ActionType.TAX_COLLECTION.value}"
+    return None
+
+
+def _bot_war_action(
+    game: AgeOfHeroesGame, player: AgeOfHeroesPlayer, armies: int
+) -> str | None:
+    """Decide whether to declare war."""
+    if armies < 1:
+        return None
+    if can_declare_war(game, player) is not None:
+        return None
+
+    targets = get_valid_war_targets(game, player)
+    for _target_idx, target in targets:
+        if not hasattr(target, "tribe_state") or not target.tribe_state:
+            continue
+        target_armies = target.tribe_state.get_available_armies()
+        target_fortresses = target.tribe_state.fortresses
+        effective_defense = target_armies + target_fortresses
+        advantage = armies - effective_defense
+
+        if advantage >= 2:
+            return f"action_{ActionType.WAR.value}"
+        if advantage >= 0:  # Equal or better
+            if random.random() < 0.75:  # nosec B311
+                return f"action_{ActionType.WAR.value}"
+            continue
+        if advantage >= -1:  # Slight disadvantage
+            if random.random() < 0.5:  # nosec B311
+                return f"action_{ActionType.WAR.value}"
+    return None
+
+
+def _bot_army_build_action(
+    affordable: list[BuildingType], armies: int
+) -> str | None:
+    """Build armies when low on defense."""
+    if armies < 3 and BuildingType.ARMY in affordable:
+        if random.random() < 0.7:  # 70% chance to build army when low  # nosec B311
+            return f"action_{ActionType.CONSTRUCTION.value}"
+    return None
+
+
+def _bot_other_build_action(affordable: list[BuildingType]) -> str | None:
+    """Chance to build other affordable structures."""
+    if affordable and random.random() < 0.4:  # nosec B311
+        return f"action_{ActionType.CONSTRUCTION.value}"
+    return None
+
+
+def _bot_tax_action(cities: int) -> str | None:
+    """Fallback tax collection when at least one city exists."""
+    if cities >= 1:
+        return f"action_{ActionType.TAX_COLLECTION.value}"
+    return None
 
 
 def bot_discard_excess(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> str | None:
@@ -248,7 +295,7 @@ def bot_select_construction(
     # Build road for fair cards
     if BuildingType.ROAD in affordable:
         targets = get_road_targets(game, player)
-        if targets and random.random() < 0.3:
+        if targets and random.random() < 0.3:  # nosec B311
             return BuildingType.ROAD
 
     # Default priorities
@@ -258,7 +305,7 @@ def bot_select_construction(
         return BuildingType.ARMY
 
     # Build anything available
-    return random.choice(affordable) if affordable else None
+    return random.choice(affordable) if affordable else None  # nosec B311
 
 
 def _select_war_goal(
@@ -274,25 +321,25 @@ def _select_war_goal(
         # Higher chance to destroy if they're closer to winning
         if target_state.monument_progress >= 4:
             return WarGoal.DESTRUCTION
-        elif target_state.monument_progress >= 3 and random.random() < 0.8:
+        elif target_state.monument_progress >= 3 and random.random() < 0.8:  # nosec B311
             return WarGoal.DESTRUCTION
-        elif random.random() < 0.5:
+        elif random.random() < 0.5:  # nosec B311
             return WarGoal.DESTRUCTION
 
     # Priority 2: Conquest if target has cities and we want to expand
     if WarGoal.CONQUEST in available_goals:
         # Strong preference if target has many cities or we're close to city victory
         if target_state.cities >= 3 or our_state.cities >= 3:
-            if random.random() < 0.7:
+            if random.random() < 0.7:  # nosec B311
                 return WarGoal.CONQUEST
         # Otherwise still consider it
-        elif random.random() < 0.4:
+        elif random.random() < 0.4:  # nosec B311
             return WarGoal.CONQUEST
 
     # Priority 3: Plunder for resources
     if WarGoal.PLUNDER in available_goals:
         # Good if we need cards for building
-        if random.random() < 0.6:
+        if random.random() < 0.6:  # nosec B311
             return WarGoal.PLUNDER
 
     # Default: pick first available

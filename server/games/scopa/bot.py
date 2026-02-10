@@ -74,54 +74,82 @@ def find_best_combo_chain(
     best_score = 0.0
 
     for card in remaining_hand:
-        # Check if this card can capture
         captures = find_captures(table, card.rank, escoba)
-
         if captures:
-            best_capture = select_best_capture(captures)
-            # Check if any of our previously played cards are in this capture
-            played_set = set(c.id for c in cards_played)
-            captured_from_combo = [c for c in best_capture if c.id in played_set]
-
-            if captured_from_combo:
-                # This completes a combo! Score it.
-                score = 0.0
-                # Base score for combo completion
-                score += 15 + len(best_capture) * 5
-                # Bonus for each card we played that gets captured back
-                score += len(captured_from_combo) * 8
-                # Bonus for chain length
-                score += len(cards_played) * 3
-
-                # Value of captured cards
-                for c in best_capture:
-                    if c.suit == 1:  # Diamond
-                        score += 2
-                    if c.rank == 7:
-                        score += 3
-                    if c.rank == 7 and c.suit == 1:
-                        score += 5
-
-                if score > best_score:
-                    best_score = score
-                    best_sequence = cards_played + [card]
-                    best_captured = best_capture
+            sequence, captured, score = _evaluate_combo_completion(
+                captures, cards_played, card
+            )
         else:
-            # No capture - this card goes to table, continue the chain
-            new_table = table + [card]
-            new_hand = [c for c in remaining_hand if c.id != card.id]
-            new_played = cards_played + [card]
-
-            seq, captured, score = find_best_combo_chain(
-                new_table, new_hand, escoba, new_played, depth + 1, max_depth
+            sequence, captured, score = _explore_combo_chain(
+                table,
+                remaining_hand,
+                escoba,
+                cards_played,
+                card,
+                depth,
+                max_depth,
             )
 
-            if score > best_score:
-                best_score = score
-                best_sequence = seq
-                best_captured = captured
+        if score > best_score:
+            best_score = score
+            best_sequence = sequence
+            best_captured = captured
 
     return (best_sequence, best_captured, best_score)
+
+
+def _evaluate_combo_completion(
+    captures: list[list[Card]], cards_played: list[Card], card: Card
+) -> tuple[list[Card], list[Card], float]:
+    best_capture = select_best_capture(captures)
+    played_set = {c.id for c in cards_played}
+    captured_from_combo = [c for c in best_capture if c.id in played_set]
+    if not captured_from_combo:
+        return ([], [], 0.0)
+
+    score = _score_combo_completion(best_capture, captured_from_combo, cards_played)
+    return (cards_played + [card], best_capture, score)
+
+
+def _score_combo_completion(
+    best_capture: list[Card],
+    captured_from_combo: list[Card],
+    cards_played: list[Card],
+) -> float:
+    score = 15 + len(best_capture) * 5
+    score += len(captured_from_combo) * 8
+    score += len(cards_played) * 3
+    score += _score_combo_captured_cards(best_capture)
+    return score
+
+
+def _score_combo_captured_cards(captured_cards: list[Card]) -> float:
+    score = 0.0
+    for card in captured_cards:
+        if card.suit == 1:  # Diamond
+            score += 2
+        if card.rank == 7:
+            score += 3
+        if card.rank == 7 and card.suit == 1:
+            score += 5
+    return score
+
+
+def _explore_combo_chain(
+    table: list[Card],
+    remaining_hand: list[Card],
+    escoba: bool,
+    cards_played: list[Card],
+    card: Card,
+    depth: int,
+    max_depth: int,
+) -> tuple[list[Card], list[Card], float]:
+    new_table = table + [card]
+    new_hand = [c for c in remaining_hand if c.id != card.id]
+    new_played = cards_played + [card]
+    return find_best_combo_chain(
+        new_table, new_hand, escoba, new_played, depth + 1, max_depth
+    )
 
 
 def check_combo_potential(
@@ -214,51 +242,61 @@ def evaluate_card(game: "ScopaGame", card: Card, player: "ScopaPlayer") -> float
     Returns:
         Score for this card (higher is better).
     """
-    score = 0.0
     inverse = game.options.inverse_scopa
     escoba = game.options.escoba
 
     captures = find_captures(game.table_cards, card.rank, escoba)
 
     if not captures:
-        # No capture available
-        if inverse:
-            score = 10 - (card.rank * 0.5)  # Prefer playing low cards
-        else:
-            score = -5 + (card.rank * 0.5)  # Prefer playing high cards
+        return _score_non_capture(game, card, player, inverse, escoba)
 
-        # Check for combo setup potential
-        combo_bonus = check_combo_potential(game, card, player)
-        score += combo_bonus
+    return _score_capture(game, card, captures, inverse)
 
-        # Escoba empty table defense
-        if escoba and len(game.table_cards) == 0:
-            score += evaluate_escoba_empty_table(card, inverse)
-    else:
-        best_capture = select_best_capture(captures)
-        num_captured = len(best_capture)
 
-        if inverse:
-            # Inverse: avoid capturing
-            score = -num_captured * 10
-        else:
-            # Normal: prefer capturing
-            score = num_captured * 10
+def _score_non_capture(
+    game: "ScopaGame", card: Card, player: "ScopaPlayer", inverse: bool, escoba: bool
+) -> float:
+    score = 10 - (card.rank * 0.5) if inverse else -5 + (card.rank * 0.5)
+    score += check_combo_potential(game, card, player)
+    if escoba and len(game.table_cards) == 0:
+        score += evaluate_escoba_empty_table(card, inverse)
+    return score
 
-        # Check for scopa
-        is_scopa = num_captured == len(game.table_cards) and len(game.table_cards) > 0
-        if is_scopa:
-            score += 100 if not inverse else -100
 
-        # Evaluate captured card values
-        for c in best_capture:
-            if c.suit == 1:  # Diamond
-                score += 5 if not inverse else -5
-            if c.rank == 7 and c.suit == 1:  # 7 of diamonds
-                score += 20 if not inverse else -20
-            if c.rank == 7:  # Any 7
-                score += 3 if not inverse else -3
-            if c.rank in (1, 6):  # Primiera cards
-                score += 2 if not inverse else -2
+def _score_capture(
+    game: "ScopaGame", card: Card, captures: list[list[Card]], inverse: bool
+) -> float:
+    best_capture = select_best_capture(captures)
+    score = _score_capture_size(best_capture, inverse)
+    score += _score_scopa(best_capture, game.table_cards, inverse)
+    score += _score_capture_cards(best_capture, inverse)
+    return score
 
+
+def _score_capture_size(best_capture: list[Card], inverse: bool) -> float:
+    num_captured = len(best_capture)
+    return -num_captured * 10 if inverse else num_captured * 10
+
+
+def _score_scopa(
+    best_capture: list[Card], table_cards: list[Card], inverse: bool
+) -> float:
+    num_captured = len(best_capture)
+    is_scopa = num_captured == len(table_cards) and len(table_cards) > 0
+    if not is_scopa:
+        return 0.0
+    return -100 if inverse else 100
+
+
+def _score_capture_cards(best_capture: list[Card], inverse: bool) -> float:
+    score = 0.0
+    for card in best_capture:
+        if card.suit == 1:  # Diamond
+            score += -5 if inverse else 5
+        if card.rank == 7 and card.suit == 1:
+            score += -20 if inverse else 20
+        if card.rank == 7:
+            score += -3 if inverse else 3
+        if card.rank in (1, 6):
+            score += -2 if inverse else 2
     return score

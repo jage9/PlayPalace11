@@ -14,6 +14,7 @@ from getpass import getpass
 from pathlib import Path
 
 import json
+import websockets
 from typing import Any
 
 try:
@@ -42,6 +43,7 @@ from ..network.packet_models import CLIENT_TO_SERVER_PACKET_ADAPTER
 VERSION = "11.0.0"
 BOOTSTRAP_WARNING_ENV = "PLAYPALACE_SUPPRESS_BOOTSTRAP_WARNING"
 PACKET_LOGGER = logging.getLogger("playpalace.packets")
+LOG = logging.getLogger("playpalace.server")
 
 DEFAULT_USERNAME_MIN_LENGTH = 3
 DEFAULT_USERNAME_MAX_LENGTH = 32
@@ -260,13 +262,15 @@ class Server(AdministrationMixin):
         protocol = "wss" if self._ssl_cert else "ws"
         print(f"Server running on {protocol}://{self.host}:{self.port}")
         if self.host == "127.0.0.1":
+            # Guidance message only; not a bind default.
             print(
                 "Bind IP is 127.0.0.1, use 0.0.0.0 to allow connections on all interfaces."
-            )  # nosec B104 - guidance message, not a bind default
-        elif self.host == "0.0.0.0":  # nosec B104 - guidance branch only
+            )  # nosec B104
+        elif self.host == "0.0.0.0":  # nosec B104
+            # Guidance message only; not a bind default.
             print(
                 "Bind IP is 0.0.0.0, use 127.0.0.1 to limit to local connections."
-            )  # nosec B104 - guidance message, not a bind default
+            )  # nosec B104
         self._start_localization_warmup()
         self._lifecycle.resolve_gate(STARTUP_GATE_ID)
 
@@ -771,8 +775,8 @@ class Server(AdministrationMixin):
                     "return_to_login": True,
                     "message": Localization.get(user.locale, "already-logged-in"),
                 })
-            except Exception:
-                pass
+            except (OSError, RuntimeError, websockets.exceptions.ConnectionClosed) as exc:
+                LOG.debug("Failed to notify replaced session: %s", exc)
             with contextlib.suppress(Exception):
                 await old_client.close()
         new_client.username = user.username
@@ -1685,75 +1689,67 @@ class Server(AdministrationMixin):
                     self._show_main_menu(user)
             return
 
-        # Handle menu selections based on current menu
-        if current_menu == "main_menu":
-            await self._handle_main_menu_selection(user, selection_id)
-        elif current_menu == "categories_menu":
-            await self._handle_categories_selection(user, selection_id, state)
-        elif current_menu == "games_menu":
-            await self._handle_games_selection(user, selection_id, state)
-        elif current_menu == "tables_menu":
-            await self._handle_tables_selection(user, selection_id, state)
-        elif current_menu == "active_tables_menu":
-            await self._handle_active_tables_selection(user, selection_id)
-        elif current_menu == "join_menu":
-            await self._handle_join_selection(user, selection_id, state)
-        elif current_menu == "options_menu":
-            await self._handle_options_selection(user, selection_id)
-        elif current_menu == "language_menu":
-            await self._handle_language_selection(user, selection_id)
-        elif current_menu == "dice_keeping_style_menu":
-            await self._handle_dice_keeping_style_selection(user, selection_id)
-        elif current_menu == "saved_tables_menu":
-            await self._handle_saved_tables_selection(user, selection_id, state)
-        elif current_menu == "saved_table_actions_menu":
-            await self._handle_saved_table_actions_selection(user, selection_id, state)
-        elif current_menu == "leaderboards_menu":
-            await self._handle_leaderboards_selection(user, selection_id, state)
-        elif current_menu == "leaderboard_types_menu":
-            await self._handle_leaderboard_types_selection(user, selection_id, state)
-        elif current_menu == "game_leaderboard":
-            await self._handle_game_leaderboard_selection(user, selection_id, state)
-        elif current_menu == "my_stats_menu":
-            await self._handle_my_stats_selection(user, selection_id, state)
-        elif current_menu == "my_game_stats":
-            await self._handle_my_game_stats_selection(user, selection_id, state)
-        elif current_menu == "online_users":
-            self._restore_previous_menu(user, state)
-        elif current_menu == "admin_menu":
-            await self._handle_admin_menu_selection(user, selection_id)
-        elif current_menu == "account_approval_menu":
-            await self._handle_account_approval_selection(user, selection_id)
-        elif current_menu == "pending_user_actions_menu":
-            await self._handle_pending_user_actions_selection(user, selection_id, state)
-        elif current_menu == "promote_admin_menu":
-            await self._handle_promote_admin_selection(user, selection_id)
-        elif current_menu == "demote_admin_menu":
-            await self._handle_demote_admin_selection(user, selection_id)
-        elif current_menu == "promote_confirm_menu":
-            await self._handle_promote_confirm_selection(user, selection_id, state)
-        elif current_menu == "demote_confirm_menu":
-            await self._handle_demote_confirm_selection(user, selection_id, state)
-        elif current_menu == "broadcast_choice_menu":
-            await self._handle_broadcast_choice_selection(user, selection_id, state)
-        elif current_menu == "transfer_ownership_menu":
-            await self._handle_transfer_ownership_selection(user, selection_id)
-        elif current_menu == "transfer_ownership_confirm_menu":
-            await self._handle_transfer_ownership_confirm_selection(user, selection_id, state)
-        elif current_menu == "transfer_broadcast_choice_menu":
-            await self._handle_transfer_broadcast_choice_selection(user, selection_id, state)
-        elif current_menu == "ban_user_menu":
-            await self._handle_ban_user_selection(user, selection_id)
-        elif current_menu == "unban_user_menu":
-            await self._handle_unban_user_selection(user, selection_id)
-        elif current_menu == "ban_confirm_menu":
-            await self._handle_ban_confirm_selection(user, selection_id, state)
-        elif current_menu == "unban_confirm_menu":
-            await self._handle_unban_confirm_selection(user, selection_id, state)
-        elif current_menu == "virtual_bots_menu":
-            await self._handle_virtual_bots_selection(user, selection_id)
-        elif current_menu == "virtual_bots_clear_confirm_menu":
-            await self._handle_virtual_bots_clear_confirm_selection(user, selection_id)
+        await self._dispatch_menu_selection(user, selection_id, state, current_menu)
+
+    async def _dispatch_menu_selection(
+        self,
+        user: NetworkUser,
+        selection_id: str,
+        state: dict,
+        current_menu: str | None,
+    ) -> None:
+        """Dispatch menu selections based on current menu context."""
+        handlers: dict[str, tuple[callable, tuple]] = {
+            "main_menu": (self._handle_main_menu_selection, (user, selection_id)),
+            "categories_menu": (self._handle_categories_selection, (user, selection_id, state)),
+            "games_menu": (self._handle_games_selection, (user, selection_id, state)),
+            "tables_menu": (self._handle_tables_selection, (user, selection_id, state)),
+            "active_tables_menu": (self._handle_active_tables_selection, (user, selection_id)),
+            "join_menu": (self._handle_join_selection, (user, selection_id, state)),
+            "options_menu": (self._handle_options_selection, (user, selection_id)),
+            "language_menu": (self._handle_language_selection, (user, selection_id)),
+            "dice_keeping_style_menu": (self._handle_dice_keeping_style_selection, (user, selection_id)),
+            "saved_tables_menu": (self._handle_saved_tables_selection, (user, selection_id, state)),
+            "saved_table_actions_menu": (self._handle_saved_table_actions_selection, (user, selection_id, state)),
+            "leaderboards_menu": (self._handle_leaderboards_selection, (user, selection_id, state)),
+            "leaderboard_types_menu": (self._handle_leaderboard_types_selection, (user, selection_id, state)),
+            "game_leaderboard": (self._handle_game_leaderboard_selection, (user, selection_id, state)),
+            "my_stats_menu": (self._handle_my_stats_selection, (user, selection_id, state)),
+            "my_game_stats": (self._handle_my_game_stats_selection, (user, selection_id, state)),
+            "online_users": (self._restore_previous_menu, (user, state)),
+            "admin_menu": (self._handle_admin_menu_selection, (user, selection_id)),
+            "account_approval_menu": (self._handle_account_approval_selection, (user, selection_id)),
+            "pending_user_actions_menu": (self._handle_pending_user_actions_selection, (user, selection_id, state)),
+            "promote_admin_menu": (self._handle_promote_admin_selection, (user, selection_id)),
+            "demote_admin_menu": (self._handle_demote_admin_selection, (user, selection_id)),
+            "promote_confirm_menu": (self._handle_promote_confirm_selection, (user, selection_id, state)),
+            "demote_confirm_menu": (self._handle_demote_confirm_selection, (user, selection_id, state)),
+            "broadcast_choice_menu": (self._handle_broadcast_choice_selection, (user, selection_id, state)),
+            "transfer_ownership_menu": (self._handle_transfer_ownership_selection, (user, selection_id)),
+            "transfer_ownership_confirm_menu": (
+                self._handle_transfer_ownership_confirm_selection,
+                (user, selection_id, state),
+            ),
+            "transfer_broadcast_choice_menu": (
+                self._handle_transfer_broadcast_choice_selection,
+                (user, selection_id, state),
+            ),
+            "ban_user_menu": (self._handle_ban_user_selection, (user, selection_id)),
+            "unban_user_menu": (self._handle_unban_user_selection, (user, selection_id)),
+            "ban_confirm_menu": (self._handle_ban_confirm_selection, (user, selection_id, state)),
+            "unban_confirm_menu": (self._handle_unban_confirm_selection, (user, selection_id, state)),
+            "virtual_bots_menu": (self._handle_virtual_bots_selection, (user, selection_id)),
+            "virtual_bots_clear_confirm_menu": (self._handle_virtual_bots_clear_confirm_selection, (user, selection_id)),
+        }
+        if not current_menu:
+            return
+        handler_entry = handlers.get(current_menu)
+        if not handler_entry:
+            return
+        func, args = handler_entry
+        result = func(*args)
+        if asyncio.iscoroutine(result):
+            await result
 
     def _ensure_user_approved(self, user: NetworkUser) -> bool:
         """Return True if user is approved or admin/server owner; otherwise show approval notice."""
@@ -3660,165 +3656,21 @@ async def run_server(
         ssl_key: Path to SSL private key file (for WSS support)
         preload_locales: Whether to block on localization compilation.
     """
-    logging.basicConfig(
-        filename="errors.log",
-        level=logging.ERROR,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
-
-    def _log_uncaught(exc_type, exc, tb):
-        """Log uncaught exceptions while skipping shutdown interrupts."""
-        if exc_type in (KeyboardInterrupt, asyncio.CancelledError):
-            return
-        logging.getLogger("playpalace").exception(
-            "Uncaught exception", exc_info=(exc_type, exc, tb)
-        )
-
-    sys.excepthook = _log_uncaught
-    loop = asyncio.get_running_loop()
-
-    def _asyncio_exception_handler(loop, context):
-        """Log asyncio exceptions with consistent context details."""
-        exc = context.get("exception")
-        if isinstance(exc, asyncio.CancelledError):
-            return
-        if exc:
-            logging.getLogger("playpalace").exception(
-                "Asyncio exception", exc_info=exc
-            )
-        else:
-            logging.getLogger("playpalace").error(
-                "Asyncio error: %s", context.get("message")
-            )
-
-    loop.set_exception_handler(_asyncio_exception_handler)
+    _configure_logging()
+    _install_exception_handlers(asyncio.get_running_loop())
 
     config_path = _MODULE_DIR / "config.toml"
     example_path = _MODULE_DIR / "config.example.toml"
     db_path = _MODULE_DIR / "playpalace.db"
 
-    if not config_path.exists():
-        if not example_path.exists():
-            print(
-                f"ERROR: Missing configuration template '{example_path}'.",
-                file=sys.stderr,
-            )
-            raise SystemExit(1)
-        try:
-            shutil.copyfile(example_path, config_path)
-        except OSError as exc:
-            print(
-                f"ERROR: Failed to create '{config_path}' from template: {exc}",
-                file=sys.stderr,
-            )
-            raise SystemExit(1) from exc
-        print(f"Created '{config_path}' from '{example_path}'.")
-
-        print(
-            "Review server/config.toml before running in production. "
-            "TLS is required unless you explicitly allow insecure mode.\n"
-            "Run the server with:\n"
-            "  uv run python main.py --ssl-cert <cert> --ssl-key <key>\n"
-            "or set [network].allow_insecure_ws=true for local development."
-        )
+    if _ensure_config_file(config_path, example_path):
         return
 
-    db_created = False
-    needs_owner = False
-    if not db_path.exists():
-        db_created = True
-        needs_owner = True
-    else:
-        try:
-            database = Database(str(db_path))
-            database.connect()
-            user_count = database.get_user_count()
-            owner = database.get_server_owner()
-            needs_owner = user_count == 0 or owner is None
-            database.close()
-        except Exception as exc:
-            print(f"ERROR: Failed to open database '{db_path}': {exc}", file=sys.stderr)
-            raise SystemExit(1) from exc
-
+    db_created, needs_owner = _inspect_database(db_path)
     if needs_owner:
-        from server.cli import bootstrap_owner
+        _ensure_server_owner(db_path, config_path, db_created)
 
-        if db_created:
-            print(f"Creating database at '{db_path}'.")
-        else:
-            print("No server owner found in the database. Creating one now.")
-
-        if not sys.stdin.isatty():
-            print(
-                "ERROR: Cannot prompt for a server owner in a non-interactive session. "
-                "Run `uv run python -m server.cli bootstrap-owner --username <name>` "
-                "to create the initial owner.",
-                file=sys.stderr,
-            )
-            raise SystemExit(1)
-
-        min_user_len = DEFAULT_USERNAME_MIN_LENGTH
-        max_user_len = DEFAULT_USERNAME_MAX_LENGTH
-        min_pass_len = DEFAULT_PASSWORD_MIN_LENGTH
-        max_pass_len = DEFAULT_PASSWORD_MAX_LENGTH
-        try:
-            with open(config_path, "rb") as f:
-                data = tomllib.load(f)
-            auth_cfg = data.get("auth")
-            if isinstance(auth_cfg, dict):
-                min_user_len = int(auth_cfg.get("username_min_length", min_user_len))
-                max_user_len = int(auth_cfg.get("username_max_length", max_user_len))
-                min_pass_len = int(auth_cfg.get("password_min_length", min_pass_len))
-                max_pass_len = int(auth_cfg.get("password_max_length", max_pass_len))
-        except Exception:
-            pass
-
-        while True:
-            username = input(f"Server owner username ({min_user_len}-{max_user_len} chars): ").strip()
-            if not username:
-                print("Username cannot be empty.")
-                continue
-            if not (min_user_len <= len(username) <= max_user_len):
-                print(
-                    f"Username must be between {min_user_len} and {max_user_len} characters."
-                )
-                continue
-            break
-        while True:
-            password = getpass(f"Server owner password ({min_pass_len}-{max_pass_len} chars): ")
-            if not password:
-                print("Password cannot be empty.")
-                continue
-            if not (min_pass_len <= len(password) <= max_pass_len):
-                print(
-                    f"Password must be between {min_pass_len} and {max_pass_len} characters."
-                )
-                continue
-            confirm = getpass("Confirm password: ")
-            if password != confirm:
-                print("Passwords do not match. Try again.")
-                continue
-            break
-
-        try:
-            bootstrap_owner(
-                db_path=str(db_path),
-                username=username,
-                password=password,
-                quiet=True,
-            )
-            print(f"Created server owner '{username}'.")
-        except RuntimeError as exc:
-            print(f"ERROR: {exc}", file=sys.stderr)
-            raise SystemExit(1) from exc
-
-    if host is None:
-        server_config = load_server_config(config_path)
-        bind_ip = server_config.get("bind_ip")
-        if isinstance(bind_ip, str) and bind_ip.strip():
-            host = bind_ip.strip()
-        else:
-            host = "127.0.0.1"
+    host = _resolve_bind_host(host, config_path)
 
     print(f"Starting PlayPalace v{VERSION} server...")
     server = Server(
@@ -3839,3 +3691,185 @@ async def run_server(
         pass
     finally:
         await server.stop()
+
+
+def _configure_logging() -> None:
+    """Configure server error logging."""
+    logging.basicConfig(
+        filename="errors.log",
+        level=logging.ERROR,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+
+
+def _install_exception_handlers(loop: asyncio.AbstractEventLoop) -> None:
+    """Install top-level exception handlers for the event loop."""
+    def _log_uncaught(exc_type, exc, tb):
+        """Log uncaught exceptions while skipping shutdown interrupts."""
+        if exc_type in (KeyboardInterrupt, asyncio.CancelledError):
+            return
+        logging.getLogger("playpalace").exception(
+            "Uncaught exception", exc_info=(exc_type, exc, tb)
+        )
+
+    def _asyncio_exception_handler(loop, context):
+        """Log asyncio exceptions with consistent context details."""
+        exc = context.get("exception")
+        if isinstance(exc, asyncio.CancelledError):
+            return
+        if exc:
+            logging.getLogger("playpalace").exception(
+                "Asyncio exception", exc_info=exc
+            )
+        else:
+            logging.getLogger("playpalace").error(
+                "Asyncio error: %s", context.get("message")
+            )
+
+    sys.excepthook = _log_uncaught
+    loop.set_exception_handler(_asyncio_exception_handler)
+
+
+def _ensure_config_file(config_path: Path, example_path: Path) -> bool:
+    """Ensure a server config exists; return True if created and exit needed."""
+    if config_path.exists():
+        return False
+    if not example_path.exists():
+        print(
+            f"ERROR: Missing configuration template '{example_path}'.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+    try:
+        shutil.copyfile(example_path, config_path)
+    except OSError as exc:
+        print(
+            f"ERROR: Failed to create '{config_path}' from template: {exc}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from exc
+    print(f"Created '{config_path}' from '{example_path}'.")
+    print(
+        "Review server/config.toml before running in production. "
+        "TLS is required unless you explicitly allow insecure mode.\n"
+        "Run the server with:\n"
+        "  uv run python main.py --ssl-cert <cert> --ssl-key <key>\n"
+        "or set [network].allow_insecure_ws=true for local development."
+    )
+    return True
+
+
+def _inspect_database(db_path: Path) -> tuple[bool, bool]:
+    """Check if the database exists and whether an owner is required."""
+    if not db_path.exists():
+        return True, True
+
+    try:
+        database = Database(str(db_path))
+        database.connect()
+        user_count = database.get_user_count()
+        owner = database.get_server_owner()
+        database.close()
+        return False, user_count == 0 or owner is None
+    except Exception as exc:
+        print(f"ERROR: Failed to open database '{db_path}': {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+
+
+def _ensure_server_owner(db_path: Path, config_path: Path, db_created: bool) -> None:
+    """Create the initial server owner if required."""
+    from server.cli import bootstrap_owner
+
+    if db_created:
+        print(f"Creating database at '{db_path}'.")
+    else:
+        print("No server owner found in the database. Creating one now.")
+
+    if not sys.stdin.isatty():
+        print(
+            "ERROR: Cannot prompt for a server owner in a non-interactive session. "
+            "Run `uv run python -m server.cli bootstrap-owner --username <name>` "
+            "to create the initial owner.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    min_user_len, max_user_len, min_pass_len, max_pass_len = _load_auth_limits(
+        config_path
+    )
+
+    username = _prompt_username(min_user_len, max_user_len)
+    password = _prompt_password(min_pass_len, max_pass_len)
+
+    try:
+        bootstrap_owner(
+            db_path=str(db_path),
+            username=username,
+            password=password,
+            quiet=True,
+        )
+        print(f"Created server owner '{username}'.")
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+
+
+def _load_auth_limits(config_path: Path) -> tuple[int, int, int, int]:
+    """Load auth length limits from config, falling back to defaults."""
+    min_user_len = DEFAULT_USERNAME_MIN_LENGTH
+    max_user_len = DEFAULT_USERNAME_MAX_LENGTH
+    min_pass_len = DEFAULT_PASSWORD_MIN_LENGTH
+    max_pass_len = DEFAULT_PASSWORD_MAX_LENGTH
+    try:
+        with open(config_path, "rb") as f:
+            data = tomllib.load(f)
+        auth_cfg = data.get("auth")
+        if isinstance(auth_cfg, dict):
+            min_user_len = int(auth_cfg.get("username_min_length", min_user_len))
+            max_user_len = int(auth_cfg.get("username_max_length", max_user_len))
+            min_pass_len = int(auth_cfg.get("password_min_length", min_pass_len))
+            max_pass_len = int(auth_cfg.get("password_max_length", max_pass_len))
+    except (OSError, tomllib.TOMLDecodeError, TypeError, ValueError) as exc:
+        LOG.debug("Failed to load auth limits from config: %s", exc)
+    return min_user_len, max_user_len, min_pass_len, max_pass_len
+
+
+def _prompt_username(min_len: int, max_len: int) -> str:
+    """Prompt for a valid server owner username."""
+    while True:
+        username = input(f"Server owner username ({min_len}-{max_len} chars): ").strip()
+        if not username:
+            print("Username cannot be empty.")
+            continue
+        if not (min_len <= len(username) <= max_len):
+            print(f"Username must be between {min_len} and {max_len} characters.")
+            continue
+        return username
+
+
+def _prompt_password(min_len: int, max_len: int) -> str:
+    """Prompt for a valid server owner password."""
+    while True:
+        password = getpass(f"Server owner password ({min_len}-{max_len} chars): ")
+        if not password:
+            print("Password cannot be empty.")
+            continue
+        if not (min_len <= len(password) <= max_len):
+            print(f"Password must be between {min_len} and {max_len} characters.")
+            continue
+        confirm = getpass("Confirm password: ")
+        if password != confirm:
+            print("Passwords do not match. Try again.")
+            continue
+        return password
+
+
+def _resolve_bind_host(host: str | None, config_path: Path) -> str:
+    """Resolve bind host from config when none provided."""
+    if host is not None:
+        return host
+    server_config = load_server_config(config_path)
+    bind_ip = server_config.get("bind_ip")
+    if isinstance(bind_ip, str) and bind_ip.strip():
+        return bind_ip.strip()
+    return "127.0.0.1"

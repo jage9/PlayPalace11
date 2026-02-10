@@ -47,8 +47,8 @@ class ClientConnection:
         """Close this connection."""
         try:
             await self.websocket.close()
-        except Exception:
-            pass
+        except (OSError, RuntimeError, websockets.exceptions.ConnectionClosed) as exc:
+            PACKET_LOGGER.debug("Failed to close websocket: %s", exc)
 
 
 class WebSocketServer:

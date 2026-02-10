@@ -646,7 +646,7 @@ class VirtualBotManager:
             else:
                 # Username taken by a real user - mark bot as offline
                 bot.state = VirtualBotState.OFFLINE
-                bot.cooldown_ticks = random.randint(200, 400)
+                bot.cooldown_ticks = random.randint(200, 400)  # nosec B311
                 return
 
         # Create virtual user and add to server
@@ -711,7 +711,7 @@ class VirtualBotManager:
                 )
                 min_offline = self._get_config_value(bot, "min_offline_ticks")
                 max_offline = self._get_config_value(bot, "max_offline_ticks")
-                cooldown = random.randint(min_offline, max_offline)
+                cooldown = random.randint(min_offline, max_offline)  # nosec B311
                 bot.cooldown_ticks = cooldown
                 self._bots[name] = bot
             added += 1
@@ -1008,7 +1008,7 @@ class VirtualBotManager:
             and not bot.target_rule
         ):
             # Stay offline until a guided assignment needs this bot
-            bot.cooldown_ticks = random.randint(
+            bot.cooldown_ticks = random.randint(  # nosec B311
                 self._get_config_value(bot, "min_offline_ticks"),
                 self._get_config_value(bot, "max_offline_ticks"),
             )
@@ -1034,23 +1034,23 @@ class VirtualBotManager:
         if (
             bot.online_ticks >= self._get_config_value(bot, "min_online_ticks")
             and bot.online_ticks >= bot.target_online_ticks
-            and random.random() < self._get_config_value(bot, "go_offline_chance")
+            and random.random() < self._get_config_value(bot, "go_offline_chance")  # nosec B311
         ):
             self._take_bot_offline(bot)
             return
 
         # Try to join an existing game
-        if random.random() < self._get_config_value(bot, "join_game_chance"):
+        if random.random() < self._get_config_value(bot, "join_game_chance"):  # nosec B311
             if self._try_join_game(bot):
                 return
 
         # Try to create a new game
-        if random.random() < self._get_config_value(bot, "create_game_chance"):
+        if random.random() < self._get_config_value(bot, "create_game_chance"):  # nosec B311
             if self._try_create_game(bot):
                 return
 
         # Set next think delay
-        bot.think_ticks = random.randint(
+        bot.think_ticks = random.randint(  # nosec B311
             self._get_config_value(bot, "min_idle_ticks"),
             self._get_config_value(bot, "max_idle_ticks"),
         )
@@ -1096,7 +1096,7 @@ class VirtualBotManager:
             # Log off after a short delay (2-5 seconds)
             bot.logout_after_game = False  # Reset flag
             bot.state = VirtualBotState.ONLINE_IDLE
-            bot.cooldown_ticks = random.randint(
+            bot.cooldown_ticks = random.randint(  # nosec B311
                 self._get_config_value(bot, "logout_after_game_min_ticks"),
                 self._get_config_value(bot, "logout_after_game_max_ticks"),
             )
@@ -1106,7 +1106,7 @@ class VirtualBotManager:
             self._take_bot_offline(bot)
         else:
             bot.state = VirtualBotState.ONLINE_IDLE
-            bot.think_ticks = random.randint(
+            bot.think_ticks = random.randint(  # nosec B311
                 self._get_config_value(bot, "min_idle_ticks"),
                 self._get_config_value(bot, "max_idle_ticks"),
             )
@@ -1174,7 +1174,7 @@ class VirtualBotManager:
         wait_min = self._get_config_value(bot, "waiting_min_ticks")
         wait_max = self._get_config_value(bot, "waiting_max_ticks")
         bot.state = VirtualBotState.WAITING_FOR_TABLE
-        bot.cooldown_ticks = random.randint(wait_min, wait_max)
+        bot.cooldown_ticks = random.randint(wait_min, wait_max)  # nosec B311
         bot.think_ticks = 0
 
     def _count_rule_bots(self, state: GuidedTableState, exclude: str | None = None) -> int:
@@ -1277,7 +1277,7 @@ class VirtualBotManager:
         # Check if username is already taken by a real user
         if bot.name in self._server._users:
             # Reschedule for later
-            bot.cooldown_ticks = random.randint(200, 400)
+            bot.cooldown_ticks = random.randint(200, 400)  # nosec B311
             return
 
         # Create virtual user and add to server
@@ -1288,11 +1288,11 @@ class VirtualBotManager:
         # Set up bot state
         bot.state = VirtualBotState.ONLINE_IDLE
         bot.online_ticks = 0
-        bot.target_online_ticks = random.randint(
+        bot.target_online_ticks = random.randint(  # nosec B311
             self._get_config_value(bot, "min_online_ticks"),
             self._get_config_value(bot, "max_online_ticks"),
         )
-        bot.think_ticks = random.randint(
+        bot.think_ticks = random.randint(  # nosec B311
             self._get_config_value(bot, "min_idle_ticks"),
             self._get_config_value(bot, "max_idle_ticks"),
         )
@@ -1314,7 +1314,7 @@ class VirtualBotManager:
 
         # Set up offline state
         bot.state = VirtualBotState.OFFLINE
-        bot.cooldown_ticks = random.randint(
+        bot.cooldown_ticks = random.randint(  # nosec B311
             self._get_config_value(bot, "min_offline_ticks"),
             self._get_config_value(bot, "max_offline_ticks"),
         )
@@ -1344,11 +1344,11 @@ class VirtualBotManager:
     def _start_leaving_game(self, bot: VirtualBot) -> None:
         """Start the leaving game process with a staggered delay."""
         bot.state = VirtualBotState.LEAVING_GAME
-        bot.cooldown_ticks = random.randint(
+        bot.cooldown_ticks = random.randint(  # nosec B311
             0, self._get_config_value(bot, "leave_game_delay_ticks")
         )
         # Decide if this bot will log off after the game
-        bot.logout_after_game = random.random() < self._get_config_value(
+        bot.logout_after_game = random.random() < self._get_config_value(  # nosec B311
             bot, "logout_after_game_chance"
         )
 
@@ -1360,7 +1360,7 @@ class VirtualBotManager:
             return False
 
         # Pick a random table
-        table = random.choice(tables)
+        table = random.choice(tables)  # nosec B311
         game = table.game
         if not game:
             return False
@@ -1440,7 +1440,7 @@ class VirtualBotManager:
             return False
 
         # Pick a random available game type
-        game_class = random.choice(available_game_classes)
+        game_class = random.choice(available_game_classes)  # nosec B311
         game_type = game_class.get_type()
 
         user = self._server._users.get(bot.name)

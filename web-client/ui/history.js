@@ -119,8 +119,6 @@ export function createHistoryView({
     } = options;
 
     store.addHistory(buffer, text);
-    // Force immediate UI repaint for mobile/VO so new lines appear without a layout toggle.
-    render();
     const incomingBufferMuted = mutedBuffers.has(buffer);
     if (announce && !incomingBufferMuted) {
       a11y.announce(text, { assertive });

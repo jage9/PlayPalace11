@@ -3,6 +3,8 @@
 window.WEB_CLIENT_CONFIG = {
   // Optional full override (scheme + host + optional port), e.g.:
   // serverUrl: "wss://playpalace.example.com:7000",
+  // When this is set to wss:// and the page is loaded over http://,
+  // app.js will upgrade the page to https:// automatically.
   serverUrl: "",
 
   // Optional port override when deriving from current host.

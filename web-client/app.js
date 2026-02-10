@@ -27,6 +27,41 @@ const APP_VERSION = String(
   window.PLAYPALACE_WEB_VERSION || DEFAULT_APP_VERSION
 ).trim();
 
+function shouldForceHttpsPage() {
+  if (window.location.protocol !== "http:") {
+    return false;
+  }
+
+  const host = window.location.hostname;
+  const isLocalHost = host === "localhost" || host === "127.0.0.1" || host === "::1";
+  if (isLocalHost) {
+    return false;
+  }
+
+  if (!WEB_CLIENT_CONFIG.serverUrl) {
+    return false;
+  }
+
+  try {
+    const configured = new URL(WEB_CLIENT_CONFIG.serverUrl);
+    return configured.protocol === "wss:";
+  } catch {
+    return String(WEB_CLIENT_CONFIG.serverUrl).toLowerCase().startsWith("wss://");
+  }
+}
+
+function redirectHttpToHttps() {
+  if (!shouldForceHttpsPage()) {
+    return;
+  }
+  const nextUrl = new URL(window.location.href);
+  nextUrl.protocol = "https:";
+  if (nextUrl.port === "80") {
+    nextUrl.port = "";
+  }
+  window.location.replace(nextUrl.toString());
+}
+
 function getDefaultServerUrl() {
   if (WEB_CLIENT_CONFIG.serverUrl) {
     try {
@@ -894,6 +929,11 @@ function installAudioUnlock() {
 }
 
 async function bootstrap() {
+  redirectHttpToHttps();
+  if (window.location.protocol !== "https:" && shouldForceHttpsPage()) {
+    return;
+  }
+
   renderVersion();
   renderVolumeControls();
   const validator = await loadPacketValidator();

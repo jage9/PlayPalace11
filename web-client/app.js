@@ -8,11 +8,17 @@ import { installKeybinds } from "./keybinds.js";
 import { createNetworkClient, loadPacketValidator } from "./network.js";
 
 const REMEMBERED_USERNAME_KEY = "playpalace.web.remembered_username";
+const AUTH_USERNAME_KEY = "playpalace.web.auth.username";
+const SESSION_TOKEN_KEY = "playpalace.web.auth.session_token";
+const SESSION_EXPIRES_AT_KEY = "playpalace.web.auth.session_expires_at";
+const REFRESH_TOKEN_KEY = "playpalace.web.auth.refresh_token";
+const REFRESH_EXPIRES_AT_KEY = "playpalace.web.auth.refresh_expires_at";
 const MUSIC_VOLUME_KEY = "playpalace.web.music_volume";
 const AMBIENCE_VOLUME_KEY = "playpalace.web.ambience_volume";
 const AUDIO_MUTED_KEY = "playpalace.web.audio_muted";
 const DEFAULT_MUSIC_VOLUME = 20;
 const DEFAULT_AMBIENCE_VOLUME = 100;
+const SESSION_REFRESH_LEEWAY_SECONDS = 60;
 const DEFAULT_APP_VERSION = "2026.02.08.1";
 const DEFAULT_WEB_CLIENT_CONFIG = {
   serverUrl: "",
@@ -140,6 +146,40 @@ function saveStoredBool(key, value) {
   }
 }
 
+function loadStoredString(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? String(raw) : "";
+  } catch {
+    return "";
+  }
+}
+
+function saveStoredString(key, value) {
+  try {
+    localStorage.setItem(key, String(value || ""));
+  } catch {
+    // Ignore persistence failures.
+  }
+}
+
+function removeStoredKey(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Ignore persistence failures.
+  }
+}
+
+function loadStoredEpochSeconds(key) {
+  const raw = loadStoredString(key);
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0;
+  }
+  return Math.floor(parsed);
+}
+
 const elements = {
   loginDialog: document.getElementById("login-dialog"),
   gameShell: document.getElementById("game-shell"),
@@ -238,6 +278,16 @@ let pendingInlineInput = null;
 let focusMenuOnNextMenuPacket = false;
 let pendingActionsMenuRequest = false;
 let activeActionsMenu = null;
+let pendingAuthMethod = null;
+let refreshTimerId = null;
+
+const authState = {
+  username: loadStoredString(AUTH_USERNAME_KEY),
+  sessionToken: loadStoredString(SESSION_TOKEN_KEY),
+  sessionExpiresAt: loadStoredEpochSeconds(SESSION_EXPIRES_AT_KEY),
+  refreshToken: loadStoredString(REFRESH_TOKEN_KEY),
+  refreshExpiresAt: loadStoredEpochSeconds(REFRESH_EXPIRES_AT_KEY),
+};
 
 let network = null;
 
@@ -319,6 +369,117 @@ function setConnectedUi(connected) {
   elements.disconnectBtn.disabled = !connected;
   elements.openLoginBtn.disabled = connected;
   updateActionsButtonVisibility();
+}
+
+function clearRefreshTimer() {
+  if (refreshTimerId !== null) {
+    window.clearTimeout(refreshTimerId);
+    refreshTimerId = null;
+  }
+}
+
+function persistAuthState() {
+  saveStoredString(AUTH_USERNAME_KEY, authState.username);
+  saveStoredString(SESSION_TOKEN_KEY, authState.sessionToken);
+  saveStoredString(SESSION_EXPIRES_AT_KEY, authState.sessionExpiresAt || 0);
+  saveStoredString(REFRESH_TOKEN_KEY, authState.refreshToken);
+  saveStoredString(REFRESH_EXPIRES_AT_KEY, authState.refreshExpiresAt || 0);
+}
+
+function clearAuthState() {
+  authState.username = "";
+  authState.sessionToken = "";
+  authState.sessionExpiresAt = 0;
+  authState.refreshToken = "";
+  authState.refreshExpiresAt = 0;
+  clearRefreshTimer();
+  removeStoredKey(AUTH_USERNAME_KEY);
+  removeStoredKey(SESSION_TOKEN_KEY);
+  removeStoredKey(SESSION_EXPIRES_AT_KEY);
+  removeStoredKey(REFRESH_TOKEN_KEY);
+  removeStoredKey(REFRESH_EXPIRES_AT_KEY);
+}
+
+function updateAuthStateFromPacket(packet) {
+  if (packet.username) {
+    authState.username = normalizeUsername(packet.username);
+  }
+  if (packet.session_token) {
+    authState.sessionToken = packet.session_token;
+  }
+  if (packet.session_expires_at) {
+    authState.sessionExpiresAt = Number(packet.session_expires_at) || 0;
+  }
+  if (packet.refresh_token) {
+    authState.refreshToken = packet.refresh_token;
+  }
+  if (packet.refresh_expires_at) {
+    authState.refreshExpiresAt = Number(packet.refresh_expires_at) || 0;
+  }
+  persistAuthState();
+}
+
+function buildAuthorizePacketFromSession(username, sessionToken) {
+  return {
+    type: "authorize",
+    username: normalizeUsername(username),
+    session_token: sessionToken,
+    major: 11,
+    minor: 0,
+    patch: 0,
+  };
+}
+
+function buildRefreshPacket(refreshToken, username = "") {
+  const packet = {
+    type: "refresh_session",
+    refresh_token: refreshToken,
+  };
+  if (username) {
+    packet.username = normalizeUsername(username);
+  }
+  return packet;
+}
+
+function nowSeconds() {
+  return Math.floor(Date.now() / 1000);
+}
+
+function canUseSessionToken() {
+  return (
+    Boolean(authState.username && authState.sessionToken)
+    && authState.sessionExpiresAt > (nowSeconds() + 5)
+  );
+}
+
+function canUseRefreshToken() {
+  return (
+    Boolean(authState.username && authState.refreshToken)
+    && authState.refreshExpiresAt > (nowSeconds() + 5)
+  );
+}
+
+function sendRefreshSession({ assertiveOnFailure = false } = {}) {
+  if (!canUseRefreshToken() || !network?.isConnected() || !store.state.connection.authenticated) {
+    return false;
+  }
+  const ok = network.send(buildRefreshPacket(authState.refreshToken, authState.username));
+  if (!ok && assertiveOnFailure) {
+    a11y.announce("Unable to refresh session.", { assertive: true });
+  }
+  return ok;
+}
+
+function scheduleSessionRefresh() {
+  clearRefreshTimer();
+  if (!canUseRefreshToken() || !authState.sessionExpiresAt) {
+    return;
+  }
+  const targetEpoch = authState.sessionExpiresAt - SESSION_REFRESH_LEEWAY_SECONDS;
+  const delayMs = Math.max(5000, (targetEpoch - nowSeconds()) * 1000);
+  refreshTimerId = window.setTimeout(() => {
+    sendRefreshSession();
+  }, delayMs);
 }
 
 function loadRememberedUsername() {
@@ -742,23 +903,51 @@ function requestActionsDialog() {
   runEscapeAction();
 }
 
+function handleAuthorizeSuccess(packet, { refreshed = false } = {}) {
+  store.setConnection({
+    authenticated: true,
+    status: "authenticated",
+    lastError: "",
+    username: normalizeUsername(packet.username || store.state.connection.username),
+  });
+  clearLoginError();
+  updateAuthStateFromPacket(packet);
+  scheduleSessionRefresh();
+
+  if (!refreshed && pendingAuthMethod === "password") {
+    if (elements.rememberMe.checked) {
+      saveRememberedUsername(packet.username || elements.username.value);
+    } else {
+      clearRememberedUsername();
+    }
+  }
+  pendingAuthMethod = null;
+
+  const versionLabel = packet.version ? ` (${packet.version})` : "";
+  setStatus(`Connected as ${packet.username}${versionLabel}`);
+  closeLoginDialog();
+  setConnectedUi(true);
+  historyView.addEntry(`Connected as ${packet.username}${packet.version ? ` (server ${packet.version})` : ""}`, {
+    buffer: "activity",
+  });
+  elements.menuList.focus();
+}
+
 function handlePacket(packet) {
   switch (packet.type) {
     case "authorize_success": {
-      store.setConnection({ authenticated: true, status: "authenticated", lastError: "" });
-      clearLoginError();
-      if (elements.rememberMe.checked) {
-        saveRememberedUsername(packet.username || elements.username.value);
-      } else {
-        clearRememberedUsername();
-      }
-      setStatus(`Connected as ${packet.username} (${packet.version})`);
-      closeLoginDialog();
-      setConnectedUi(true);
-      historyView.addEntry(`Connected as ${packet.username} (server ${packet.version})`, {
-        buffer: "activity",
-      });
-      elements.menuList.focus();
+      handleAuthorizeSuccess(packet, { refreshed: false });
+      break;
+    }
+    case "refresh_session_success": {
+      handleAuthorizeSuccess(packet, { refreshed: true });
+      break;
+    }
+    case "refresh_session_failure": {
+      clearAuthState();
+      const message = packet.message || "Session refresh failed. Please log in again.";
+      setLoginError(message, { announce: true });
+      historyView.addEntry(message, { buffer: "activity", announce: true, assertive: true });
       break;
     }
     case "menu": {
@@ -883,6 +1072,9 @@ function handlePacket(packet) {
       break;
     }
     case "disconnect": {
+      if (packet.return_to_login && packet.reconnect === false) {
+        clearAuthState();
+      }
       store.setConnection({ authenticated: false, status: "disconnected" });
       setStatus("Disconnected", true);
       audio.stopAll();
@@ -947,6 +1139,8 @@ async function bootstrap() {
       } else if (status === "connected") {
         setStatus("Connected. Authorizing...");
       } else if (status === "disconnected") {
+        pendingAuthMethod = null;
+        clearRefreshTimer();
         setStatus("Disconnected");
         audio.stopAll();
         closeInlineInput({ returnFocus: false });
@@ -954,6 +1148,8 @@ async function bootstrap() {
         setConnectedUi(false);
         openLoginDialog();
       } else if (status === "error") {
+        pendingAuthMethod = null;
+        clearRefreshTimer();
         setStatus("Connection error", true);
         setLoginError("Connection error.", { announce: true });
         audio.stopAll();
@@ -1028,10 +1224,22 @@ async function bootstrap() {
     elements.username.value = username;
     elements.loginDialog.returnValue = "connect";
     store.setConnection({ serverUrl, username, status: "connecting", authenticated: false });
-    network.connect({ serverUrl, username, password });
+    pendingAuthMethod = "password";
+    network.connect({
+      serverUrl,
+      authPacket: {
+        type: "authorize",
+        username,
+        password,
+        major: 11,
+        minor: 0,
+        patch: 0,
+      },
+    });
   });
 
   elements.disconnectBtn.addEventListener("click", () => {
+    clearRefreshTimer();
     network.disconnect();
     store.setConnection({ status: "disconnected", authenticated: false });
     setStatus("Disconnected");
@@ -1133,7 +1341,26 @@ async function bootstrap() {
   ]);
   installActionsDialogTabTrap(elements.actionsDialog);
   setConnectedUi(false);
-  openLoginDialog();
+  const serverUrl = getDefaultServerUrl();
+  const sessionAuthPacket = canUseSessionToken()
+    ? buildAuthorizePacketFromSession(authState.username, authState.sessionToken)
+    : null;
+  const refreshAuthPacket = (!sessionAuthPacket && canUseRefreshToken())
+    ? buildRefreshPacket(authState.refreshToken, authState.username)
+    : null;
+  const bootstrapAuthPacket = sessionAuthPacket || refreshAuthPacket;
+  if (bootstrapAuthPacket) {
+    pendingAuthMethod = sessionAuthPacket ? "session_token" : "refresh_token";
+    store.setConnection({
+      serverUrl,
+      username: normalizeUsername(authState.username),
+      status: "connecting",
+      authenticated: false,
+    });
+    network.connect({ serverUrl, authPacket: bootstrapAuthPacket });
+  } else {
+    openLoginDialog();
+  }
 }
 
 void bootstrap();

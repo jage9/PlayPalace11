@@ -169,7 +169,7 @@ export function createNetworkClient({ validator, onStatus, onPacket, onError }) 
     ws = null;
   }
 
-  function connect({ serverUrl, username, password }) {
+  function connect({ serverUrl, authPacket }) {
     disconnect();
 
     onStatus("connecting");
@@ -181,14 +181,11 @@ export function createNetworkClient({ validator, onStatus, onPacket, onError }) 
         return;
       }
       onStatus("connected");
-      send({
-        type: "authorize",
-        username,
-        password,
-        major: 11,
-        minor: 0,
-        patch: 0,
-      });
+      if (!authPacket || typeof authPacket !== "object") {
+        onError("Missing auth packet.");
+        return;
+      }
+      send(authPacket);
     });
 
     socket.addEventListener("message", (event) => {

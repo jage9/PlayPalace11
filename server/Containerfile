@@ -1,0 +1,19 @@
+# syntax=docker/dockerfile:1.7
+ARG BASE_IMAGE=playpalace/base:latest
+FROM ${BASE_IMAGE}
+
+ARG APP_USER=playpalace
+ARG APP_DIR=/app/server
+ENV APP_USER=${APP_USER}
+WORKDIR ${APP_DIR}
+
+COPY . ./
+RUN uv sync --frozen --no-dev --python python3.11 \
+    && chown -R ${APP_USER}:${APP_USER} ${APP_DIR}
+USER ${APP_USER}
+
+ENV VIRTUAL_ENV=${APP_DIR}/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+EXPOSE 8000
+
+CMD ["python", "main.py"]

@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1.7
+ARG PYTHON_IMAGE=python:3.11-slim
+FROM ${PYTHON_IMAGE}
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_PREFERENCE=managed \
+    APP_USER=playpalace
+
+# hadolint ignore=DL3008
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       build-essential \
+       curl \
+       libffi-dev \
+       libssl-dev \
+       ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -LsSf https://astral.sh/install.sh -o /tmp/install.sh \
+    && bash /tmp/install.sh -s -- -y \
+    && rm /tmp/install.sh \
+    && ln -sf /root/.local/bin/uv /usr/local/bin/uv
+
+RUN useradd --create-home --shell /bin/bash --uid 1000 ${APP_USER}
+
+ENV HOME=/home/${APP_USER}
+
+CMD ["python3", "--version"]

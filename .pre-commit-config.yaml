@@ -1,0 +1,103 @@
+ci:
+  skip: []
+  autoupdate_schedule: quarterly
+
+default_language_version:
+  python: python3
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.9.18
+    hooks:
+      - id: uv-lock
+        name: uv lock (server)
+        files: ^server/pyproject\.toml$
+        args: [--project, server]
+      - id: uv-lock
+        name: uv lock (client)
+        files: ^client/pyproject\.toml$
+        args: [--project, client]
+
+  - repo: https://github.com/tsvikas/sync-with-uv
+    rev: v0.4.0
+    hooks:
+      - id: sync-with-uv
+
+  - repo: local
+    hooks:
+      - id: regen-packet-schema
+        name: Regenerate packet schemas (uv run)
+        entry: python scripts/hooks/regen_packet_schema.py
+        language: python
+        pass_filenames: false
+        files: ^server/network/packet_models\.py$
+      - id: uv-ruff-critical
+        name: Ruff (E9,F63,F7 via uvx)
+        entry: python scripts/hooks/run_ruff.py
+        language: python
+        types: [python]
+        pass_filenames: false
+      - id: packet-schema-sync
+        name: Packet schema parity check
+        entry: python scripts/hooks/check_packet_schema_sync.py
+        language: python
+        pass_filenames: false
+        files: ^(server/packet_schema\.json|client/packet_schema\.json)
+      - id: hadolint-containerfiles
+        name: Hadolint (Containerfiles via podman)
+        entry: python scripts/hooks/run_hadolint.py
+        language: python
+        pass_filenames: false
+        stages: [manual, pre-push]
+      - id: bandit-security
+        name: Bandit security scan (manual)
+        entry: python scripts/hooks/run_bandit.py
+        language: python
+        pass_filenames: false
+        stages: [manual, pre-push]
+      - id: xenon-complexity
+        name: Xenon complexity budget (manual)
+        entry: python scripts/hooks/run_xenon.py
+        language: python
+        pass_filenames: false
+        stages: [manual, pre-push]
+      - id: vulture-deadcode
+        name: Vulture dead code scan (manual)
+        entry: python scripts/hooks/run_vulture.py
+        language: python
+        pass_filenames: false
+        stages: [manual, pre-push]
+      - id: trivy-vulnerability-scan
+        name: Trivy fs scan (manual)
+        entry: python scripts/hooks/run_trivy_vuln.py
+        language: python
+        pass_filenames: false
+        stages: [manual, pre-push]
+      - id: trivy-sbom
+        name: Trivy SBOM (manual)
+        entry: python scripts/hooks/run_trivy_sbom.py
+        language: python
+        pass_filenames: false
+        stages: [manual, pre-push]
+      - id: podman-smoke-server
+        name: Podman server image smoke test
+        entry: python scripts/hooks/podman_smoke_server.py
+        language: python
+        pass_filenames: false
+        stages: [manual, pre-push]
+      - id: podman-smoke-client
+        name: Podman client image smoke test
+        entry: python scripts/hooks/podman_smoke_client.py
+        language: python
+        pass_filenames: false
+        stages: [manual, pre-push]

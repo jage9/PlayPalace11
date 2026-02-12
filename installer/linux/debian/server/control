@@ -1,0 +1,12 @@
+Package: playpalace-server
+Version: 0.0.0
+Section: games
+Priority: optional
+Architecture: amd64
+Depends: adduser, systemd, libc6 (>= 2.31), libstdc++6
+Maintainer: XGDevGroup <support@example.com>
+Description: PlayPalace multiplayer server
+ This is a placeholder control file. A release build should update
+ Version, Depends, and Maintainer fields. The install tree copies the
+ PyInstaller output from server/dist/PlayPalaceServer.exe-equivalent
+ into /opt/playpalace/server/ and installs systemd units.

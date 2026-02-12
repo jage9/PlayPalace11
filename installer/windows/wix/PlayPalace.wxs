@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?define ClientSource=..\..\client\dist\PlayPalace ?>
+<?define ServerSource=..\..\server\dist ?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="PlayPalace" Manufacturer="XGDevGroup" Version="11.0.0.0" UpgradeCode="{b40ba410-e0df-422a-9f26-f630a7fe3d1d}" Language="1033" Codepage="1252">
+    <Icon Id="ProductIcon" SourceFile="assets/product.ico" />
+    <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+    <Property Id="SERVERHOST" Value="0.0.0.0" />
+    <Property Id="SERVERPORT" Value="8000" />
+    <Property Id="SERVERALLOWINSECURE" Value="0" />
+    <Property Id="SERVERENABLESSL" Value="0" />
+    <Property Id="SERVERCERTPATH" Value="" />
+    <Property Id="SERVERKEYPATH" Value="" />
+    <MajorUpgrade Schedule="afterInstallInitialize" AllowDowngrades="no" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="PlayPalace">
+        <Directory Id="CLIENTDIR" Name="Client" />
+        <Directory Id="SERVERDIR" Name="Server" />
+        <Directory Id="TOOLSDIR" Name="tools" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="PlayPalaceProgramMenu" Name="PlayPalace" />
+    </StandardDirectory>
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="CONFIGDIR" Name="PlayPalace" />
+    </StandardDirectory>
+
+    <Component Id="ClientExecutable" Directory="CLIENTDIR" Guid="{05b8b594-0a71-4e74-a32e-772842c64a63}">
+      <File Id="PlayPalaceClientExe" Source="!(wix.ClientSource)\PlayPalace.exe" KeyPath="yes">
+        <Shortcut Id="ClientStartMenuShortcut" Directory="PlayPalaceProgramMenu" Name="PlayPalace Client" WorkingDirectory="CLIENTDIR" Icon="ProductIcon" IconIndex="0" />
+      </File>
+    </Component>
+
+    <Component Id="ServerExecutable" Directory="SERVERDIR" Guid="{9c0b7f68-4c76-4e3a-aa83-07c2c0cc8171}">
+      <File Id="PlayPalaceServerExe" Source="!(wix.ServerSource)\PlayPalaceServer.exe" KeyPath="yes" />
+      <ServiceInstall
+          Id="PlayPalaceServiceInstall"
+          Name="PlayPalaceServer"
+          DisplayName="PlayPalace Server"
+          Type="ownProcess"
+          Start="auto"
+          ErrorControl="normal"
+          Description="Runs the PlayPalace multiplayer server backend."
+          Account="LocalSystem"
+          Arguments="--host [SERVERHOST] --port [SERVERPORT]">
+        <ServiceDependency Id="W32Time" />
+      </ServiceInstall>
+      <ServiceControl Id="PlayPalaceServiceControl" Name="PlayPalaceServer" Stop="both" Remove="uninstall" Wait="yes" />
+    </Component>
+
+    <Component Id="ProgramDataFolderComponent" Directory="CONFIGDIR" Guid="{9f8b8d5d-64d7-4f67-a921-bcd5634b9619}">
+      <CreateFolder />
+    </Component>
+
+    <Component Id="ConfigureScriptComponent" Directory="TOOLSDIR" Guid="{3cc85d8a-3ab2-4e13-93b6-5530f99c12f7}">
+      <File Id="ConfigureServerScript" Source="..\configure_server.ps1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="SelfSignedScriptComponent" Directory="TOOLSDIR" Guid="{5586b47e-564f-47fb-9620-418a564a9104}">
+      <File Id="GenerateCertScript" Source="..\generate_self_signed.ps1" KeyPath="yes" />
+    </Component>
+
+    <ComponentGroup Id="ClientComponents">
+      <ComponentRef Id="ClientExecutable" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="ServerComponents">
+      <ComponentRef Id="ServerExecutable" />
+      <ComponentRef Id="ProgramDataFolderComponent" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="InstallerToolsComponents">
+      <ComponentRef Id="ConfigureScriptComponent" />
+      <ComponentRef Id="SelfSignedScriptComponent" />
+    </ComponentGroup>
+
+    <Feature Id="ClientFeature" Title="!(loc.FeatureClient)" Level="1" AllowAbsent="yes" ConfigurableDirectory="CLIENTDIR">
+      <ComponentGroupRef Id="ClientComponents" />
+    </Feature>
+
+    <Feature Id="ServerFeature" Title="!(loc.FeatureServer)" Level="1" AllowAbsent="yes" ConfigurableDirectory="SERVERDIR">
+      <ComponentGroupRef Id="ServerComponents" />
+      <ComponentGroupRef Id="InstallerToolsComponents" />
+    </Feature>
+
+    <CustomAction Id="ConfigureServerAction"
+                  BinaryKey="WixCA"
+                  DllEntry="CAQuietExec64"
+                  Execute="deferred"
+                  Return="check"
+                  Impersonate="no" />
+
+    <InstallExecuteSequence>
+      <Custom Action="SetConfigureServerActionData" Before="ConfigureServerAction">(&ServerFeature=3) AND (!ServerFeature=2)</Custom>
+      <Custom Action="ConfigureServerAction" After="InstallFiles">(&ServerFeature=3) AND (!ServerFeature=2)</Custom>
+      <Custom Action="ValidateCertAction" Before="VerifyReadyDlg"><![CDATA[(&ServerFeature=3) AND (SERVERENABLESSL = "1") AND (NOT Installed)]]></Custom>
+    </InstallExecuteSequence>
+
+    <CustomAction Id="SetConfigureServerActionData"
+                  Property="ConfigureServerAction"
+                  Value='powershell.exe -ExecutionPolicy Bypass -NoProfile -File "[#ConfigureServerScript]" -ProgramDataPath "[CommonAppDataFolder]PlayPalace" -HostName "[SERVERHOST]" -Port "[SERVERPORT]" -AllowInsecure [SERVERALLOWINSECURE] -EnableSsl [SERVERENABLESSL] -CertificatePath "[SERVERCERTPATH]" -PrivateKeyPath "[SERVERKEYPATH]"' />
+
+    <CustomAction Id="ValidateCertAction"
+                  BinaryKey="WixCA"
+                  DllEntry="CAQuietExec64"
+                  Execute="immediate"
+                  Return="check"
+                  Impersonate="yes"
+                  ExeCommand='powershell.exe -ExecutionPolicy Bypass -NoProfile -Command "& { if (-not \"[SERVERCERTPATH]\") { throw \"Certificate path missing\" } if (-not (Test-Path \"[SERVERCERTPATH]\")) { throw \"Certificate path not found\" } if (-not \"[SERVERKEYPATH]\") { throw \"Key path missing\" } if (-not (Test-Path \"[SERVERKEYPATH]\")) { throw \"Key path not found\" } Write-Output \"Certificate inputs look valid.\" }"' />
+
+    <CustomAction Id="GenerateCertAction"
+                  BinaryKey="WixCA"
+                  DllEntry="CAQuietExec64"
+                  Execute="immediate"
+                  Return="check"
+                  Impersonate="no" />
+
+    <UI>
+      <TextStyle Id="Tahoma" FaceName="Tahoma" Size="8" />
+      <UIRef Id="WixUI_InstallDir" />
+
+      <Dialog Id="ServerConfigDlg" Width="370" Height="295" Title="!(loc.ConfigDialogTitle)">
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="340" Height="15" Transparent="yes" NoPrefix="yes" Text="!(loc.ConfigDialogTitle)" />
+        <Control Id="Description" Type="Text" X="15" Y="23" Width="340" Height="30" Text="!(loc.ConfigDialogDescription)" />
+
+        <Control Id="HostLabel" Type="Text" X="15" Y="60" Width="140" Height="10" Text="!(loc.ConfigHostLabel)" />
+        <Control Id="HostEdit" Type="Edit" X="15" Y="72" Width="160" Height="18" Property="SERVERHOST" />
+
+        <Control Id="PortLabel" Type="Text" X="190" Y="60" Width="60" Height="10" Text="!(loc.ConfigPortLabel)" />
+        <Control Id="PortEdit" Type="Edit" X="190" Y="72" Width="70" Height="18" Property="SERVERPORT" />
+
+        <Control Id="AllowInsecureCheck" Type="CheckBox" X="15" Y="100" Width="330" Height="16" Property="SERVERALLOWINSECURE" CheckBoxValue="1" Text="!(loc.ConfigAllowInsecure)">
+          <Condition Action="disable"><![CDATA[SERVERENABLESSL = "1"]]></Condition>
+          <Condition Action="enable"><![CDATA[SERVERENABLESSL <> "1"]]></Condition>
+        </Control>
+
+        <Control Id="EnableSslCheck" Type="CheckBox" X="15" Y="122" Width="330" Height="16" Property="SERVERENABLESSL" CheckBoxValue="1" Text="!(loc.ConfigEnableSsl)" />
+
+        <Control Id="CertLabel" Type="Text" X="15" Y="145" Width="330" Height="10" Text="!(loc.ConfigCertPath)">
+          <Condition Action="disable"><![CDATA[SERVERENABLESSL <> "1"]]></Condition>
+          <Condition Action="enable"><![CDATA[SERVERENABLESSL = "1"]]></Condition>
+        </Control>
+        <Control Id="CertPath" Type="PathEdit" X="15" Y="157" Width="330" Height="18" Property="SERVERCERTPATH" Filter="Certificate (*.cer;*.crt)|*.cer;*.crt|All Files (*.*)|*.*">
+          <Condition Action="disable"><![CDATA[SERVERENABLESSL <> "1"]]></Condition>
+          <Condition Action="enable"><![CDATA[SERVERENABLESSL = "1"]]></Condition>
+        </Control>
+
+        <Control Id="KeyLabel" Type="Text" X="15" Y="180" Width="330" Height="10" Text="!(loc.ConfigKeyPath)">
+          <Condition Action="disable"><![CDATA[SERVERENABLESSL <> "1"]]></Condition>
+          <Condition Action="enable"><![CDATA[SERVERENABLESSL = "1"]]></Condition>
+        </Control>
+        <Control Id="KeyPath" Type="PathEdit" X="15" Y="192" Width="330" Height="18" Property="SERVERKEYPATH" Filter="Key (*.key;*.pem;*.pfx)|*.key;*.pem;*.pfx|All Files (*.*)|*.*">
+          <Condition Action="disable"><![CDATA[SERVERENABLESSL <> "1"]]></Condition>
+          <Condition Action="enable"><![CDATA[SERVERENABLESSL = "1"]]></Condition>
+        </Control>
+
+        <Control Id="GenerateCertBtn" Type="PushButton" X="15" Y="217" Width="160" Height="17" Text="!(loc.ConfigGenerateCert)">
+          <Publish Event="SetProperty" Value="SERVERCERTPATH=[CommonAppDataFolder]PlayPalace\ssl\playpalace_cert.cer"><![CDATA[SERVERENABLESSL = "1"]]></Publish>
+          <Publish Event="SetProperty" Value="SERVERKEYPATH=[CommonAppDataFolder]PlayPalace\ssl\playpalace_key.pfx"><![CDATA[SERVERENABLESSL = "1"]]></Publish>
+          <Publish Event="SetProperty" Value='GenerateCertAction=powershell.exe -ExecutionPolicy Bypass -NoProfile -File "[#GenerateCertScript]" -OutDir "[CommonAppDataFolder]PlayPalace\ssl"'><![CDATA[SERVERENABLESSL = "1"]]></Publish>
+          <Publish Event="DoAction" Value="GenerateCertAction"><![CDATA[SERVERENABLESSL = "1"]]></Publish>
+          <Condition Action="disable"><![CDATA[SERVERENABLESSL <> "1"]]></Condition>
+          <Condition Action="enable"><![CDATA[SERVERENABLESSL = "1"]]></Condition>
+        </Control>
+
+        <Control Id="ValidateCertBtn" Type="PushButton" X="185" Y="217" Width="160" Height="17" Text="!(loc.ConfigValidateCert)">
+          <Publish Event="DoAction" Value="ValidateCertAction"><![CDATA[SERVERENABLESSL = "1"]]></Publish>
+          <Condition Action="disable"><![CDATA[SERVERENABLESSL <> "1"]]></Condition>
+          <Condition Action="enable"><![CDATA[SERVERENABLESSL = "1"]]></Condition>
+        </Control>
+
+        <Control Id="Back" Type="PushButton" X="150" Y="268" Width="56" Height="17" Text="!(loc.WixUIBack)">
+          <Publish Event="NewDialog" Value="InstallDirDlg">1</Publish>
+        </Control>
+        <Control Id="Next" Type="PushButton" X="222" Y="268" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)">
+          <Publish Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+        </Control>
+        <Control Id="Cancel" Type="PushButton" X="294" Y="268" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
+          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+        </Control>
+      </Dialog>
+
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="LicenseAgreementDlg">1</Publish>
+      <Publish Dialog="LicenseAgreementDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg">1</Publish>
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="ServerConfigDlg"><![CDATA[(&ServerFeature=3) AND (NOT Installed)]]></Publish>
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg"><![CDATA[NOT((&ServerFeature=3) AND (NOT Installed))]]></Publish>
+      <Publish Dialog="ServerConfigDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg">1</Publish>
+      <Publish Dialog="ServerConfigDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="ServerConfigDlg"><![CDATA[(&ServerFeature=3) AND (NOT Installed)]]></Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg"><![CDATA[NOT((&ServerFeature=3) AND (NOT Installed))]]></Publish>
+    </UI>
+
+    <WixVariable Id="WixUILicenseRtf" Value="LICENSE_PLACEHOLDER.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="assets/banner.png" />
+    <WixVariable Id="WixUIDialogBmp" Value="assets/dialog.png" />
+  </Package>
+</Wix>

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=PlayPalace
+Comment=PlayPalace multiplayer client
+Exec=/opt/playpalace/client/PlayPalace
+Icon=playpalace
+Terminal=false
+Categories=Game;

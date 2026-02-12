@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+CONFIG_DIR="/etc/playpalace"
+INSTALL_DIR="/opt/playpalace/server"
+EXAMPLE="$INSTALL_DIR/config.example.toml"
+TARGET="$CONFIG_DIR/config.toml"
+
+mkdir -p "$CONFIG_DIR"
+if [ -f "$EXAMPLE" ] && [ ! -f "$TARGET" ]; then
+    install -m 0640 "$EXAMPLE" "$TARGET"
+fi
+
+systemctl daemon-reload || true
+systemctl enable playpalace-server.service || true
+systemctl restart playpalace-server.service || true
+
+exit 0

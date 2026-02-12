@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-US" Codepage="1252">
+    <String Id="ProductName">PlayPalace</String>
+    <String Id="Manufacturer">XGDevGroup</String>
+    <String Id="FeatureClient">PlayPalace Client</String>
+    <String Id="FeatureServer">PlayPalace Server</String>
+    <String Id="ConfigDialogTitle">Server Configuration</String>
+    <String Id="ConfigDialogDescription">Set host, port, and TLS options for the Windows service.</String>
+    <String Id="ConfigHostLabel">Host</String>
+    <String Id="ConfigPortLabel">Port</String>
+    <String Id="ConfigAllowInsecure">Allow insecure ws:// connections (dev only)</String>
+    <String Id="ConfigEnableSsl">Use SSL/TLS (requires certificate and key)</String>
+    <String Id="ConfigCertPath">Certificate path</String>
+    <String Id="ConfigKeyPath">Private key or PFX path</String>
+    <String Id="ConfigGenerateCert">Generate self-signed certificate</String>
+    <String Id="ConfigValidateCert">Validate paths</String>
+    <String Id="InstallerLicensePlaceholder">Licensing placeholder. Provide final text later.</String>
+</WixLocalization>

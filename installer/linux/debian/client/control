@@ -1,0 +1,12 @@
+Package: playpalace-client
+Version: 0.0.0
+Section: games
+Priority: optional
+Architecture: amd64
+Depends: libc6 (>= 2.31), libstdc++6, libgtk-3-0
+Maintainer: XGDevGroup <support@example.com>
+Description: PlayPalace desktop client
+ Placeholder control file for the wxPython-based desktop client. The
+ package should install the PyInstaller onedir from
+ client/dist/PlayPalace/ into /opt/playpalace/client/ and register a
+ desktop entry plus icons.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}" )/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}" )/../.." && pwd)"
 
 read_pyproject_version() {
   local project_dir="$1"

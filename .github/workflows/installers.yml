@@ -37,7 +37,8 @@ jobs:
       - name: Sync client dependencies
         run: |
           cd client
-          uv sync
+          echo 'setuptools<75' > /tmp/build-constraints.txt
+          UV_BUILD_CONSTRAINT=/tmp/build-constraints.txt uv sync
 
       - name: Sync server dependencies
         run: |

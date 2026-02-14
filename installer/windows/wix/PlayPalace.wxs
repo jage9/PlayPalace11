@@ -109,7 +109,7 @@
                   Execute="immediate"
                   Return="check"
                   Impersonate="yes"
-                  ExeCommand='powershell.exe -ExecutionPolicy Bypass -NoProfile -Command "& { if (-not \"[SERVERCERTPATH]\") { throw \"Certificate path missing\" } if (-not (Test-Path \"[SERVERCERTPATH]\")) { throw \"Certificate path not found\" } if (-not \"[SERVERKEYPATH]\") { throw \"Key path missing\" } if (-not (Test-Path \"[SERVERKEYPATH]\")) { throw \"Key path not found\" } Write-Output \"Certificate inputs look valid.\" }"' />
+                  ExeCommand='powershell.exe -ExecutionPolicy Bypass -NoProfile -Command "&amp; { if (-not \"[SERVERCERTPATH]\") { throw \"Certificate path missing\" } if (-not (Test-Path \"[SERVERCERTPATH]\")) { throw \"Certificate path not found\" } if (-not \"[SERVERKEYPATH]\") { throw \"Key path missing\" } if (-not (Test-Path \"[SERVERKEYPATH]\")) { throw \"Key path not found\" } Write-Output \"Certificate inputs look valid.\" }"' />
 
     <CustomAction Id="GenerateCertAction"
                   BinaryKey="WixCA"

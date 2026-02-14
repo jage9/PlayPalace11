@@ -94,8 +94,8 @@
                   Impersonate="no" />
 
     <InstallExecuteSequence>
-      <Custom Action="SetConfigureServerActionData" Before="ConfigureServerAction">(&ServerFeature=3) AND (!ServerFeature=2)</Custom>
-      <Custom Action="ConfigureServerAction" After="InstallFiles">(&ServerFeature=3) AND (!ServerFeature=2)</Custom>
+      <Custom Action="SetConfigureServerActionData" Before="ConfigureServerAction"><![CDATA[(&ServerFeature=3) AND (!ServerFeature=2)]]></Custom>
+      <Custom Action="ConfigureServerAction" After="InstallFiles"><![CDATA[(&ServerFeature=3) AND (!ServerFeature=2)]]></Custom>
       <Custom Action="ValidateCertAction" Before="VerifyReadyDlg"><![CDATA[(&ServerFeature=3) AND (SERVERENABLESSL = "1") AND (NOT Installed)]]></Custom>
     </InstallExecuteSequence>
 

@@ -27,10 +27,12 @@ jobs:
       - name: Install uv
         run: python -m pip install --upgrade uv
 
-      - name: Install packaging toolchains
+      - name: Install packaging toolchains and wxPython build deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y dpkg-dev rpm rpm2cpio rsync
+          sudo apt-get install -y dpkg-dev rpm rpm2cpio rsync \
+            libgtk-3-dev libsdl2-dev libnotify-dev libsm-dev \
+            libgstreamer-gl1.0-0 freeglut3-dev pkg-config
 
       - name: Sync client dependencies
         run: |
@@ -77,21 +79,23 @@ jobs:
   arch-packages:
     name: Arch Packages
     runs-on: ubuntu-latest
+    container:
+      image: archlinux:base-devel
     steps:
+      - name: Install dependencies
+        run: pacman -Syu --noconfirm git python python-pip rsync tar
+
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build with Arch container
-        uses: uraimo/run-on-arch-action@v2
-        with:
-          arch: x86_64
-          distro: archlinux
-          shell: /bin/bash
-          run: |
-            pacman -Sy --noconfirm base-devel git python python-pip rsync tar
-            pip install --upgrade uv
-            ./installer/linux/scripts/build_arch.sh
-             ./installer/linux/scripts/test_arch.sh
+      - name: Install uv
+        run: pip install --upgrade uv --break-system-packages
+
+      - name: Build Arch packages
+        run: ./installer/linux/scripts/build_arch.sh
+
+      - name: Test Arch packages
+        run: ./installer/linux/scripts/test_arch.sh
 
       - name: Upload Arch packages
         uses: actions/upload-artifact@v4

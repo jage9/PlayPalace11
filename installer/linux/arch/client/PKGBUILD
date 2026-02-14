@@ -1,0 +1,23 @@
+pkgname=playpalace-client
+pkgver=0.0.0
+pkgrel=1
+pkgdesc="PlayPalace desktop client"
+arch=('x86_64')
+url="https://github.com/XGDevGroup/PlayPalace11"
+license=('custom')
+depends=('gtk3')
+source=("PlayPalaceClient.tar.gz" "playpalace.desktop")
+sha256sums=('SKIP' 'SKIP')
+
+package() {
+  install -d "$pkgdir/opt/playpalace/client"
+  cp -a PlayPalaceClient/* "$pkgdir/opt/playpalace/client/"
+  install -d "$pkgdir/usr/bin"
+  cat <<'LAUNCH' > "$pkgdir/usr/bin/playpalace-client"
+#!/bin/sh
+exec /opt/playpalace/client/PlayPalace "$@"
+LAUNCH
+  chmod 755 "$pkgdir/usr/bin/playpalace-client"
+  install -Dm644 playpalace.desktop "$pkgdir/usr/share/applications/playpalace.desktop"
+  install -Dm644 PlayPalaceClient/LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

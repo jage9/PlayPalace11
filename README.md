@@ -29,7 +29,7 @@ Once inside the shell, use the helper scripts under `scripts/` (documented below
 
 ### Running the Server
 
-PlayPalace always reads configuration from `server/config.toml`. On a fresh clone, copy the template once and edit it to suit your environment. See [Server Configuration](#server-configuration) for descriptions of each knob.
+PlayPalace always reads configuration from `server/config.toml` when run from source. On Windows installs produced by the MSI, the server instead looks for `%PROGRAMDATA%\PlayPalace\config.toml`. The installer copies `config.example.toml` into that directory the first time and future updates preserve any edits. See [Server Configuration](#server-configuration) for descriptions of each knob.
 
 ```bash
 cd server
@@ -99,6 +99,12 @@ The client requires wxPython and a few other dependencies from v10.
 The client supports both `ws://` and `wss://` connections. When connecting to a server with SSL enabled, enter the server address with the `wss://` prefix (e.g., `wss://example.com`). The client will handle SSL certificate validation automatically.
 Use the **Server Manager** button on the login screen to add/edit servers (name, host, port, notes) and manage saved accounts for each server. You can add `localhost` for local testing.
 
+### Windows Packaging (Work in Progress)
+
+To produce a single MSI that ships both the PyInstaller-built client and server, run `client/build.ps1` and `server/build.ps1`, then follow the WiX v4 instructions in `installer/windows/README.md`. The MSI installs binaries under `Program Files\PlayPalace`, copies configuration into `%PROGRAMDATA%\PlayPalace\config.toml`, and registers the server as a Windows service with a post-install PowerShell helper that applies the installer’s host/port/SSL inputs. Branding assets and the final configuration wizard are still placeholders—see the installer README for current gaps.
+
+Linux packaging work has begun too: `installer/linux/scripts/build_deb.sh`, `build_rpm.sh`, and `build_arch.sh` produce basic `.deb`, `.rpm`, and Arch packages (client and server separately). See `installer/linux/README.md` for details.
+
 ### Packet Schema Validation
 
 Packet contracts are defined once in `server/network/packet_models.py` using Pydantic. Whenever you add or edit packet fields, regenerate the mirrored JSON schema files (used by both the server and client validators) with:
@@ -127,7 +133,7 @@ Refresh tokens are stored in the client identities file (same storage used for s
 
 ### Server Configuration
 
-After the first server launch creates `server/config.toml`, edit that file (or re-copy `config.example.toml` if you need a fresh baseline) to adjust behavior. Alongside the existing `[virtual_bots]` settings, the `[auth]` section lets you clamp username and password lengths that the server will accept:
+After the first server launch creates `server/config.toml` (or `%PROGRAMDATA%\PlayPalace\config.toml` on Windows installs), edit that file (or re-copy `config.example.toml` if you need a fresh baseline) to adjust behavior. Alongside the existing `[virtual_bots]` settings, the `[auth]` section lets you clamp username and password lengths that the server will accept:
 
 ```toml
 [auth]

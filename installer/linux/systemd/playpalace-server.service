@@ -1,0 +1,13 @@
+[Unit]
+Description=PlayPalace Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/playpalace/server/PlayPalaceServer --host 0.0.0.0 --port 8000
+WorkingDirectory=/opt/playpalace/server
+Restart=on-failure
+Environment=PLAYPALACE_CONFIG=/etc/playpalace/config.toml
+
+[Install]
+WantedBy=multi-user.target

@@ -24,6 +24,7 @@ except ModuleNotFoundError:  # pragma: no cover - Python <3.11 fallback when ava
 
 from pydantic import ValidationError
 
+from .config_paths import get_default_config_path, get_example_config_path, ensure_default_config_dir
 from .state import ModeSnapshot, ServerLifecycleState, ServerMode
 from .tick import TickScheduler, load_server_config
 from .administration import AdministrationMixin
@@ -152,7 +153,7 @@ class Server(AdministrationMixin):
         self._password_min_length = DEFAULT_PASSWORD_MIN_LENGTH
         self._password_max_length = DEFAULT_PASSWORD_MAX_LENGTH
         self._ws_max_message_size = DEFAULT_WS_MAX_MESSAGE_BYTES
-        self._config_path = Path(config_path) if config_path else _MODULE_DIR / "config.toml"
+        self._config_path = Path(config_path) if config_path else get_default_config_path()
         self._allow_insecure_ws = False
         self._preload_locales = preload_locales
         self._login_ip_limit = DEFAULT_LOGIN_ATTEMPTS_PER_MINUTE
@@ -3659,8 +3660,8 @@ async def run_server(
     _configure_logging()
     _install_exception_handlers(asyncio.get_running_loop())
 
-    config_path = _MODULE_DIR / "config.toml"
-    example_path = _MODULE_DIR / "config.example.toml"
+    config_path = get_default_config_path()
+    example_path = get_example_config_path()
     db_path = _MODULE_DIR / "playpalace.db"
 
     if _ensure_config_file(config_path, example_path):
@@ -3741,6 +3742,7 @@ def _ensure_config_file(config_path: Path, example_path: Path) -> bool:
         )
         raise SystemExit(1)
     try:
+        ensure_default_config_dir()
         shutil.copyfile(example_path, config_path)
     except OSError as exc:
         print(
@@ -3750,9 +3752,9 @@ def _ensure_config_file(config_path: Path, example_path: Path) -> bool:
         raise SystemExit(1) from exc
     print(f"Created '{config_path}' from '{example_path}'.")
     print(
-        "Review server/config.toml before running in production. "
+        "Review the generated configuration before running in production. "
         "TLS is required unless you explicitly allow insecure mode.\n"
-        "Run the server with:\n"
+        "Edit the file and run the server with:\n"
         "  uv run python main.py --ssl-cert <cert> --ssl-key <key>\n"
         "or set [network].allow_insecure_ws=true for local development."
     )

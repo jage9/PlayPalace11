@@ -6,6 +6,8 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from .config_paths import get_default_config_path
+
 if TYPE_CHECKING:
     from .server import Server
 
@@ -179,8 +181,7 @@ class VirtualBotManager:
     def load_config(self, path: str | Path | None = None) -> None:
         """Load bot configuration from config.toml."""
         if path is None:
-            # Default to server/config.toml
-            path = Path(__file__).parent.parent / "config.toml"
+            path = get_default_config_path()
 
         path = Path(path)
         if not path.exists():

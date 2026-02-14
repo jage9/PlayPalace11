@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+if [ "$1" = "remove" ] || [ "$1" = "upgrade" ]; then
+    systemctl stop playpalace-server.service || true
+    systemctl disable playpalace-server.service || true
+fi
+
+exit 0

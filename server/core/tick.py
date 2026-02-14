@@ -10,6 +10,9 @@ from typing import Callable
 DEFAULT_TICK_INTERVAL_MS = 50
 
 
+from .config_paths import get_default_config_path
+
+
 def load_server_config(path: str | Path | None = None) -> dict:
     """
     Load server configuration from config.toml.
@@ -21,7 +24,7 @@ def load_server_config(path: str | Path | None = None) -> dict:
         Dictionary with server config values.
     """
     if path is None:
-        path = Path(__file__).parent.parent / "config.toml"
+        path = get_default_config_path()
 
     path = Path(path)
     if not path.exists():

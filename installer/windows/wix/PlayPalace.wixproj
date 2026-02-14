@@ -15,6 +15,7 @@
       <ComponentGroupName>ClientHarvestedFiles</ComponentGroupName>
       <DirectoryRefId>CLIENTDIR</DirectoryRefId>
       <SuppressRootDirectory>true</SuppressRootDirectory>
+      <PreprocessorVariable>var.ClientSource</PreprocessorVariable>
     </HarvestDirectory>
   </ItemGroup>
 </Project>

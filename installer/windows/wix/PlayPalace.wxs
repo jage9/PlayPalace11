@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?define ServerSource=..\..\..\server\dist ?>
+<?define ClientSource=..\..\..\client\dist\PlayPalace ?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="PlayPalace" Manufacturer="XGDevGroup" Version="11.0.0.0" UpgradeCode="{b40ba410-e0df-422a-9f26-f630a7fe3d1d}" Language="1033" Codepage="1252">
     <Icon Id="ProductIcon" SourceFile="assets/product.ico" />

@@ -95,4 +95,3 @@ class ServerLifecycleState:
                 if gate_msg:
                     return gate_msg
         return default or "Server is initializing."
-

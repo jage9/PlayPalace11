@@ -1,15 +1,20 @@
 $ErrorActionPreference = "Stop"
 
+# build.ps1 may be run from repo root; ensure uv uses the server/ pyproject.toml
+$ServerDir = $PSScriptRoot
+
 # Ensure PyInstaller is available
-uv run --project . pyinstaller --version 2>$null
+uv run --project $ServerDir pyinstaller --version 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "PyInstaller not found in uv environment. Installing..."
-    uv add --dev pyinstaller pyinstaller-hooks-contrib
+    uv add --project $ServerDir --dev pyinstaller pyinstaller-hooks-contrib
 }
 
 Write-Host "Building PlayPalace server executable..."
 
-$entry = "main.py"
+Push-Location $ServerDir
+try {
+	$entry = "main.py"
 $commonArgs = @(
     "-y",
     "--clean",
@@ -30,4 +35,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "Server PyInstaller build failed."
 }
 
-Write-Host "Server build complete. Output in dist\PlayPalaceServer.exe"
+	Write-Host "Server build complete. Output in dist\PlayPalaceServer.exe"
+} finally {
+	Pop-Location
+}

@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<WixLocalization Culture="en-US" Codepage="1252">
-    <String Id="ProductName">PlayPalace</String>
-    <String Id="Manufacturer">XGDevGroup</String>
-    <String Id="FeatureClient">PlayPalace Client</String>
-    <String Id="FeatureServer">PlayPalace Server</String>
-    <String Id="ConfigDialogTitle">Server Configuration</String>
-    <String Id="ConfigDialogDescription">Set host, port, and TLS options for the Windows service.</String>
-    <String Id="ConfigHostLabel">Host</String>
-    <String Id="ConfigPortLabel">Port</String>
-    <String Id="ConfigAllowInsecure">Allow insecure ws:// connections (dev only)</String>
-    <String Id="ConfigEnableSsl">Use SSL/TLS (requires certificate and key)</String>
-    <String Id="ConfigCertPath">Certificate path</String>
-    <String Id="ConfigKeyPath">Private key or PFX path</String>
-    <String Id="ConfigGenerateCert">Generate self-signed certificate</String>
-    <String Id="ConfigValidateCert">Validate paths</String>
-    <String Id="InstallerLicensePlaceholder">Licensing placeholder. Provide final text later.</String>
+<WixLocalization xmlns="http://wixtoolset.org/schemas/v4/wxl" Culture="en-US" Codepage="1252">
+    <String Id="ProductName" Value="PlayPalace" />
+    <String Id="Manufacturer" Value="XGDevGroup" />
+    <String Id="FeatureClient" Value="PlayPalace Client" />
+    <String Id="FeatureServer" Value="PlayPalace Server" />
+    <String Id="ConfigDialogTitle" Value="Server Configuration" />
+    <String Id="ConfigDialogDescription" Value="Set host, port, and TLS options for the Windows service." />
+    <String Id="ConfigHostLabel" Value="Host" />
+    <String Id="ConfigPortLabel" Value="Port" />
+    <String Id="ConfigAllowInsecure" Value="Allow insecure ws:// connections (dev only)" />
+    <String Id="ConfigEnableSsl" Value="Use SSL/TLS (requires certificate and key)" />
+    <String Id="ConfigCertPath" Value="Certificate path" />
+    <String Id="ConfigKeyPath" Value="Private key or PFX path" />
+    <String Id="ConfigGenerateCert" Value="Generate self-signed certificate" />
+    <String Id="ConfigValidateCert" Value="Validate paths" />
+    <String Id="InstallerLicensePlaceholder" Value="Licensing placeholder. Provide final text later." />
 </WixLocalization>

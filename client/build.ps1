@@ -1,25 +1,49 @@
 $ErrorActionPreference = "Stop"
 
+# build.ps1 may be run from repo root; ensure uv uses the client/ pyproject.toml
+$ClientDir = $PSScriptRoot
+
 # Ensure PyInstaller is available in this uv project
-uv run --project . pyinstaller --version 2>$null
+uv run --project $ClientDir pyinstaller --version 2>$null
 if ($LASTEXITCODE -ne 0) {
 	Write-Host "PyInstaller not found in uv environment. Installing..."
-	uv add --dev pyinstaller pyinstaller-hooks-contrib
+	uv add --project $ClientDir --dev pyinstaller pyinstaller-hooks-contrib
 }
 
 Write-Host "Building PlayPalace..."
 
-uv run --project . pyinstaller -y --clean --onedir --noconsole --name PlayPalace --add-data "sounds;sounds" client.py
-if ($LASTEXITCODE -ne 0) {
-	throw "PyInstaller failed."
+Push-Location $ClientDir
+try {
+	uv run --project $ClientDir pyinstaller -y --clean --onedir --noconsole --name PlayPalace --add-data "sounds;sounds" client.py
+	if ($LASTEXITCODE -ne 0) {
+		throw "PyInstaller failed."
+	}
+} finally {
+	Pop-Location
 }
 
-$dist = "dist\PlayPalace"
-$src  = Join-Path $dist "_internal\sounds"
-$dst  = Join-Path $dist "sounds"
+$dist = Join-Path $ClientDir "dist\PlayPalace"
 
-if (!(Test-Path $src)) {
-	throw "Expected sounds folder not found at: $src"
+# PyInstaller's directory layout can vary by version/options.
+# The sounds folder might already be in the correct place, or it might be under _internal.
+# Newer PyInstaller versions may also place --add-data into "<appname>\_internal\<dest>".
+$srcCandidates = @(
+	(Join-Path $dist "_internal\sounds"),
+	(Join-Path $dist "sounds"),
+	(Join-Path $dist "_internal\sounds\sounds")
+)
+
+$src = $srcCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+$dst = Join-Path $dist "sounds"
+
+if (-not $src) {
+	throw "Expected sounds folder not found. Looked for: $($srcCandidates -join ', ')"
+}
+
+# If the sounds folder is already at the destination, nothing to do.
+if ((Resolve-Path $src).Path -eq (Resolve-Path $dst -ErrorAction SilentlyContinue).Path) {
+	Write-Host "Build complete. Output in $dist"
+	return
 }
 
 if (Test-Path $dst) {

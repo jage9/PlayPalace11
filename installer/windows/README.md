@@ -1,6 +1,6 @@
 # Windows Installer Notes
 
-This directory hosts early WiX v4 scaffolding for the single MSI that packages both the PlayPalace client and server.
+This directory hosts WiX v4 scaffolding for the single MSI that packages both the PlayPalace client and server.
 
 ## Current Layout
 - `wix/PlayPalace.wxs` – base product definition with placeholder features, directory tree, component groups, and WiX custom actions.
@@ -9,14 +9,18 @@ This directory hosts early WiX v4 scaffolding for the single MSI that packages b
 - `configure_server.ps1` – helper invoked by custom actions to ensure `%PROGRAMDATA%\PlayPalace\config.toml` exists and to apply wizard-provided host/port/SSL values.
 - `generate_self_signed.ps1` – optional utility to mint a self-signed certificate using PowerShell's `New-SelfSignedCertificate`. The installer dialog can call this when the user requests automatic cert creation.
 
-## Building the MSI (draft workflow)
+## Building the MSI
 1. Build the client binary via `client/build.ps1` so `client/dist/PlayPalace/PlayPalace.exe` exists.
 2. Build the server binary via `server/build.ps1` so `server/dist/PlayPalaceServer.exe` exists.
-3. From `installer/windows/wix/`, run WiX v4 (after installing `wix.exe` and ensuring it is on PATH):
+3. From the **repository root**, run WiX v4 (after installing `wix.exe` and ensuring it is on PATH) to produce a **single-file MSI** (no external `.cab` and no `.wixpdb`):
    ```powershell
-   wix build PlayPalace.wxs -arch x64 -loc locales/en-us.wxl -out ..\dist\PlayPalace.msi
+   wix build installer\windows\wix\PlayPalace.wxs -arch x64 -loc installer\windows\wix\locales/en-us.wxl `
+     -bindpath ClientSource=client\dist\PlayPalace `
+     -bindpath ServerSource=server\dist `
+     -pdbtype none `
+     -out installer\windows\dist\PlayPalace.msi
    ```
-   The `ClientSource` and `ServerSource` defines inside `PlayPalace.wxs` point at the default PyInstaller output folders; adjust if artifacts move.
+   `PlayPalace.wxs` references build artifacts via `!(bindpath.ClientSource)` and `!(bindpath.ServerSource)`, so the `-bindpath` arguments must point at the folders containing `PlayPalace.exe` and `PlayPalaceServer.exe` respectively. The `.cab` is embedded by setting `Compressed="yes"` on the `<Package>` element in `PlayPalace.wxs`.
 
 ## Custom action inputs
 The MSI defines the following public properties, intended to be bound to a custom dialog:

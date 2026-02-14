@@ -29,9 +29,13 @@
     </StandardDirectory>
 
     <Component Id="ClientExecutable" Directory="CLIENTDIR" Guid="{05b8b594-0a71-4e74-a32e-772842c64a63}">
-      <File Id="PlayPalaceClientExe" Source="$(var.ClientSource)\PlayPalace.exe" KeyPath="yes">
-        <Shortcut Id="ClientStartMenuShortcut" Directory="PlayPalaceProgramMenu" Name="PlayPalace Client" WorkingDirectory="CLIENTDIR" Icon="ProductIcon" IconIndex="0" />
-      </File>
+      <File Id="PlayPalaceClientExe" Source="$(var.ClientSource)\PlayPalace.exe" KeyPath="yes" />
+    </Component>
+
+    <Component Id="ClientShortcutComponent" Directory="PlayPalaceProgramMenu" Guid="{a7c3e1d2-5f48-4b9a-8e61-3d2c7f9b0a14}">
+      <Shortcut Id="ClientStartMenuShortcut" Name="PlayPalace Client" Target="[CLIENTDIR]PlayPalace.exe" WorkingDirectory="CLIENTDIR" Icon="ProductIcon" IconIndex="0" />
+      <RemoveFolder Id="RemovePlayPalaceProgramMenu" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\PlayPalace" Name="ClientShortcut" Type="integer" Value="1" KeyPath="yes" />
     </Component>
 
     <Component Id="ServerExecutable" Directory="SERVERDIR" Guid="{9c0b7f68-4c76-4e3a-aa83-07c2c0cc8171}">
@@ -65,6 +69,7 @@
 
     <ComponentGroup Id="ClientComponents">
       <ComponentRef Id="ClientExecutable" />
+      <ComponentRef Id="ClientShortcutComponent" />
     </ComponentGroup>
 
     <ComponentGroup Id="ServerComponents">

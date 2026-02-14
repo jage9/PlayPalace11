@@ -12,3 +12,14 @@ We use [fluent-compiler](https://pypi.org/project/fluent-compiler/) with one oth
 Games should never have hard-coded strings in them. Instead, render mesages per-user.
 
 We will not be adding pronouns. You have your singular they, and that's all.
+
+## Locale Maintenance
+
+To ensure all locales remain complete:
+
+- **When adding a new game**: Create the English .ftl file, then run `python3 tools/check_locales.py --fix` to copy it to all languages
+- **Verification**: The script `server/tools/check_locales.py` checks locale completeness
+- **Automated testing**: `server/tests/test_locale_completeness.py` prevents regressions
+- **Documentation**: See `server/locales/README.md` for full details
+
+All locale directories must have identical file sets. If a translation doesn't exist yet, English text serves as a placeholder.

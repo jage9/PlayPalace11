@@ -729,14 +729,14 @@ class CrazyEightsGame(Game):
         deck_count = self.deck.size()
         if deck_count > 0:
             parts.append(Localization.get(locale, "crazyeights-deck-count", count=deck_count))
-        
+
         if parts:
             text = ", ".join(parts)
         elif self.players:
             text = Localization.get(locale, "crazyeights-no-hands")
         else:
             text = Localization.get(locale, "crazyeights-no-players")
-        
+
         user.speak(text)
 
     def _action_check_turn_timer(self, player: Player, action_id: str) -> None:
@@ -1117,7 +1117,7 @@ class CrazyEightsGame(Game):
 
     def _end_round(self, winner: CrazyEightsPlayer, last_card: Card | None) -> None:
         self._stop_turn_loop()
-        
+
         # Calculate scores before clearing hands
         points_from: list[tuple[CrazyEightsPlayer, int]] = []
         total = 0
@@ -1143,7 +1143,7 @@ class CrazyEightsGame(Game):
         for p in self.players:
             if isinstance(p, CrazyEightsPlayer):
                 p.hand = []
-        
+
         self.rebuild_all_menus()
 
         if winner.score >= self.options.winning_score:
@@ -1242,12 +1242,12 @@ class CrazyEightsGame(Game):
                 continue
             card_text = self.format_card(card, user.locale)
             one_card_text = Localization.get(user.locale, 'crazyeights-one-card') if len(player.hand) == 1 else ""
-            
+
             if p.id == player.id:
                 msg = Localization.get(user.locale, "crazyeights-you-play", card=card_text)
             else:
                 msg = Localization.get(user.locale, "crazyeights-player-plays", player=player.name, card=card_text)
-            
+
             if one_card_text:
                 user.speak(f"{msg} {one_card_text}", buffer="table")
             else:

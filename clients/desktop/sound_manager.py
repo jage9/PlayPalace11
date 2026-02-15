@@ -542,7 +542,7 @@ class SoundManager:
                 if o is None:
                     # Silent mode - skip ambience
                     return
-                
+
                 intro_path = (
                     os.path.join(self.sounds_folder, intro_name) if intro_name else None
                 )

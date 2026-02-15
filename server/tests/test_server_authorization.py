@@ -37,11 +37,11 @@ class DummyAuth:
         self.calls = {"authenticate": [], "register": []}
         self.user_record = user_record
 
-    def authenticate(self, username, password):
+    def authenticate(self, username, password, **kwargs):
         self.calls["authenticate"].append((username, password))
         return self.authenticate_result
 
-    def register(self, username, password):
+    def register(self, username, password, **kwargs):
         self.calls["register"].append((username, password))
         return self.register_result
 
@@ -101,12 +101,12 @@ async def test_authorize_registers_and_waits_for_approval(monkeypatch, server):
     server._show_main_menu = fake_show_main_menu
 
     client = DummyClient()
-    packet = {"username": "newbie", "password": "pw"}
+    packet = {"username": "newbie", "password": "validpass"}
 
     await server._handle_authorize(client, packet)
 
-    assert auth.calls["authenticate"] == [("newbie", "pw")]
-    assert auth.calls["register"] == [("newbie", "pw")]
+    assert auth.calls["authenticate"] == [("newbie", "validpass")]
+    assert auth.calls["register"] == [("newbie", "validpass")]
     assert notifications == [("account-request", "accountrequest.ogg")]
     assert client.authenticated and client.username == "newbie"
     assert sent_game_list == ["newbie"]
@@ -149,7 +149,7 @@ async def test_authorize_existing_admin_announces(monkeypatch, server):
     server._send_game_list = fake_send_game_list
 
     client = DummyClient()
-    packet = {"username": "admin", "password": "pw"}
+    packet = {"username": "admin", "password": "validpass"}
 
     await server._handle_authorize(client, packet)
 
@@ -172,7 +172,7 @@ async def test_register_requires_username_and_password(server):
         f"Username must be between {server._username_min_length} and {server._username_max_length} characters."
     )
     assert client.sent == [
-        {"type": "speak", "text": expected}
+        {"type": "speak", "text": expected, "buffer": "activity"}
     ]
 
 
@@ -186,13 +186,14 @@ async def test_register_success_notifies_admins(server):
     server._notify_admins = lambda msg, sound: notifications.append((msg, sound))
 
     client = DummyClient()
-    await server._handle_register(client, {"username": "fresh", "password": "pw"})
+    await server._handle_register(client, {"username": "fresh", "password": "validpass"})
 
     assert client.sent[-1] == {
         "type": "speak",
-        "text": "Registration successful! You can now log in with your credentials.",
+        "text": "Registration successful! Your account is waiting for approval.",
+        "buffer": "activity",
     }
-    assert auth.calls["register"] == [("fresh", "pw")]
+    assert auth.calls["register"] == [("fresh", "validpass")]
     assert notifications == [("account-request", "accountrequest.ogg")]
 
 
@@ -204,13 +205,14 @@ async def test_register_rejects_duplicate_username(server):
     server._auth = auth
 
     client = DummyClient()
-    await server._handle_register(client, {"username": "taken", "password": "pw"})
+    await server._handle_register(client, {"username": "taken", "password": "validpass"})
 
     assert client.sent[-1] == {
         "type": "speak",
         "text": "Username already taken. Please choose a different username.",
+        "buffer": "activity",
     }
-    assert auth.calls["register"] == [("taken", "pw")]
+    assert auth.calls["register"] == [("taken", "validpass")]
 
 
 @pytest.mark.asyncio

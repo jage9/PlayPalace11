@@ -32,6 +32,11 @@ repos:
     rev: v0.4.0
     hooks:
       - id: sync-with-uv
+        name: sync-with-uv (server)
+        args: [--uv-lock, server/uv.lock]
+      - id: sync-with-uv
+        name: sync-with-uv (client)
+        args: [--uv-lock, client/uv.lock]
 
   - repo: local
     hooks:

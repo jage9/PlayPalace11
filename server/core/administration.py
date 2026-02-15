@@ -1109,7 +1109,7 @@ class AdministrationMixin:
 
         bots_cleared, tables_killed = self._virtual_bots.clear_bots()
         if bots_cleared > 0:
-            owner.speak_l( 
+            owner.speak_l(
                 "virtual-bots-cleared",
                 bots=bots_cleared,
                 tables=tables_killed,
@@ -1129,7 +1129,7 @@ class AdministrationMixin:
             return
 
         status = self._virtual_bots.get_status()
-        owner.speak_l( 
+        owner.speak_l(
             "virtual-bots-status-report",
             total=status["total"],
             online=status["online"],

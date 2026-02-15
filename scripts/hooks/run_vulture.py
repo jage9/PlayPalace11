@@ -8,6 +8,14 @@ from pathlib import Path
 
 TARGETS = ["server", "clients/desktop"]
 MIN_CONFIDENCE = "80"
+# Ignore vendored deps and virtualenvs to focus on project code only.
+EXCLUDES = [
+    "server/vendor",
+    "client/vendor",
+    "server/.venv",
+    "client/.venv",
+    ".venv",
+]
 
 
 def main() -> int:
@@ -17,6 +25,7 @@ def main() -> int:
         print("uv is required to run Vulture.")
         return 1
 
+    exclude_arg = ",".join(EXCLUDES)
     cmd = [
         uv,
         "tool",
@@ -25,6 +34,8 @@ def main() -> int:
         *TARGETS,
         "--min-confidence",
         MIN_CONFIDENCE,
+        "--exclude",
+        exclude_arg,
     ]
     print("Running:", " ".join(cmd))
     proc = subprocess.run(cmd, cwd=repo_root, check=False)

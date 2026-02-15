@@ -20,7 +20,7 @@ class SoundCacher:
         if o is None:
             # Silent mode - no audio device available
             return None
-            
+
         if file_name not in self.cache:
             with open(file_name, "rb") as f:
                 self.cache[file_name] = ctypes.create_string_buffer(f.read())

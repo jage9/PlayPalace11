@@ -128,7 +128,7 @@ class WebSocketServer:
                     file=sys.stderr,
                 )
             raise SystemExit(1) from exc
-        
+
         protocol = "wss" if self._ssl_context else "ws"
         print(f"WebSocket server started on {protocol}://{self.host}:{self.port}")
 

@@ -6,4 +6,4 @@ To publish packages manually:
 1. Update `pkgver/pkgrel` (handled automatically in CI, but document expected values).
 2. Run `updpkgsums` after pointing `source` to actual tarballs if you build by hand.
 3. Use `makepkg -si` or push to AUR repositories (`playpalace-client-bin`, `playpalace-server-bin`).
-4. Ensure systemd units/configs live under `/usr/lib/systemd/system/` and `/etc/playpalace/` (current PKGBUILD installs the unit from `packaging/installers/linux/systemd`). 
+4. Ensure systemd units/configs live under `/usr/lib/systemd/system/` and `/etc/playpalace/` (current PKGBUILD installs the unit from `packaging/installers/linux/systemd`).

@@ -6,9 +6,13 @@ import shutil
 import subprocess
 from pathlib import Path
 
+# Keep tests and vendored environments out of Bandit runs to avoid noise.
 EXCLUDES = [
     "server/tests",
     "clients/desktop/tests",
+    "server/.venv",
+    "clients/desktop/.venv",
+    ".venv",
 ]
 
 

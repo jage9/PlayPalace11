@@ -194,7 +194,7 @@ class MenuList(wx.ListBox):
         """Play the appropriate sound for the selected item."""
         if not self.sound_manager:
             return
-        
+
         custom_sound = None
         if selection_index != wx.NOT_FOUND:
             try:
@@ -204,7 +204,7 @@ class MenuList(wx.ListBox):
             except (wx._core.wxAssertionError, RuntimeError, AttributeError):
                 # Silently ignore when client data is not available
                 pass
-        
+
         if custom_sound:
             self.sound_manager.play(custom_sound)
         else:

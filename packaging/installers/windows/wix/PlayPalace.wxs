@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?define ClientSource=..\..\..\client\dist\PlayPalace ?>
 <?define ServerSource=..\..\..\server\dist ?>
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="PlayPalace" Manufacturer="XGDevGroup" Version="11.0.0.0" UpgradeCode="{b40ba410-e0df-422a-9f26-f630a7fe3d1d}" Language="1033" Codepage="1252">
@@ -27,10 +26,6 @@
     <StandardDirectory Id="CommonAppDataFolder">
       <Directory Id="CONFIGDIR" Name="PlayPalace" />
     </StandardDirectory>
-
-    <Component Id="ClientExecutable" Directory="CLIENTDIR" Guid="{05b8b594-0a71-4e74-a32e-772842c64a63}">
-      <File Id="PlayPalaceClientExe" Source="$(var.ClientSource)\PlayPalace.exe" KeyPath="yes" />
-    </Component>
 
     <Component Id="ClientShortcutComponent" Directory="PlayPalaceProgramMenu" Guid="{a7c3e1d2-5f48-4b9a-8e61-3d2c7f9b0a14}">
       <Shortcut Id="ClientStartMenuShortcut" Name="PlayPalace Client" Target="[CLIENTDIR]PlayPalace.exe" WorkingDirectory="CLIENTDIR" Icon="ProductIcon" IconIndex="0" />
@@ -68,7 +63,6 @@
     </Component>
 
     <ComponentGroup Id="ClientComponents">
-      <ComponentRef Id="ClientExecutable" />
       <ComponentRef Id="ClientShortcutComponent" />
     </ComponentGroup>
 
@@ -84,6 +78,7 @@
 
     <Feature Id="ClientFeature" Title="!(loc.FeatureClient)" Level="1" AllowAbsent="yes" ConfigurableDirectory="CLIENTDIR">
       <ComponentGroupRef Id="ClientComponents" />
+      <ComponentGroupRef Id="ClientHarvestedFiles" />
     </Feature>
 
     <Feature Id="ServerFeature" Title="!(loc.FeatureServer)" Level="1" AllowAbsent="yes" ConfigurableDirectory="SERVERDIR">

@@ -64,4 +64,3 @@ Classic Ludo: race four tokens around the track and into the home column. First 
 
 ## Win Condition
 - First player to finish all 4 tokens wins; game ends immediately.
-

@@ -15,6 +15,11 @@ COMMON_FLAGS=(--privileged --name "$CONTAINER" --systemd=true --tmpfs /tmp --tmp
 podman run "${COMMON_FLAGS[@]}" -d "$IMAGE"
 trap 'podman rm -f "$CONTAINER" >/dev/null 2>&1 || true' EXIT
 
+for i in $(seq 1 30); do
+  if podman inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null | grep -q true; then break; fi
+  sleep 1
+done
+
 podman exec "$CONTAINER" bash -c "set -euo pipefail
 dnf install -y systemd sudo
 rpm -i /workspace/$CLIENT_REL || dnf install -y /workspace/$CLIENT_REL

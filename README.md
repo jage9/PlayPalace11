@@ -101,9 +101,9 @@ Use the **Server Manager** button on the login screen to add/edit servers (name,
 
 ### Windows Packaging (Work in Progress)
 
-To produce a single MSI that ships both the PyInstaller-built client and server, run `clients/desktop/build.ps1` and `server/build.ps1`, then follow the WiX v4 instructions in `packaging/installers/windows/README.md`. The MSI installs binaries under `Program Files\PlayPalace`, copies configuration into `%PROGRAMDATA%\PlayPalace\config.toml`, and registers the server as a Windows service with a post-install PowerShell helper that applies the installer’s host/port/SSL inputs. Branding assets and the final configuration wizard are still placeholders—see the installer README for current gaps.
+To produce a single MSI that ships both the PyInstaller-built client and server, run `clients/desktop/build.ps1` and `server/build.ps1`, then follow the WiX v4 instructions in `packaging/installers/windows/README.md`. When it is time to build, change into `packaging/installers/windows/wix/` (or pass the `.wxs/.wixproj` path) before invoking `wix build` so the relative `ClientSource`/`ServerSource` values resolve correctly. The MSI installs binaries under `Program Files\PlayPalace`, copies configuration into `%PROGRAMDATA%\PlayPalace\config.toml`, and registers the server as a Windows service with a post-install PowerShell helper that applies the installer’s host/port/SSL inputs. Branding assets and the final configuration wizard are still placeholders—see the installer README for current gaps.
 
-Linux packaging work has begun too: `packaging/installers/linux/scripts/build_deb.sh`, `build_rpm.sh`, and `build_arch.sh` produce basic `.deb`, `.rpm`, and Arch packages (client and server separately). See `packaging/installers/linux/README.md` for details.
+Linux packaging work has begun too: run the repo-relative helpers (`./packaging/installers/linux/scripts/build_deb.sh`, `build_rpm.sh`, `build_arch.sh`) to produce basic `.deb`, `.rpm`, and Arch packages (client and server separately) from any working directory. See `packaging/installers/linux/README.md` for details.
 
 ### Packet Schema Validation
 

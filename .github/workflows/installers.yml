@@ -6,9 +6,9 @@ on:
     branches:
       - main
     paths:
-      - "client/**"
+      - "clients/**"
       - "server/**"
-      - "installer/**"
+      - "packaging/**"
       - ".github/workflows/installers.yml"
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
 
       - name: Sync client dependencies
         run: |
-          cd client
+          cd clients/desktop
           uv sync
 
       - name: Sync server dependencies
@@ -46,36 +46,36 @@ jobs:
 
       - name: Build Debian packages
         run: |
-          ./installer/linux/scripts/build_deb.sh
+          ./packaging/installers/linux/scripts/build_deb.sh
 
       - name: Upload Debian packages
         uses: actions/upload-artifact@v4
         with:
           name: linux-deb
-          path: installer/dist/linux/deb
+          path: packaging/installers/dist/linux/deb
 
       - name: Build RPM packages
         run: |
-          ./installer/linux/scripts/build_rpm.sh
+          ./packaging/installers/linux/scripts/build_rpm.sh
 
       - name: Upload RPM packages
         uses: actions/upload-artifact@v4
         with:
           name: linux-rpm
-          path: installer/dist/linux/rpm
+          path: packaging/installers/dist/linux/rpm
 
       - name: Test Debian packages (podman)
         env:
           PLAYPALACE_SIGNING_KEY_ID: ${{ secrets.PLAYPALACE_SIGNING_KEY_ID }}
         run: |
-          ./installer/linux/scripts/test_deb.sh
+          ./packaging/installers/linux/scripts/test_deb.sh
 
       - name: Test RPM packages (podman)
         continue-on-error: true
         env:
           PLAYPALACE_SIGNING_KEY_ID: ${{ secrets.PLAYPALACE_SIGNING_KEY_ID }}
         run: |
-          ./installer/linux/scripts/test_rpm.sh
+          ./packaging/installers/linux/scripts/test_rpm.sh
 
   arch-packages:
     name: Arch Packages
@@ -107,12 +107,12 @@ jobs:
           chown -R builder:builder "$GITHUB_WORKSPACE"
 
       - name: Build Arch packages
-        run: runuser --preserve-environment -u builder -- ./installer/linux/scripts/build_arch.sh
+        run: runuser --preserve-environment -u builder -- ./packaging/installers/linux/scripts/build_arch.sh
 
       - name: Test Arch packages
         run: |
           if command -v podman &>/dev/null; then
-            ./installer/linux/scripts/test_arch.sh
+            ./packaging/installers/linux/scripts/test_arch.sh
           else
             echo "Skipping smoke test: podman not available in container"
           fi
@@ -121,7 +121,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-arch
-          path: installer/dist/linux/arch
+          path: packaging/installers/dist/linux/arch
 
   windows-msi:
     name: Windows MSI
@@ -141,13 +141,13 @@ jobs:
       - name: Sync client dependencies
         shell: pwsh
         run: |
-          Set-Location client
+          Set-Location clients/desktop
           uv sync
 
       - name: Build client executable
         shell: pwsh
         run: |
-          Set-Location client
+          Set-Location clients/desktop
           ./build.ps1
 
       - name: Sync server dependencies
@@ -170,10 +170,10 @@ jobs:
       - name: Build MSI with WiX
         shell: pwsh
         run: |
-          dotnet build installer/windows/wix/PlayPalace.wixproj -c Release
+          dotnet build packaging/installers/windows/wix/PlayPalace.wixproj -c Release
 
       - name: Upload MSI artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-msi
-          path: installer/windows/wix/bin/**/*.msi
+          path: packaging/installers/windows/wix/bin/**/*.msi

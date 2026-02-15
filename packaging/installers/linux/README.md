@@ -6,7 +6,7 @@ Linux distributions will ship separate packages for the server and client so adm
 2. **Red Hat / Oracle / Fedora (RPM)** – parallel spec files for `playpalace-server` and `playpalace-client`, installing units under `/usr/lib/systemd/system/` and SELinux policies if necessary.
 3. **Arch Linux** – PKGBUILDs for each component, following the rolling-release guidelines and ideally publishing to an AUR namespace.
 
-Scripts:
+Scripts (run from anywhere, e.g., `./packaging/installers/linux/scripts/build_deb.sh`):
 - `scripts/build_deb.sh` builds `.deb` artifacts for both client and server by invoking the new `clients/desktop/build.sh` and `server/build.sh` PyInstaller steps, staging files under `/opt/playpalace/`, and running `dpkg-deb`.
 - `scripts/build_rpm.sh` mirrors the process for `.rpm` packages using `rpmbuild`, tarballing the PyInstaller outputs and installing the systemd unit/desktop entry from `packaging/installers/linux/systemd/` and `packaging/installers/linux/client/`.
 - `scripts/build_arch.sh` runs `makepkg` in an Arch environment (CI uses `uraimo/run-on-arch-action`) after preparing tarballs and copying the desktop/service sources, emitting `.pkg.tar.zst` files per component.

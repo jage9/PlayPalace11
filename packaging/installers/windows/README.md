@@ -12,11 +12,12 @@ This directory hosts early WiX v4 scaffolding for the single MSI that packages b
 ## Building the MSI (draft workflow)
 1. Build the client binary via `clients/desktop/build.ps1` so `clients/desktop/dist/PlayPalace/PlayPalace.exe` exists.
 2. Build the server binary via `server/build.ps1` so `server/dist/PlayPalaceServer.exe` exists.
-3. From `packaging/installers/windows/wix/`, run WiX v4 (after installing `wix.exe` and ensuring it is on PATH):
-   ```powershell
-   wix build PlayPalace.wxs -arch x64 -loc locales/en-us.wxl -out ..\dist\PlayPalace.msi
-   ```
-   The `ClientSource` and `ServerSource` defines inside `PlayPalace.wxs` point at the default PyInstaller output folders; adjust if artifacts move.
+3. From `packaging/installers/windows/wix/` (or by passing the `.wixproj/.wxs` file explicitly), run WiX v4 (after installing `wix.exe` and ensuring it is on PATH):
+  ```powershell
+  PS repo:\> cd packaging/installers/windows/wix
+  PS ...\wix> wix build PlayPalace.wxs -arch x64 -loc locales/en-us.wxl -out ..\dist\PlayPalace.msi
+  ```
+   WiX resolves the `ClientSource`/`ServerSource` defines relative to this directory, so keeping the build command in `packaging/installers/windows/wix` avoids ambiguity. If you invoke `wix build` from elsewhere, pass the path to `PlayPalace.wixproj` or `PlayPalace.wxs` so the same relative resolution applies.
 
 ## Custom action inputs
 The MSI defines the following public properties, intended to be bound to a custom dialog:

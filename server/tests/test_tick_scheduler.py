@@ -67,6 +67,32 @@ def test_load_server_config_missing_file():
     assert config == {}
 
 
+def test_load_server_config_invalid_toml(tmp_path, capsys):
+    bad = tmp_path / "bad.toml"
+    bad.write_text("server = { invalid = }")
+
+    with pytest.raises(SystemExit):
+        load_server_config(bad)
+
+    captured = capsys.readouterr()
+    assert "Failed to parse configuration file" in captured.err
+
+
+def test_load_server_config_os_error(monkeypatch, tmp_path, capsys):
+    cfg = tmp_path / "cfg.toml"
+    cfg.write_text("[server]\nvalue = 1\n")
+
+    def boom(*_, **__):
+        raise OSError("nope")
+
+    monkeypatch.setattr("builtins.open", boom)
+
+    with pytest.raises(SystemExit):
+        load_server_config(cfg)
+
+    assert "Failed to read configuration file" in capsys.readouterr().err
+
+
 def test_load_server_config_from_actual_file():
     """Test loading tick_interval_ms from actual config.toml."""
     from pathlib import Path
@@ -79,3 +105,13 @@ def test_load_server_config_from_actual_file():
             assert "tick_interval_ms" in config
             assert isinstance(config["tick_interval_ms"], int)
             assert config["tick_interval_ms"] > 0
+
+
+def test_load_server_config_uses_default_path(monkeypatch, tmp_path):
+    default_cfg = tmp_path / "default.toml"
+    default_cfg.write_text("[server]\ntick_interval_ms = 75\n")
+    monkeypatch.setattr("server.core.tick.get_default_config_path", lambda: default_cfg)
+
+    cfg = load_server_config()
+
+    assert cfg["tick_interval_ms"] == 75

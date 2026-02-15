@@ -7,8 +7,8 @@ import random
 import json
 
 from server.games.snakesandladders.game import SnakesAndLaddersGame, SnakesPlayer
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 class TestSnakesAndLaddersUnit:

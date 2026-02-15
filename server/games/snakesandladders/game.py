@@ -14,7 +14,7 @@ from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.game_result import GameResult, PlayerResult
 from ...messages.localization import Localization
-from ...ui.keybinds import KeybindState
+from server.core.ui.keybinds import KeybindState
 
 
 @dataclass

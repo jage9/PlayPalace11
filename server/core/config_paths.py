@@ -22,7 +22,16 @@ def _running_on_windows() -> bool:
 
 
 def get_default_config_dir() -> Path:
-    """Return the default directory that should contain config.toml."""
+    """Return the default directory that should contain config.toml.
+
+    When running from a source checkout (config.example.toml present next to
+    the package) the module directory is used on every platform so that a
+    developer's ``server/config.toml`` is always found.  The Windows
+    ProgramData path is only used for an installed application where the
+    example template has been removed.
+    """
+    if (_MODULE_DIR / "config.example.toml").exists():
+        return _MODULE_DIR
     if _running_on_windows():
         program_data = os.environ.get("PROGRAMDATA")
         if program_data:

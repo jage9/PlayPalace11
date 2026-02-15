@@ -5,13 +5,13 @@
 ### Server (Ready to Use)
 ```bash
 # Start the server
-./run_server.sh
+./scripts/run_server.sh
 
 # Or with custom port
-./run_server.sh --port 9000
+./scripts/run_server.sh --port 9000
 
 # With SSL
-./run_server.sh --ssl-cert /path/to/cert.pem --ssl-key /path/to/key.pem
+./scripts/run_server.sh --ssl-cert /path/to/cert.pem --ssl-key /path/to/key.pem
 ```
 
 ### Client
@@ -20,10 +20,10 @@
 
 ```bash
 # Run client (silent mode is OK)
-./run_client.sh
+./scripts/run_client.sh
 
 # Headless GUI smoke tests (launches Xvfb screen 0 @ 1024x768x24)
-PLAYPALACE_USE_XVFB=1 ./run_client.sh
+PLAYPALACE_USE_XVFB=1 ./scripts/run_client.sh
 ```
 
 The launcher now enters the pinned flake devshell automatically—no extra `.venv` or manual `pip install` needed.
@@ -44,8 +44,8 @@ The client functions normally for gameplay despite these warnings.
 2. **Additional users** = Require admin approval
 
 To create your admin account:
-1. Start server: `./run_server.sh`
-2. Start client: `./run_client.sh`
+1. Start server: `./scripts/run_server.sh`
+2. Start client: `./scripts/run_client.sh`
 3. Click "Register" and choose your username/password
 4. You'll be logged in as Server Owner (first user only)
 
@@ -76,7 +76,7 @@ Then restart the client.
 
 Pre-built wheels are available in:
 - `server/dist/playpalace_server-11.0.0-py3-none-any.whl` (637 KB)
-- `client/dist/playpalace_client-11.0.0-py3-none-any.whl` (53 MB)
+- `clients/desktop/dist/playpalace_client-11.0.0-py3-none-any.whl` (53 MB)
 
 ## Development
 
@@ -88,12 +88,12 @@ nix --extra-experimental-features "nix-command flakes" \
   --command bash -c "cd server && uv run pytest"
 
 # Quick verification
-./test_run.sh
+./scripts/test_run.sh
 ```
 
 ### Building from Source
 ```bash
-./build.sh
+./scripts/build.sh
 ```
 
 ## Recent Fixes (2026-01-30)

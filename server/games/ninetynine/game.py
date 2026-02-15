@@ -33,7 +33,7 @@ from ...game_utils.cards import (
 )
 from ...game_utils.options import BoolOption, IntOption, MenuOption, option_field
 from ...messages.localization import Localization
-from ...ui.keybinds import KeybindState
+from server.core.ui.keybinds import KeybindState
 from .bot import bot_think as _bot_think, evaluate_count as _evaluate_count
 
 

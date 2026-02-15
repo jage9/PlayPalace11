@@ -12,9 +12,9 @@ from ...game_utils.options import IntOption, MenuOption, option_field
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.poker_timer import PokerTurnTimer
 from ...messages.localization import Localization
-from ...ui.keybinds import KeybindState
-from ...users.bot import Bot
-from ...users.base import User
+from server.core.ui.keybinds import KeybindState
+from server.core.users.bot import Bot
+from server.core.users.base import User
 from datetime import datetime
 from .bot import bot_think
 

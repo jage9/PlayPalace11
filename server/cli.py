@@ -48,8 +48,8 @@ Localization.init(_MODULE_DIR / "locales")
 
 from server.games.registry import GameRegistry, get_game_class  # noqa: E402
 from server.games.base import Game, BOT_NAMES  # noqa: E402
-from server.users.base import User, TrustLevel, generate_uuid  # noqa: E402
-from server.users.bot import Bot  # noqa: E402
+from server.core.users.base import User, TrustLevel, generate_uuid  # noqa: E402
+from server.core.users.bot import Bot  # noqa: E402
 from server.persistence.database import Database  # noqa: E402
 from server.auth.auth import AuthManager  # noqa: E402
 
@@ -665,7 +665,7 @@ def main():
     bootstrap_parser.add_argument(
         "--db-path",
         default="playpalace.db",
-        help="Path to the server database (default: playpalace.db)",
+        help="Path to the server database (default resolves to var/server/playpalace.db)",
     )
     bootstrap_parser.add_argument(
         "--locale",

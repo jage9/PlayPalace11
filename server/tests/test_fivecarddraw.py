@@ -1,8 +1,8 @@
 import json
 
 from server.games.fivecarddraw.game import FiveCardDrawGame, FiveCardDrawOptions
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 def test_draw_game_creation():

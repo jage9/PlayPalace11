@@ -5,8 +5,8 @@ Tests for the Threes game.
 import json
 
 from server.games.threes.game import ThreesGame, ThreesPlayer, ThreesOptions
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 class TestThreesGameUnit:

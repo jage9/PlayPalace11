@@ -30,7 +30,7 @@ def pytest_runtest_setup(item):
 @pytest.fixture
 def mock_user():
     """Create a mock user."""
-    from server.users.test_user import MockUser
+    from server.core.users.test_user import MockUser
 
     return MockUser("TestPlayer")
 
@@ -38,7 +38,7 @@ def mock_user():
 @pytest.fixture
 def bot():
     """Create a bot user."""
-    from server.users.bot import Bot
+    from server.core.users.bot import Bot
 
     return Bot("TestBot")
 
@@ -55,7 +55,7 @@ def pig_game():
 def pig_game_with_players():
     """Create a Pig game with two players."""
     from server.games.pig.game import PigGame
-    from server.users.test_user import MockUser
+    from server.core.users.test_user import MockUser
 
     game = PigGame()
     user1 = MockUser("Alice")

@@ -6,11 +6,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
-# Relax budgets to C for now; prior B threshold flagged many existing blocks.
-MAX_ABSOLUTE = "C"
-MAX_MODULES = "C"
-MAX_AVERAGE = "C"
-TARGETS = ["server", "client"]
+MAX_ABSOLUTE = "B"
+MAX_MODULES = "B"
+MAX_AVERAGE = "B"
+TARGETS = ["server", "clients/desktop"]
 
 
 def main() -> int:

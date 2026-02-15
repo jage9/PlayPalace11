@@ -9,9 +9,9 @@ from pathlib import Path
 # Keep tests and vendored environments out of Bandit runs to avoid noise.
 EXCLUDES = [
     "server/tests",
-    "client/tests",
+    "clients/desktop/tests",
     "server/.venv",
-    "client/.venv",
+    "clients/desktop/.venv",
     ".venv",
 ]
 
@@ -32,7 +32,7 @@ def main() -> int:
         "-q",
         "-r",
         "server",
-        "client",
+        "clients/desktop",
         "-x",
         exclude_arg,
     ]

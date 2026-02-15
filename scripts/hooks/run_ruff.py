@@ -23,7 +23,7 @@ def find_uv() -> str:
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[2]
     uv = find_uv()
-    cmd = [uv, "tool", "run", "ruff", "check", "server", "client"]
+    cmd = [uv, "tool", "run", "ruff", "check", "server", "clients/desktop"]
     print("Running:", " ".join(cmd))
     proc = subprocess.run(cmd, cwd=repo_root, check=False)
     return proc.returncode

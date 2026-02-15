@@ -15,8 +15,8 @@ from server.games.yahtzee.game import (
     UPPER_CATEGORIES,
     LOWER_CATEGORIES,
 )
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 class TestYahtzeeScoring:

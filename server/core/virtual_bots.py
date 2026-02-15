@@ -402,7 +402,7 @@ class VirtualBotManager:
 
     def _validate_guided_tables(self) -> None:
         """Validate guided table rules against available games and bot counts."""
-        from ..games.registry import GameRegistry
+        from server.games.registry import GameRegistry
 
         available_games = {cls.get_type() for cls in GameRegistry.get_all()}
         for state in self._guided_tables.values():
@@ -629,7 +629,7 @@ class VirtualBotManager:
 
     def _restore_bot_user(self, bot: VirtualBot) -> None:
         """Restore a VirtualUser for a bot that was online."""
-        from ..users.virtual_user import VirtualUser
+        from .users.virtual_user import VirtualUser
 
         # Check if user already exists (e.g., from table loading for IN_GAME bots)
         existing_user = self._server._users.get(bot.name)
@@ -1217,7 +1217,7 @@ class VirtualBotManager:
 
     def _create_guided_table(self, bot: VirtualBot, state: GuidedTableState) -> bool:
         """Create a guided table and seat the bot as host."""
-        from ..games.registry import GameRegistry
+        from server.games.registry import GameRegistry
 
         user = self._server._users.get(bot.name)
         if not user:
@@ -1273,7 +1273,7 @@ class VirtualBotManager:
 
     def _bring_bot_online(self, bot: VirtualBot) -> None:
         """Bring a bot online."""
-        from ..users.virtual_user import VirtualUser
+        from .users.virtual_user import VirtualUser
 
         # Check if username is already taken by a real user
         if bot.name in self._server._users:
@@ -1420,7 +1420,7 @@ class VirtualBotManager:
 
     def _get_available_game_types(self) -> list:
         """Get game classes that bots can still create tables for."""
-        from ..games.registry import GameRegistry
+        from server.games.registry import GameRegistry
 
         available = []
         for game_class in GameRegistry.get_all():

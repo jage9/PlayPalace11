@@ -24,9 +24,9 @@ repos:
         files: ^server/pyproject\.toml$
         args: [--project, server]
       - id: uv-lock
-        name: uv lock (client)
-        files: ^client/pyproject\.toml$
-        args: [--project, client]
+        name: uv lock (desktop client)
+        files: ^clients/desktop/pyproject\.toml$
+        args: [--project, clients/desktop]
 
   - repo: https://github.com/tsvikas/sync-with-uv
     rev: v0.4.0
@@ -63,7 +63,7 @@ repos:
         entry: python scripts/hooks/check_packet_schema_sync.py
         language: python
         pass_filenames: false
-        files: ^(server/packet_schema\.json|client/packet_schema\.json)
+        files: ^(server/packet_schema\.json|clients/desktop/packet_schema\.json)
       - id: hadolint-containerfiles
         name: Hadolint (Containerfiles via podman)
         entry: python scripts/hooks/run_hadolint.py

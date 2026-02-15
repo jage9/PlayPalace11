@@ -18,7 +18,7 @@ from ...game_utils.dice import roll_dice
 from ...game_utils.game_result import GameResult, PlayerResult
 from ...game_utils.options import IntOption, option_field
 from ...messages.localization import Localization
-from ...users.preferences import DiceKeepingStyle
+from server.core.users.preferences import DiceKeepingStyle
 
 from .scoring import SET_DEFINITIONS, find_best_scoring
 from .bot import bot_think_trading, bot_think_taking
@@ -511,7 +511,7 @@ class TradeoffGame(Game):
         super().setup_keybinds()
 
         # Number keys 1-6 for dice actions (respects user preference)
-        from ...ui.keybinds import KeybindState
+        from server.core.ui.keybinds import KeybindState
         for v in range(1, 7):
             self.define_keybind(
                 str(v),

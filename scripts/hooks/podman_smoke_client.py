@@ -31,7 +31,7 @@ def main() -> int:
         podman,
         "build",
         "-f",
-        "containers/base/Containerfile",
+        "packaging/containers/base/Containerfile",
         "-t",
         BASE_IMAGE,
         ".",
@@ -43,10 +43,10 @@ def main() -> int:
         podman,
         "build",
         "-f",
-        "client/Containerfile",
+        "clients/desktop/Containerfile",
         "-t",
         CLIENT_IMAGE,
-        "client",
+        ".",
     ]
     if run(client_build, cwd=repo_root) != 0:
         return 1
@@ -61,7 +61,7 @@ def main() -> int:
         "python",
         "-m",
         "compileall",
-        "client",
+        "clients/desktop",
     ]
     return run(smoke_cmd, cwd=repo_root)
 

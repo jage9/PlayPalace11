@@ -5,7 +5,7 @@ import pytest
 
 from server.game_utils.lobby_actions_mixin import LobbyActionsMixin, BOT_NAMES
 from server.game_utils.actions import Action, ResolvedAction
-from server.users.base import MenuItem, EscapeBehavior
+from server.core.users.base import MenuItem, EscapeBehavior
 from server.games.base import Player
 from server.messages.localization import Localization
 

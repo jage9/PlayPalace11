@@ -5,8 +5,8 @@ import json
 import pytest
 
 from server.persistence.database import Database
-from server.tables.table import Table, TableMember
-from server.users.base import TrustLevel
+from server.core.tables.table import Table, TableMember
+from server.core.users.base import TrustLevel
 
 
 @pytest.fixture

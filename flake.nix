@@ -144,8 +144,8 @@
                 echo ""
                 echo "Common commands:"
                 echo "  nix develop . --command bash"
-                echo "  ./run_server.sh"
-                echo "  ./run_client.sh"
+                echo "  ./scripts/run_server.sh"
+                echo "  ./scripts/run_client.sh"
                 ${extraHook}
               '';
             };

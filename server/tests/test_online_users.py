@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 
 from server.core.server import Server
-from server.tables.manager import TableManager
-from server.users.test_user import MockUser
+from server.core.tables.manager import TableManager
+from server.core.users.test_user import MockUser
 from server.messages.localization import Localization
 
 # Ensure games are registered for name lookups.

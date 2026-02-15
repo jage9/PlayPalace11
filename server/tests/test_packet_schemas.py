@@ -151,10 +151,9 @@ def test_all_literal_types_are_in_schema() -> None:
     repo_root = Path(__file__).resolve().parents[2]
     scan_paths = [
         repo_root / "server" / "core",
-        repo_root / "server" / "users",
-        repo_root / "client" / "ui",
-        repo_root / "client" / "network_manager.py",
-        repo_root / "client" / "ui" / "slash_commands.py",
+        repo_root / "clients" / "desktop" / "ui",
+        repo_root / "clients" / "desktop" / "network_manager.py",
+        repo_root / "clients" / "desktop" / "ui" / "slash_commands.py",
     ]
     found = _extract_literal_types(scan_paths)
     # Filter out literals that aren't protocol packets but appear in UI widgets or helpers
@@ -194,4 +193,4 @@ def test_packet_schema_files_are_up_to_date(tmp_path: Path) -> None:
         check=True,
     )
     assert server_out.read_text(encoding="utf-8") == (server_dir / "packet_schema.json").read_text(encoding="utf-8")
-    assert client_out.read_text(encoding="utf-8") == (repo_root / "client" / "packet_schema.json").read_text(encoding="utf-8")
+    assert client_out.read_text(encoding="utf-8") == (repo_root / "clients" / "desktop" / "packet_schema.json").read_text(encoding="utf-8")

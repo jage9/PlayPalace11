@@ -1,6 +1,6 @@
 """Tests for user preference helpers."""
 
-from server.users.preferences import (
+from server.core.users.preferences import (
     DiceKeepingStyle,
     UserPreferences,
 )

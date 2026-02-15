@@ -3,8 +3,8 @@
 import functools
 from typing import TYPE_CHECKING
 
-from ..users.network_user import NetworkUser
-from ..users.base import MenuItem, EscapeBehavior, TrustLevel
+from .users.network_user import NetworkUser
+from .users.base import MenuItem, EscapeBehavior, TrustLevel
 from ..messages.localization import Localization
 
 if TYPE_CHECKING:

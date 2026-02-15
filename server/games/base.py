@@ -8,7 +8,7 @@ import threading
 from mashumaro.mixins.json import DataClassJSONMixin
 from mashumaro.config import BaseConfig
 
-from ..users.base import User
+from server.core.users.base import User
 from ..game_utils.actions import ActionSet
 from ..game_utils.options import (
     GameOptions as DeclarativeGameOptions,
@@ -30,7 +30,7 @@ from ..game_utils.event_handling_mixin import EventHandlingMixin
 from ..game_utils.action_set_creation_mixin import ActionSetCreationMixin
 from ..game_utils.action_execution_mixin import ActionExecutionMixin
 from ..game_utils.action_set_system_mixin import ActionSetSystemMixin
-from ..ui.keybinds import Keybind
+from server.core.ui.keybinds import Keybind
 
 
 @dataclass

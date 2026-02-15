@@ -1,8 +1,8 @@
 import json
 
 from server.games.holdem.game import HoldemGame, HoldemOptions
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 def test_holdem_game_creation():

@@ -18,7 +18,7 @@ def file_digest(path: Path) -> str:
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[2]
     server_schema = repo_root / "server" / "packet_schema.json"
-    client_schema = repo_root / "client" / "packet_schema.json"
+    client_schema = repo_root / "clients" / "desktop" / "packet_schema.json"
 
     missing = [p for p in (server_schema, client_schema) if not p.exists()]
     if missing:

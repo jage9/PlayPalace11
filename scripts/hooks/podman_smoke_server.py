@@ -31,7 +31,7 @@ def main() -> int:
         podman,
         "build",
         "-f",
-        "containers/base/Containerfile",
+        "packaging/containers/base/Containerfile",
         "-t",
         BASE_IMAGE,
         ".",

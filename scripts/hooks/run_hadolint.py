@@ -8,9 +8,9 @@ import sys
 from pathlib import Path
 
 CONTAINERFILES = (
-    "containers/base/Containerfile",
+    "packaging/containers/base/Containerfile",
     "server/Containerfile",
-    "client/Containerfile",
+    "clients/desktop/Containerfile",
 )
 IMAGE = "docker.io/hadolint/hadolint:latest"
 

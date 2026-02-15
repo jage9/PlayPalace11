@@ -13,7 +13,7 @@ from server.games.scopa.bot import (
 from server.games.registry import GameRegistry
 from server.game_utils.cards import Card, DeckFactory
 from server.game_utils.teams import TeamManager
-from server.users.test_user import MockUser
+from server.core.users.test_user import MockUser
 from server.messages.localization import Localization
 
 # Initialize localization for tests
@@ -349,7 +349,7 @@ class TestScopaPlayTest:
 
     def test_two_player_bot_game_completes(self):
         """Test that a 2-player bot game completes."""
-        from server.users.bot import Bot
+        from server.core.users.bot import Bot
 
         game = ScopaGame()
         game.options.target_score = 5  # Lower for faster test
@@ -372,7 +372,7 @@ class TestScopaPlayTest:
 
     def test_four_player_team_game(self):
         """Test a 4-player team game."""
-        from server.users.bot import Bot
+        from server.core.users.bot import Bot
 
         game = ScopaGame()
         game.options.target_score = 5

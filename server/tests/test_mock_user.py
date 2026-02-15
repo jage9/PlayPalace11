@@ -1,7 +1,7 @@
 """Tests for the MockUser utility used in games."""
 
-from server.users.base import MenuItem, EscapeBehavior
-from server.users.test_user import MockUser
+from server.core.users.base import MenuItem, EscapeBehavior
+from server.core.users.test_user import MockUser
 
 
 def test_mock_user_captures_messages_and_ui_state():

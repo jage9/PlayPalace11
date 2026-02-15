@@ -6,7 +6,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-TARGETS = ["server", "client"]
+TARGETS = ["server", "clients/desktop"]
 MIN_CONFIDENCE = "80"
 # Ignore vendored deps and virtualenvs to focus on project code only.
 EXCLUDES = [

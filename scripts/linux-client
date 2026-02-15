@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CLIENT_DIR="$ROOT/clients/desktop"
+
+need_cmd() {
+  local cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Error: '$cmd' is required but not found in PATH." >&2
+    exit 1
+  fi
+}
+
+check_python() {
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: python3 is required (>= 3.11)." >&2
+    exit 1
+  fi
+  python3 - <<'PY'
+import sys
+if sys.version_info < (3, 11):
+    raise SystemExit("Error: Python 3.11+ is required.")
+PY
+}
+
+check_client_deps() {
+  if ! (cd "$CLIENT_DIR" && uv run python - <<'PY'
+import wx
+import accessible_output2
+import websockets
+import sound_lib
+PY
+  ); then
+    echo "Error: client dependencies are missing." >&2
+    echo "Run: cd clients/desktop && uv sync" >&2
+    exit 1
+  fi
+}
+
+need_cmd uv
+check_python
+check_client_deps
+
+(
+  cd "$CLIENT_DIR"
+  export G_MESSAGES_DEBUG=""
+  export GTK_DISABLE_GAIL_WARNING=1
+  uv run python client.py
+)

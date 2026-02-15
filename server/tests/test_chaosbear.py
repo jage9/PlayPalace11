@@ -5,8 +5,8 @@ Tests for the Chaos Bear game.
 import json
 
 from server.games.chaosbear.game import ChaosBearGame, ChaosBearPlayer
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 class TestChaosBearGameUnit:

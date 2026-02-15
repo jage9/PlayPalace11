@@ -16,11 +16,11 @@ These notes cover how to enable the shared git hooks on Windows, WSL, and Linux.
 
 ## What runs on each commit?
 - **General hygiene:** `check-added-large-files`, `check-merge-conflict`, `detect-private-key`, `end-of-file-fixer`, `trailing-whitespace` (markdown-aware).
-- **Dependency safety:** `uv-lock` re-locks `server/uv.lock` or `client/uv.lock` when the corresponding `pyproject.toml` changes. `sync-with-uv` keeps tool versions in `.pre-commit-config.yaml` synchronized with the `uv.lock` entries.
+- **Dependency safety:** `uv-lock` re-locks `server/uv.lock` or `clients/desktop/uv.lock` when the corresponding `pyproject.toml` changes. `sync-with-uv` keeps tool versions in `.pre-commit-config.yaml` synchronized with the `uv.lock` entries.
 - **Source checks:**
   - `scripts/hooks/regen_packet_schema.py` reruns `uv run python tools/export_packet_schema.py` any time `server/network/packet_models.py` changes, so generated JSON stays fresh.
-  - `scripts/hooks/run_ruff.py` runs `uv tool run ruff check` over `server/` and `client/` with only the fatal rule set (`E9`, `F63`, `F7`). This catches syntax errors, undefined names, and stray break/continue issues without blocking stylistic cleanups.
-  - `scripts/hooks/check_packet_schema_sync.py` fails if `server/packet_schema.json` and `client/packet_schema.json` drift even after regeneration.
+  - `scripts/hooks/run_ruff.py` runs `uv tool run ruff check` over `server/` and `clients/desktop/` with only the fatal rule set (`E9`, `F63`, `F7`). This catches syntax errors, undefined names, and stray break/continue issues without blocking stylistic cleanups.
+  - `scripts/hooks/check_packet_schema_sync.py` fails if `server/packet_schema.json` and `clients/desktop/packet_schema.json` drift even after regeneration.
 
 ## Tips for different environments
 - **Windows-only devs:** set `core.autocrlf true` (default) and leave `.gitattributes` as checked in; LF endings are enforced for Python/JSON/TOML while `.bat`/`.ps1` stay CRLF.

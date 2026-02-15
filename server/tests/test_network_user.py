@@ -1,8 +1,8 @@
 """Tests for the NetworkUser implementation."""
 
-from server.users.base import EscapeBehavior, MenuItem, TrustLevel
-from server.users.network_user import NetworkUser
-from server.users.preferences import UserPreferences
+from server.core.users.base import EscapeBehavior, MenuItem, TrustLevel
+from server.core.users.network_user import NetworkUser
+from server.core.users.preferences import UserPreferences
 
 
 class DummyConnection:

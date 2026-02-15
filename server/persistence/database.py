@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 from dataclasses import dataclass
 
-from ..tables.table import Table
-from ..users.base import TrustLevel
+from server.core.tables.table import Table
+from server.core.users.base import TrustLevel
 
 
 @dataclass
@@ -666,7 +666,7 @@ class Database:
 
         # Deserialize members
         members_data = json.loads(row["members_json"])
-        from ..tables.table import TableMember
+        from server.core.tables.table import TableMember
 
         members = [
             TableMember(username=m["username"], is_spectator=m["is_spectator"])

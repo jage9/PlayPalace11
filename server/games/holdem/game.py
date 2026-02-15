@@ -22,7 +22,7 @@ from ...game_utils.poker_showdown import order_winners_by_button, format_showdow
 from ...game_utils.poker_payout import resolve_pot
 from ...game_utils import poker_log
 from ...messages.localization import Localization
-from ...ui.keybinds import KeybindState
+from server.core.ui.keybinds import KeybindState
 from .bot import bot_think
 from ...game_utils.poker_state import order_after_button
 

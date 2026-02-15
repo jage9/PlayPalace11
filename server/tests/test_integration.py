@@ -10,10 +10,10 @@ import os
 
 from server.persistence.database import Database
 from server.auth.auth import AuthManager, AuthResult
-from server.tables.manager import TableManager
-from server.tables.table import Table
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.tables.manager import TableManager
+from server.core.tables.table import Table
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 from server.games.pig.game import PigGame, PigOptions
 from server.games.registry import GameRegistry, get_game_class
 

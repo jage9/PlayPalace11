@@ -12,8 +12,8 @@ import random
 import json
 
 from server.games.midnight.game import MidnightGame, MidnightOptions
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 def _play_human_turn(game: MidnightGame, player) -> None:

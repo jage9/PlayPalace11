@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 from .actions import Action, ActionSet, EditboxInput
 from ..messages.localization import Localization
-from ..ui.keybinds import Keybind, KeybindState
+from server.core.ui.keybinds import Keybind, KeybindState
 
 
 class ActionSetCreationMixin:

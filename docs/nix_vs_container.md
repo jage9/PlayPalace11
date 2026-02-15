@@ -13,12 +13,12 @@ PlayPalace already ships `flake.nix`, `shell.nix`, and multiple Containerfiles. 
 - **Toolchain isolation:** images decouple from host package managers, which helps Windows hosts running PlayPalace via WSL or bare metal.
 
 ## Containerfiles in this repo
-- `containers/base/Containerfile` defines the uv-enabled base image shared by every other image. Build it first via `podman build containers/base -t playpalace/base:latest`.
+- `packaging/containers/base/Containerfile` defines the uv-enabled base image shared by every other image. Build it first via `podman build packaging/containers/base -t playpalace/base:latest`.
 - `server/Containerfile` builds the websocket game server. Build with `podman build -f server/Containerfile server -t playpalace/server:latest` (after the base image exists) and run via `podman run --rm -p 8000:8000 playpalace/server:latest`.
-- `client/Containerfile` bundles the wxPython desktop client for headless testing or remote GUI sessions. Build with `podman build -f client/Containerfile client -t playpalace/client:latest`. Run with X11/Wayland forwarding, e.g. `podman run --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix playpalace/client:latest python client.py`.
+- `clients/desktop/Containerfile` bundles the wxPython desktop client for headless testing or remote GUI sessions. Build with `podman build -f clients/desktop/Containerfile clients/desktop -t playpalace/client:latest`. Run with X11/Wayland forwarding, e.g. `podman run --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix playpalace/client:latest python client.py`.
 
 ## Blended workflows
-- **Hadolint as a bridge:** use the `hadolint-containerfiles` manual hook (`uv tool run pre-commit run hadolint-containerfiles`) or directly invoke `podman run --rm --mount type=bind,source=$PWD,target=/workspace,ro docker.io/hadolint/hadolint:latest containers/base/Containerfile server/Containerfile client/Containerfile` so devs and CI lint identical Containerfiles before builds.
+- **Hadolint as a bridge:** use the `hadolint-containerfiles` manual hook (`uv tool run pre-commit run hadolint-containerfiles`) or directly invoke `podman run --rm --mount type=bind,source=$PWD,target=/workspace,ro docker.io/hadolint/hadolint:latest packaging/containers/base/Containerfile server/Containerfile clients/desktop/Containerfile` so devs and CI lint identical Containerfiles before builds.
 - **Podman smoke hooks:** run `uv tool run pre-commit run podman-smoke-server` or `podman-smoke-client` to build the base + component image and execute a quick runtime check. CI can reuse the same hooks via `uv tool run pre-commit run --hook-stage manual --all-files`.
 - **Nix inside containers:** if desired, the Containerfile can call `nix develop` to produce artifacts that are then copied into the image, keeping single-source dependency logic while still shipping containerized images.
 

@@ -12,7 +12,7 @@ from server.core.virtual_bots import (
     VirtualBotManager,
     VirtualBotState,
 )
-from server.users.base import TrustLevel
+from server.core.users.base import TrustLevel
 
 from server.core.administration import AdministrationMixin
 

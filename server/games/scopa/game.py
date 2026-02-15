@@ -31,7 +31,7 @@ from ...game_utils.options import (
 from ...game_utils.teams import TeamManager
 from ...game_utils.round_timer import RoundTransitionTimer
 from ...messages.localization import Localization
-from ...ui.keybinds import KeybindState
+from server.core.ui.keybinds import KeybindState
 
 # Modular components
 from .capture import find_captures, select_best_capture, get_capture_hint

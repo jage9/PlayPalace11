@@ -30,8 +30,8 @@ from server.game_utils.cards import (
     RS_RANK_SKIP,
     RS_RANK_NINETY_NINE,
 )
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 class TestNinetyNineUnit:

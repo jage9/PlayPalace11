@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..ui.keybinds import KeybindState
+from server.core.ui.keybinds import KeybindState
 
 
 def setup_poker_keybinds(

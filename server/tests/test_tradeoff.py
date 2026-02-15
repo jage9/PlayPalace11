@@ -21,8 +21,8 @@ from server.games.tradeoff.scoring import (
     is_all_groups,
     is_all_triplets,
 )
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 class TestTradeoffScoring:

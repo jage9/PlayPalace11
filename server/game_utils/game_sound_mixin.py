@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..games.base import Player
-    from ..users.base import User
+    from server.core.users.base import User
 
 
 class GameSoundMixin:

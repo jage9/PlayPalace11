@@ -17,7 +17,7 @@ from ...game_utils.game_result import GameResult, PlayerResult
 from ...game_utils.round_timer import RoundTransitionTimer
 from ...game_utils.teams import Team, TeamManager
 from ...messages.localization import Localization
-from ...ui.keybinds import KeybindState
+from server.core.ui.keybinds import KeybindState
 
 from .cards import (
     Card,

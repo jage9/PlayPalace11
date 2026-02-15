@@ -5,7 +5,7 @@ import pytest
 
 from server.cli import bootstrap_owner
 from server.persistence.database import Database
-from server.users.base import TrustLevel
+from server.core.users.base import TrustLevel
 from server.auth.auth import AuthManager
 from server.core.server import Server, BOOTSTRAP_WARNING_ENV
 

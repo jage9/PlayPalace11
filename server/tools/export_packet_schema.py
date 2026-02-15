@@ -23,7 +23,7 @@ def _default_paths() -> tuple[Path, Path]:
     base_dir = Path(__file__).resolve().parents[1]
     repo_root = Path(__file__).resolve().parents[2]
     server_path = base_dir / "packet_schema.json"
-    client_path = repo_root / "client" / "packet_schema.json"
+    client_path = repo_root / "clients" / "desktop" / "packet_schema.json"
     return server_path, client_path
 
 

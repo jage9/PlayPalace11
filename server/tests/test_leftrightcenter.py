@@ -8,8 +8,8 @@ from server.games.leftrightcenter.game import (
     LeftRightCenterGame,
     LeftRightCenterOptions,
 )
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 def test_game_creation():

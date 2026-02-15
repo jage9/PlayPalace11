@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, InvalidHashError
 
-from ..users.base import TrustLevel
+from server.core.users.base import TrustLevel
 
 
 class AuthResult(Enum):

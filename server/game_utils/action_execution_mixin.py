@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 from .actions import Action, MenuInput, EditboxInput
 from .options import get_option_meta, MenuOption
-from ..users.base import MenuItem, EscapeBehavior
+from server.core.users.base import MenuItem, EscapeBehavior
 from ..messages.localization import Localization
 
 

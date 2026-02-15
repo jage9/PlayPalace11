@@ -9,7 +9,7 @@ import pytest
 
 from server.games.threes.game import ThreesGame
 from server.games.midnight.game import MidnightGame
-from server.users.test_user import MockUser
+from server.core.users.test_user import MockUser
 
 
 class TestActionIdPassing:

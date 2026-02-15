@@ -10,8 +10,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .actions import Action, ActionSet, Visibility
-from ..ui.keybinds import KeybindState
-from ..users.preferences import DiceKeepingStyle
+from server.core.ui.keybinds import KeybindState
+from server.core.users.preferences import DiceKeepingStyle
 
 if TYPE_CHECKING:
     from ..games.base import Player

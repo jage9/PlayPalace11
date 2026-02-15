@@ -6,9 +6,9 @@ import json
 import pytest
 
 from server.core.server import Server
-from server.users.network_user import NetworkUser
-from server.users.base import TrustLevel
-from server.users.preferences import DiceKeepingStyle
+from server.core.users.network_user import NetworkUser
+from server.core.users.base import TrustLevel
+from server.core.users.preferences import DiceKeepingStyle
 from server.messages.localization import Localization
 
 

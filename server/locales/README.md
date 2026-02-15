@@ -103,4 +103,4 @@ The localization system uses compiled caches for performance. If you modify `.ft
 
 ## Questions?
 
-See `server/plans/localization_and_messages.md` for design decisions and architecture notes.
+See `docs/design/plans/localization_and_messages.md` for design decisions and architecture notes.

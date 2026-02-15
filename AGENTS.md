@@ -1,10 +1,12 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `server/` is the v11 game server (modern Python). Core modules live in `server/core/`, game implementations in `server/games/`, shared game helpers in `server/game_utils/`, auth in `server/auth/`, persistence in `server/persistence/`, and localization in `server/messages/`.
+- `server/` is the v11 game server (modern Python). Core modules live in `server/core/` (including `server/core/users/`, `server/core/tables/`, and `server/core/ui/`), game implementations in `server/games/`, shared game helpers in `server/game_utils/`, auth in `server/auth/`, persistence in `server/persistence/`, and localization in `server/messages/`.
 - `server/tests/` contains pytest test suites (unit, integration, and play tests).
-- `client/` is a wxPython desktop client with UI code under `client/ui/`.
-- Design notes live in `server/plans/`.
+- `clients/desktop/` hosts the wxPython desktop client (UI code under `clients/desktop/ui/`); `clients/web/` contains the browser client assets.
+- `packaging/` centralizes container definitions and platform installers (Linux, Windows, etc.).
+- `var/` stores runtime artifacts (SQLite DB, logs, packaged builds). Everything inside is gitignored except the directory marker.
+- Design notes now live in `docs/design/`.
 
 ## Build, Test, and Development Commands
 This repo uses Python 3.11+ and `uv` for dependency management.
@@ -13,10 +15,11 @@ This repo uses Python 3.11+ and `uv` for dependency management.
   - `cd server && uv sync` — install server deps.
   - `cd server && uv run python main.py` — run server on default `0.0.0.0:8000`.
   - `cd server && uv run python main.py --help` — view server flags (e.g., `--ssl-cert`, `--ssl-key`).
-  - `cd server && uv run python tools/export_packet_schema.py` — regenerate the shared packet schema JSON (writes to both `server/` and `client/`).
+  - `cd server && uv run python tools/export_packet_schema.py` — regenerate the shared packet schema JSON (writes to both `server/` and `clients/desktop/`).
 - Client dev:
-  - `cd client && uv sync` — install client deps.
-  - `cd client && uv run python client.py` — run client.
+  - `cd clients/desktop && uv sync` — install client deps.
+  - `cd clients/desktop && uv run python client.py` — run client.
+  - Helper launchers live under `scripts/` (e.g., `scripts/run_client.sh`, `scripts/linux-client`).
 - Tests:
   - `cd server && uv run pytest` — run all server tests.
   - `cd server && uv run pytest -v` — verbose output.
@@ -26,7 +29,7 @@ This repo uses Python 3.11+ and `uv` for dependency management.
 
 ## Packet Schema Workflow
 - Authoritative packet definitions live in `server/network/packet_models.py`. Update these models whenever packet shapes change.
-- Run `cd server && uv run python tools/export_packet_schema.py` after editing the models; commit the updated `server/packet_schema.json` and `client/packet_schema.json`.
+- Run `cd server && uv run python tools/export_packet_schema.py` after editing the models; commit the updated `server/packet_schema.json` and `clients/desktop/packet_schema.json`.
 - Both the server and client perform runtime validation using these schemas, so stale JSON copies will break validation and should never be left un-regenerated.
 
 ## Coding Style & Naming Conventions

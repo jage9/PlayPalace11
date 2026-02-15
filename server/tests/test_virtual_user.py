@@ -1,7 +1,7 @@
 """Tests for the VirtualUser helper class."""
 
-from server.users.virtual_user import VirtualUser
-from server.users.base import MenuItem, TrustLevel, generate_virtual_bot_uuid
+from server.core.users.virtual_user import VirtualUser
+from server.core.users.base import MenuItem, TrustLevel, generate_virtual_bot_uuid
 
 
 def test_virtual_user_deterministic_uuid_and_flags():

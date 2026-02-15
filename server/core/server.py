@@ -32,10 +32,10 @@ from .virtual_bots import VirtualBotManager
 from ..network.websocket_server import WebSocketServer, ClientConnection
 from ..persistence.database import Database
 from ..auth.auth import AuthManager, AuthResult
-from ..tables.manager import TableManager
-from ..users.network_user import NetworkUser
-from ..users.base import MenuItem, EscapeBehavior, TrustLevel
-from ..users.preferences import UserPreferences, DiceKeepingStyle
+from .tables.manager import TableManager
+from .users.network_user import NetworkUser
+from .users.base import MenuItem, EscapeBehavior, TrustLevel
+from .users.preferences import UserPreferences, DiceKeepingStyle
 from ..games.registry import GameRegistry, get_game_class
 from ..messages.localization import Localization
 from ..network.packet_models import CLIENT_TO_SERVER_PACKET_ADAPTER
@@ -89,7 +89,15 @@ def _coerce_bool(value: Any, default: bool) -> bool:
 
 # Default paths based on module location
 _MODULE_DIR = Path(__file__).parent.parent
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_VAR_SERVER_DIR = _REPO_ROOT / "var" / "server"
 _DEFAULT_LOCALES_DIR = _MODULE_DIR / "locales"
+
+
+def _ensure_var_server_dir() -> Path:
+    """Ensure the repo-local var directory exists for server artifacts."""
+    _VAR_SERVER_DIR.mkdir(parents=True, exist_ok=True)
+    return _VAR_SERVER_DIR
 
 
 class Server(AdministrationMixin):
@@ -129,10 +137,13 @@ class Server(AdministrationMixin):
         self._default_locale = "en"
 
         if db_path == "playpalace.db":
-            db_path = str(_MODULE_DIR / "playpalace.db")
+            db_path_obj = _ensure_var_server_dir() / "playpalace.db"
+        else:
+            db_path_obj = Path(db_path)
+            db_path_obj.parent.mkdir(parents=True, exist_ok=True)
 
         # Initialize components
-        self._db = Database(db_path)
+        self._db = Database(db_path_obj)
         self._auth: AuthManager | None = None
         self._tables = TableManager()
         self._tables._server = self  # Enable callbacks from TableManager
@@ -700,7 +711,7 @@ class Server(AdministrationMixin):
 
     def _load_tables(self) -> None:
         """Load tables from database and restore their games."""
-        from ..users.bot import Bot
+        from .users.bot import Bot
 
         tables = self._db.load_all_tables()
         for table in tables:
@@ -2194,7 +2205,7 @@ class Server(AdministrationMixin):
             save_id: Saved table id.
         """
         import json
-        from ..users.bot import Bot
+        from .users.bot import Bot
 
         record = self._db.get_saved_table(save_id)
         if not record:
@@ -3662,7 +3673,7 @@ async def run_server(
 
     config_path = get_default_config_path()
     example_path = get_example_config_path()
-    db_path = _MODULE_DIR / "playpalace.db"
+    db_path = _ensure_var_server_dir() / "playpalace.db"
 
     if _ensure_config_file(config_path, example_path):
         return
@@ -3696,8 +3707,9 @@ async def run_server(
 
 def _configure_logging() -> None:
     """Configure server error logging."""
+    log_dir = _ensure_var_server_dir()
     logging.basicConfig(
-        filename="errors.log",
+        filename=str(log_dir / "errors.log"),
         level=logging.ERROR,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )

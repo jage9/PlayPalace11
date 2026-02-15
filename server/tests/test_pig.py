@@ -12,8 +12,8 @@ import random
 import json
 
 from server.games.pig.game import PigGame, PigOptions
-from server.users.test_user import MockUser
-from server.users.bot import Bot
+from server.core.users.test_user import MockUser
+from server.core.users.bot import Bot
 
 
 class TestPigGameUnit:

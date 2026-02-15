@@ -4,8 +4,8 @@ from server.game_utils.actions import Visibility
 from server.game_utils.cards import Card, Deck, DeckFactory
 from server.games.crazyeights.game import CrazyEightsGame, CrazyEightsOptions
 from server.messages.localization import Localization
-from server.users.bot import Bot
-from server.users.test_user import MockUser
+from server.core.users.bot import Bot
+from server.core.users.test_user import MockUser
 
 
 def create_game_with_host(host_name: str = "Host"):

@@ -44,7 +44,7 @@ from server.games.ageofheroes.bot import (
     score_card_for_discard,
 )
 from server.games.registry import GameRegistry
-from server.users.test_user import MockUser
+from server.core.users.test_user import MockUser
 from server.messages.localization import Localization
 
 # Initialize localization for tests
@@ -457,7 +457,7 @@ class TestPlayTest:
 
     def test_two_player_bot_game_runs(self):
         """Test that a 2-player bot game can run for some ticks."""
-        from server.users.bot import Bot
+        from server.core.users.bot import Bot
 
         game = AgeOfHeroesGame()
         game.options.victory_cities = 3  # Lower for faster test
@@ -480,7 +480,7 @@ class TestPlayTest:
 
     def test_four_player_game(self):
         """Test a 4-player game."""
-        from server.users.bot import Bot
+        from server.core.users.bot import Bot
 
         game = AgeOfHeroesGame()
 

@@ -72,39 +72,37 @@ class DurationEstimateMixin:
         self._estimate_errors = []
         self._estimate_threads = []
 
-        # Spawn simulation threads
-        def run_simulation():
-            """Run a single headless simulation and collect tick counts."""
-            try:
-                result = subprocess.run(
-                    base_cmd,  # nosec B603
-                    capture_output=True,
-                    text=True,
-                    timeout=600,  # 10 minute timeout per simulation
-                    shell=False,
-                )
-                if result.returncode == 0 and result.stdout:
-                    data = json_module.loads(result.stdout)
-                    if "ticks" in data and not data.get("timed_out", False):
+        # Run all simulations sequentially in a single background thread
+        # to avoid overloading the system with many concurrent processes.
+        def run_simulations():
+            """Run all simulations sequentially and collect tick counts."""
+            for _ in range(self.NUM_ESTIMATE_SIMULATIONS):
+                try:
+                    result = subprocess.run(
+                        base_cmd,  # nosec B603
+                        capture_output=True,
+                        text=True,
+                        timeout=120,  # 2 minute timeout per simulation
+                        shell=False,
+                    )
+                    if result.returncode == 0 and result.stdout:
+                        data = json_module.loads(result.stdout)
+                        if "ticks" in data and not data.get("timed_out", False):
+                            with self._estimate_lock:
+                                self._estimate_results.append(data["ticks"])
+                    elif result.stderr:
                         with self._estimate_lock:
-                            self._estimate_results.append(data["ticks"])
-                elif result.stderr:
+                            self._estimate_errors.append(result.stderr.strip()[:200])
+                except Exception as e:
                     with self._estimate_lock:
-                        self._estimate_errors.append(result.stderr.strip()[:200])
-            except Exception as e:
-                with self._estimate_lock:
-                    self._estimate_errors.append(str(e)[:200])
+                        self._estimate_errors.append(str(e)[:200])
 
-        for _ in range(self.NUM_ESTIMATE_SIMULATIONS):
-            thread = threading.Thread(target=run_simulation, daemon=True)
-            thread.start()
-            self._estimate_threads.append(thread)
+        thread = threading.Thread(target=run_simulations, daemon=True)
+        thread.start()
+        self._estimate_threads = [thread]
 
-        if self._estimate_threads:
-            self._estimate_running = True
-            self.broadcast_l("estimate-computing")
-        else:
-            self.broadcast_l("estimate-error")
+        self._estimate_running = True
+        self.broadcast_l("estimate-computing")
 
     def check_estimate_completion(self) -> None:
         """Check if duration estimation simulations have completed.

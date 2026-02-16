@@ -3,7 +3,7 @@
 These notes cover how to enable the shared git hooks on Windows, WSL, and Linux.
 
 ## Prerequisites
-- Python 3.11+ (already required by the repo)
+- Python 3.13+ (already required by the repo)
 - [`uv`](https://astral.sh/uv) available on `PATH`
 - [`pre-commit`](https://pre-commit.com); install it into the uv tool space via `uv tool install pre-commit`
 

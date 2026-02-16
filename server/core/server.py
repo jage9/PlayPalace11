@@ -1015,6 +1015,8 @@ class Server(AdministrationMixin):
             existing_user.set_preferences(preferences)
             existing_user.set_trust_level(trust_level)
             existing_user.set_approved(is_approved)
+            existing_user.set_client_type(client.client_type)
+            existing_user.set_platform(client.platform)
             return existing_user, False
 
         client.username = username
@@ -1028,6 +1030,8 @@ class Server(AdministrationMixin):
             trust_level=trust_level,
             approved=is_approved,
         )
+        user.set_client_type(client.client_type)
+        user.set_platform(client.platform)
         self._users[username] = user
         return user, True
 
@@ -1145,6 +1149,8 @@ class Server(AdministrationMixin):
         password_raw = packet.get("password", "")
         session_token = packet.get("session_token")
         locale = packet.get("locale") or self._default_locale
+        client.client_type = packet.get("client_type") or ""
+        client.platform = packet.get("platform") or ""
 
         if session_token:
             token_username = self._auth.validate_session(session_token)
@@ -3533,28 +3539,60 @@ class Server(AdministrationMixin):
         return sorted(self._users.keys(), key=str.lower)
 
     def _format_online_users_lines(self, user: NetworkUser) -> list[str]:
-        """Format online users with game names for menu display."""
+        """Format online users with detailed info for menu display.
+
+        Format: ``Username (Xh) - Status, Language LangName, ClientType (Platform)``
+        All labels are localized to the requesting *user*'s locale.
+        """
         lines: list[str] = []
         for username in self._get_online_usernames():
             online_user = self._users.get(username)
-            # Check if user is waiting for approval
+
+            # Time online
+            if online_user and hasattr(online_user, "format_time_online"):
+                time_str = online_user.format_time_online()
+            else:
+                time_str = ""
+
+            # Status (game or waiting for approval)
             if online_user and not online_user.approved:
                 status = Localization.get(user.locale, "online-user-waiting-approval")
-                lines.append(f"{username}: {status}")
-                continue
-
-            table = self._tables.find_user_table(username)
-            if table:
-                game_class = get_game_class(table.game_type)
-                game_name = (
-                    Localization.get(user.locale, game_class.get_name_key())
-                    if game_class
-                    else table.game_type
-                )
-                lines.append(f"{username}: {game_name}")
             else:
-                status = Localization.get(user.locale, "online-user-not-in-game")
-                lines.append(f"{username}: {status}")
+                table = self._tables.find_user_table(username)
+                if table:
+                    game_class = get_game_class(table.game_type)
+                    status = (
+                        Localization.get(user.locale, game_class.get_name_key())
+                        if game_class
+                        else table.game_type
+                    )
+                else:
+                    status = Localization.get(user.locale, "online-user-not-in-game")
+
+            # Build detail parts after status
+            parts = [status]
+
+            # Language
+            if online_user:
+                lang_label = Localization.get(user.locale, "language")
+                lang_name = Localization.get(user.locale, f"language-{online_user.locale}")
+                parts.append(f"{lang_label} {lang_name}")
+
+            # Client type and platform
+            client_type = getattr(online_user, "client_type", "") if online_user else ""
+            platform_str = getattr(online_user, "platform", "") if online_user else ""
+            if client_type:
+                if platform_str:
+                    parts.append(f"{client_type} ({platform_str})")
+                else:
+                    parts.append(client_type)
+
+            detail = ", ".join(parts)
+            if time_str:
+                line = f"{username} ({time_str}) - {detail}"
+            else:
+                line = f"{username} - {detail}"
+            lines.append(line)
         if not lines:
             lines.append(Localization.get(user.locale, "online-users-none"))
         return lines

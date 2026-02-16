@@ -13,8 +13,8 @@
       devShells = forAllSystems (system:
         let
           pkgs = import nixpkgs { inherit system; };
-          python = pkgs.python311;
-          pyPkgs = pkgs.python311Packages;
+          python = pkgs.python313;
+          pyPkgs = pkgs.python313Packages;
 
           pypiSrc = { pname, version, sha256, srcPname ? pname }:
             pkgs.fetchPypi {

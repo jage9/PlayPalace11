@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import platform as platform_mod
 import threading
 import hashlib
 import os
@@ -203,6 +204,8 @@ class NetworkManager:
             "major": 11,
             "minor": 0,
             "patch": 0,
+            "client_type": "Desktop",
+            "platform": f"{platform_mod.system()} {platform_mod.release()} {platform_mod.machine()}",
         }
         if self.session_token and self._session_valid():
             packet["session_token"] = self.session_token

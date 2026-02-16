@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 CLIENT_DIR="${REPO_ROOT}/client"
 PY_PREFIX="${REPO_ROOT}/.nix-python"
-PYTHON_SITE="${PY_PREFIX}/lib/python3.11/site-packages"
+PYTHON_SITE="${PY_PREFIX}/lib/python3.13/site-packages"
 REQUIRED_PACKAGES=(pytest pydantic jsonschema)
 
 if [[ ! -d "${PYTHON_SITE}" ]]; then

@@ -9,7 +9,7 @@
 - Design notes now live in `docs/design/`.
 
 ## Build, Test, and Development Commands
-This repo uses Python 3.11+ and `uv` for dependency management.
+This repo uses Python 3.13+ and `uv` for dependency management.
 
 - Server dev:
   - `cd server && uv sync` — install server deps.

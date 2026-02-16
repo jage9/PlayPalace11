@@ -47,6 +47,8 @@ class AuthorizePacket(BasePacket):
     major: int | None = None
     minor: int | None = None
     patch: int | None = None
+    client_type: str | None = None
+    platform: str | None = None
 
     @model_validator(mode="after")
     def _ensure_credentials(self) -> "AuthorizePacket":

@@ -419,6 +419,13 @@ function updateAuthStateFromPacket(packet) {
   persistAuthState();
 }
 
+function getPlatformString() {
+  if (navigator.userAgentData && navigator.userAgentData.platform) {
+    return navigator.userAgentData.platform;
+  }
+  return navigator.platform || "";
+}
+
 function buildAuthorizePacketFromSession(username, sessionToken) {
   return {
     type: "authorize",
@@ -427,6 +434,8 @@ function buildAuthorizePacketFromSession(username, sessionToken) {
     major: 11,
     minor: 0,
     patch: 0,
+    client_type: "Web",
+    platform: getPlatformString(),
   };
 }
 
@@ -1234,6 +1243,8 @@ async function bootstrap() {
         major: 11,
         minor: 0,
         patch: 0,
+        client_type: "Web",
+        platform: getPlatformString(),
       },
     });
   });

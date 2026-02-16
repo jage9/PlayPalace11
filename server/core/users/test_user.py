@@ -1,5 +1,6 @@
 """Test user implementation for unit and play tests."""
 
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -27,6 +28,9 @@ class MockUser(User):
         self._username = username
         self._locale = locale
         self._approved = approved
+        self._connected_at: float = time.time()
+        self._client_type: str = ""
+        self._platform: str = ""
         self.messages: list[Message] = []
         self.menus: dict[str, dict[str, Any]] = {}
         self.editboxes: dict[str, dict[str, Any]] = {}
@@ -50,6 +54,37 @@ class MockUser(User):
     def approved(self) -> bool:
         """Return whether the mock user is approved."""
         return self._approved
+
+    @property
+    def client_type(self) -> str:
+        """Return the mock user's client type."""
+        return self._client_type
+
+    def set_client_type(self, client_type: str) -> None:
+        """Set the mock user's client type."""
+        self._client_type = client_type
+
+    @property
+    def platform(self) -> str:
+        """Return the mock user's platform string."""
+        return self._platform
+
+    def set_platform(self, platform: str) -> None:
+        """Set the mock user's platform string."""
+        self._platform = platform
+
+    def format_time_online(self) -> str:
+        """Format the time this user has been connected."""
+        elapsed = time.time() - self._connected_at
+        minutes = int(elapsed // 60)
+        hours = int(elapsed // 3600)
+        days = int(elapsed // 86400)
+        if hours < 1:
+            return f"{max(minutes, 1)}m"
+        if hours < 24:
+            return f"{hours}h"
+        remaining_hours = hours % 24
+        return f"{days}d {remaining_hours}h"
 
     def speak(self, text: str, buffer: str = "misc") -> None:
         """Record a speech event."""

@@ -22,6 +22,8 @@ class DummyClient:
         self.address = address
         self.closed = False
         self.replaced = False
+        self.client_type = ""
+        self.platform = ""
 
     async def send(self, payload):
         self.sent.append(payload)

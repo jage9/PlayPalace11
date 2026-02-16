@@ -17,6 +17,18 @@
       "AuthorizePacket": {
         "additionalProperties": false,
         "properties": {
+          "client_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Client Type"
+          },
           "locale": {
             "anyOf": [
               {
@@ -76,6 +88,18 @@
             ],
             "default": null,
             "title": "Patch"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Platform"
           },
           "session_token": {
             "anyOf": [

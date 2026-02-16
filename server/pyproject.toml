@@ -3,7 +3,7 @@ name = "playpalace-server"
 version = "11.0.0"
 description = "PlayPalace v11 Game Server"
 readme = "../docs/design/plans/overview.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "websockets>=14.0",
     "mashumaro>=3.11",

@@ -1,5 +1,6 @@
 """Network user implementation for real players."""
 
+import time
 from typing import Any, TYPE_CHECKING
 
 from .base import User, MenuItem, EscapeBehavior, TrustLevel, generate_uuid
@@ -35,6 +36,9 @@ class NetworkUser(User):
         self._trust_level = trust_level
         self._approved = approved
         self._message_queue: list[dict[str, Any]] = []
+        self._connected_at: float = time.time()
+        self._client_type: str = ""
+        self._platform: str = ""
 
         # Track current UI state for session resumption
         self._current_menus: dict[str, dict[str, Any]] = {}
@@ -95,6 +99,37 @@ class NetworkUser(User):
     def set_connection(self, connection: "ClientConnection") -> None:
         """Update the active client connection."""
         self._connection = connection
+
+    @property
+    def client_type(self) -> str:
+        """Return the client type (e.g. 'Desktop', 'Web')."""
+        return self._client_type
+
+    def set_client_type(self, client_type: str) -> None:
+        """Set the client type."""
+        self._client_type = client_type
+
+    @property
+    def platform(self) -> str:
+        """Return the client platform string."""
+        return self._platform
+
+    def set_platform(self, platform: str) -> None:
+        """Set the client platform string."""
+        self._platform = platform
+
+    def format_time_online(self) -> str:
+        """Format the time this user has been connected."""
+        elapsed = time.time() - self._connected_at
+        minutes = int(elapsed // 60)
+        hours = int(elapsed // 3600)
+        days = int(elapsed // 86400)
+        if hours < 1:
+            return f"{max(minutes, 1)}m"
+        if hours < 24:
+            return f"{hours}h"
+        remaining_hours = hours % 24
+        return f"{days}d {remaining_hours}h"
 
     def _queue_packet(self, packet: dict[str, Any]) -> None:
         """Queue a packet to be sent to the client."""

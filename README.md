@@ -10,7 +10,7 @@ This is the primary place for discussion about the project.
 
 ## Quick Start
 
-You need Python 3.11 or later. We use [uv](https://docs.astral.sh/uv/) for dependency management on the server and client.
+You need Python 3.13 or later. We use [uv](https://docs.astral.sh/uv/) for dependency management on the server and client.
 
 ### Developing with nix
 

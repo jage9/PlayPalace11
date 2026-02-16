@@ -22,6 +22,11 @@ class DummyUser:
         self.menu_items: list | None = None
         self._current_menus: dict = {}
         self.uuid = f"uuid-{username}"
+        self.client_type = ""
+        self.platform = ""
+
+    def format_time_online(self) -> str:
+        return "1m"
 
     def speak_l(self, message_id: str, buffer: str = "misc", **kwargs) -> None:
         self.spoken.append((message_id, kwargs))

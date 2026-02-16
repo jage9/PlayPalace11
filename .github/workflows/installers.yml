@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: Install uv
         run: python -m pip install --upgrade uv
@@ -83,7 +83,7 @@ jobs:
     container:
       image: archlinux:base-devel
     env:
-      UV_PYTHON: "3.11"
+      UV_PYTHON: "3.13"
       UV_PYTHON_INSTALL_DIR: /opt/uv/python
       UV_CACHE_DIR: /opt/uv/cache
     steps:
@@ -98,11 +98,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up uv and Python 3.11
+      - name: Set up uv and Python 3.13
         run: |
           pip install --upgrade uv --break-system-packages
           mkdir -p /opt/uv/python /opt/uv/cache
-          uv python install 3.11
+          uv python install 3.13
           chmod -R a+rwX /opt/uv
           chown -R builder:builder "$GITHUB_WORKSPACE"
 
@@ -133,7 +133,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: Install uv
         run: python -m pip install --upgrade uv

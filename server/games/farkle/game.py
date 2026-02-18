@@ -756,6 +756,10 @@ class FarkleGame(ActionGuardMixin, Game):
                 pitch = self._get_hot_dice_pitch(farkle_player.hot_dice_chain)
                 self.play_sound("game_farkle/hotdice.ogg", pitch=pitch)
                 farkle_player.hot_dice_multiplier += 1
+                self.broadcast(
+                    f"Hot Dice Multiplier {farkle_player.hot_dice_multiplier}",
+                    buffer="table",
+                )
             else:
                 self.play_sound("game_farkle/hotdice.ogg")
 

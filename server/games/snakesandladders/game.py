@@ -191,7 +191,7 @@ class SnakesAndLaddersGame(Game):
                 id="check_positions",
                 label=Localization.get(locale, "check-positions"),
                 handler="_action_check_positions",
-                is_enabled=None, # Always enabled
+                is_enabled="_is_check_positions_enabled",
                 is_hidden="_is_check_positions_hidden"
             )
         )
@@ -211,11 +211,17 @@ class SnakesAndLaddersGame(Game):
         # Removed client_type check to allow Desktop clients (NVDA) to use this feature.
         return Visibility.VISIBLE
 
+    def _is_check_positions_enabled(self, player: Player) -> str | None:
+        """Check positions is only available while a game is active."""
+        if self.status != "playing":
+            return "action-not-playing"
+        return None
+
     def setup_keybinds(self) -> None:
         super().setup_keybinds()
         self.define_keybind("r", "Roll dice", ["roll"], state=KeybindState.ACTIVE)
         self.define_keybind("space", "Roll dice", ["roll"], state=KeybindState.ACTIVE)
-        self.define_keybind("c", "Check positions", ["check_positions"], state=KeybindState.ALWAYS, include_spectators=True)
+        self.define_keybind("c", "Check positions", ["check_positions"], state=KeybindState.ACTIVE, include_spectators=True)
 
     def _action_check_positions(self, player: Player, action_id: str) -> None:
         """Announce current player positions."""

@@ -27,6 +27,8 @@ def bot_think(game, player) -> str | None:
         return None
 
     resolved = turn_set.resolve_actions(game, player)
+    roll_enabled = game._is_roll_enabled(player) is None
+    bank_enabled = game._is_bank_enabled(player) is None
 
     # Rank and choose among legal scoring actions first.
     scoring_actions = [
@@ -35,10 +37,11 @@ def bot_think(game, player) -> str | None:
         if ra.enabled and ra.action.id.startswith("score_")
     ]
     if scoring_actions:
+        if _should_skip_lone_five(game, player, scoring_actions, roll_enabled):
+            # With a completed keep already taken this roll, we may skip a low-value
+            # lone 5 to preserve more dice for the next roll.
+            return "roll"
         return _choose_best_scoring_action(game, player, scoring_actions)
-
-    roll_enabled = game._is_roll_enabled(player) is None
-    bank_enabled = game._is_bank_enabled(player) is None
 
     if roll_enabled:
         dice_remaining = _next_roll_dice_count(player)
@@ -126,6 +129,59 @@ def _should_bank_now(game, player, dice_remaining: int, bank_enabled: bool) -> b
                 threshold *= 1.15
 
     return turn_points >= int(round(threshold))
+
+
+def _should_skip_lone_five(game, player, action_ids: list[str], roll_enabled: bool) -> bool:
+    """Return True when skipping a lone 5 is a better upside play than taking it."""
+    if not roll_enabled or not getattr(player, "has_taken_combo", False):
+        return False
+    if len(action_ids) != 1 or action_ids[0] != "score_single_5_5":
+        return False
+
+    # Must be able to roll these dice immediately after skipping.
+    dice_to_roll = len(player.current_roll)
+    if dice_to_roll <= 0:
+        return False
+
+    turn_points = player.turn_score
+    score = player.score
+    target = game.options.target_score
+    initial_bank = getattr(game.options, "initial_bank_score", 0)
+    best_other = max((p.score for p in game.players if p is not player), default=0)
+    hdm_on = bool(getattr(game.options, "hot_dice_multiplier", False))
+    mult = max(1, getattr(player, "hot_dice_multiplier", 1))
+
+    # If +5 reaches key breakpoints, take it.
+    if score + turn_points + 5 >= target:
+        return False
+    if score == 0 and initial_bank > 0 and (turn_points + 5) >= initial_bank:
+        return False
+
+    near_goal = (score + turn_points) >= (target - 40)
+    behind = score + 60 < best_other
+
+    if dice_to_roll >= 4:
+        if near_goal:
+            return False
+        # In HDM mode, preserve big dice pools to chase chained hot-dice value.
+        if hdm_on and mult >= 2:
+            return True
+        return True
+
+    if dice_to_roll == 3:
+        if near_goal:
+            return False
+        # 3-dice case: skip only when upside is needed.
+        if score == 0 and initial_bank > 0 and turn_points < initial_bank:
+            return True
+        if behind and turn_points < 70:
+            return True
+        if hdm_on and mult >= 2 and turn_points < 90:
+            return True
+        return False
+
+    # With 1-2 dice, lock points more often.
+    return False
 
 
 def _next_roll_dice_count(player) -> int:

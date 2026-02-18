@@ -1,6 +1,7 @@
 """Tests for Farkle game options and hot-dice behavior."""
 
 import random
+import pytest
 
 from server.core.users.test_user import MockUser
 from server.games.farkle.game import FarkleGame, FarkleOptions
@@ -86,6 +87,9 @@ def test_hot_dice_multiplier_progression_and_pitch():
     assert len(hot_dice_events) >= 2
     assert hot_dice_events[0]["pitch"] == 100
     assert hot_dice_events[1]["pitch"] == 106
+    spoken = user1.get_spoken_messages()
+    assert "Hot Dice Multiplier 2" in spoken
+    assert "Hot Dice Multiplier 3" in spoken
 
 
 def test_hot_dice_pitch_does_not_ramp_when_multiplier_off():
@@ -173,3 +177,44 @@ def test_bot_avoids_blocked_initial_bank_attempt():
     player1.has_taken_combo = True
 
     assert game.bot_think(player1) == "roll"
+
+
+@pytest.mark.parametrize(
+    "dice_to_roll,current_roll,banked_dice,expected",
+    [
+        # Policy: with 4+ dice, lone-5 is usually skipped for upside.
+        (5, [5, 2, 3, 6, 6], [1], "roll"),
+        (4, [5, 2, 6, 6], [1, 1], "roll"),
+        # Policy: with 1-2 dice, lock value instead of pressing.
+        (2, [5, 6], [1, 1, 2, 3], "score_single_5_5"),
+        (1, [5], [1, 1, 2, 3, 4], "score_single_5_5"),
+    ],
+)
+def test_bot_lone_five_policy_by_dice_bucket(
+    dice_to_roll, current_roll, banked_dice, expected
+):
+    game, _, player1 = _setup_game()
+
+    player1.score = 0
+    player1.turn_score = 20
+    player1.has_taken_combo = True
+    player1.current_roll = current_roll
+    player1.banked_dice = banked_dice
+    game.update_scoring_actions(player1)
+
+    # Sanity: scenario should match requested dice bucket.
+    assert len(player1.current_roll) == dice_to_roll
+    assert game.bot_think(player1) == expected
+
+
+def test_bot_takes_lone_five_when_it_hits_initial_bank_threshold():
+    game, _, player1 = _setup_game(FarkleOptions(initial_bank_score=100))
+
+    player1.score = 0
+    player1.turn_score = 95
+    player1.has_taken_combo = True
+    player1.banked_dice = [1, 1, 1]
+    player1.current_roll = [5, 2, 6]
+    game.update_scoring_actions(player1)
+
+    assert game.bot_think(player1) == "score_single_5_5"

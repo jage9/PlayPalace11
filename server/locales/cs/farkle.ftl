@@ -62,3 +62,13 @@ farkle-option-changed-target = Cílové skóre nastaveno na { $score }.
 # Důvody zakázaných akcí
 farkle-must-take-combo = Musíte nejprve vzít skórovací kombinaci.
 farkle-cannot-bank = Právě teď nemůžete uložit body.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Počáteční skóre pro uložení: { $score }
+farkle-enter-initial-bank-score = Zadejte počáteční skóre pro uložení (0-1000):
+farkle-option-changed-initial-bank-score = Počáteční skóre pro uložení nastaveno na { $score }.
+farkle-toggle-hot-dice-multiplier = Násobič hot dice: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Násobič hot dice nastaven na { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Minimální počáteční skóre pro uložení je { $score }.

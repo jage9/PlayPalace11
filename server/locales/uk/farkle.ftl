@@ -56,3 +56,13 @@ farkle-option-changed-target = Цільовий рахунок встановл�
 # Disabled action reasons
 farkle-must-take-combo = Спочатку ви повинні взяти рахункову комбінацію.
 farkle-cannot-bank = Ви не можете зберегти зараз.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Початковий поріг банку: { $score }
+farkle-enter-initial-bank-score = Введіть початковий поріг банку (0-1000):
+farkle-option-changed-initial-bank-score = Початковий поріг банку встановлено на { $score }.
+farkle-toggle-hot-dice-multiplier = Множник hot dice: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Множник hot dice встановлено на { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Мінімальний початковий поріг банку: { $score }.

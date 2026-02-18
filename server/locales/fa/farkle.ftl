@@ -56,3 +56,13 @@ farkle-option-changed-target = امتیاز هدف به { $score } تنظیم ش
 # Disabled action reasons
 farkle-must-take-combo = ابتدا باید یک ترکیب امتیازی را بردارید.
 farkle-cannot-bank = اکنون نمی‌توانید ذخیره کنید.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = امتیاز اولیه برای بانک: { $score }
+farkle-enter-initial-bank-score = امتیاز اولیه برای بانک را وارد کنید (0-1000):
+farkle-option-changed-initial-bank-score = امتیاز اولیه برای بانک روی { $score } تنظیم شد.
+farkle-toggle-hot-dice-multiplier = ضریب تاس داغ: { $enabled }
+farkle-option-changed-hot-dice-multiplier = ضریب تاس داغ روی { $enabled } تنظیم شد.
+
+# Action feedback
+farkle-minimum-initial-bank-score = حداقل امتیاز اولیه برای بانک { $score } است.

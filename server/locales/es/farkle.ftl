@@ -56,3 +56,13 @@ farkle-option-changed-target = Puntuación objetivo establecida en { $score }.
 # Disabled action reasons
 farkle-must-take-combo = Debes tomar una combinación de puntuación primero.
 farkle-cannot-bank = No puedes guardar ahora mismo.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Puntuación inicial para guardar: { $score }
+farkle-enter-initial-bank-score = Introduce la puntuación inicial para guardar (0-1000):
+farkle-option-changed-initial-bank-score = La puntuación inicial para guardar se estableció en { $score }.
+farkle-toggle-hot-dice-multiplier = Multiplicador de hot dice: { $enabled }
+farkle-option-changed-hot-dice-multiplier = El multiplicador de hot dice se estableció en { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = La puntuación mínima inicial para guardar es { $score }.

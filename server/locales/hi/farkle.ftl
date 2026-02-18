@@ -56,3 +56,13 @@ farkle-option-changed-target = लक्ष्य अंक { $score } पर �
 # Disabled action reasons
 farkle-must-take-combo = आपको पहले एक स्कोरिंग संयोजन लेना होगा।
 farkle-cannot-bank = आप अभी जमा नहीं कर सकते।
+
+# Additional Farkle options
+farkle-set-initial-bank-score = प्रारंभिक बैंक स्कोर: { $score }
+farkle-enter-initial-bank-score = प्रारंभिक बैंक स्कोर दर्ज करें (0-1000):
+farkle-option-changed-initial-bank-score = प्रारंभिक बैंक स्कोर { $score } पर सेट किया गया।
+farkle-toggle-hot-dice-multiplier = हॉट डाइस गुणक: { $enabled }
+farkle-option-changed-hot-dice-multiplier = हॉट डाइस गुणक { $enabled } पर सेट किया गया।
+
+# Action feedback
+farkle-minimum-initial-bank-score = न्यूनतम प्रारंभिक बैंक स्कोर { $score } है।

@@ -53,3 +53,13 @@ farkle-option-changed-target = Target score set to { $score }.
 # Disabled action reasons
 farkle-must-take-combo = You must take a scoring combination first.
 farkle-cannot-bank = You cannot bank right now.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Początkowy próg bankowania: { $score }
+farkle-enter-initial-bank-score = Wpisz początkowy próg bankowania (0-1000):
+farkle-option-changed-initial-bank-score = Początkowy próg bankowania ustawiono na { $score }.
+farkle-toggle-hot-dice-multiplier = Mnożnik hot dice: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Mnożnik hot dice ustawiono na { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Minimalny początkowy próg bankowania to { $score }.

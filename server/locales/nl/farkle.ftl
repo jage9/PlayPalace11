@@ -56,3 +56,13 @@ farkle-option-changed-target = Doelscore ingesteld op { $score }.
 # Disabled action reasons
 farkle-must-take-combo = Je moet eerst een scorende combinatie pakken.
 farkle-cannot-bank = Je kunt nu niet banken.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Beginscore om te banken: { $score }
+farkle-enter-initial-bank-score = Voer beginscore om te banken in (0-1000):
+farkle-option-changed-initial-bank-score = Beginscore om te banken ingesteld op { $score }.
+farkle-toggle-hot-dice-multiplier = Hot dice-multiplier: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Hot dice-multiplier ingesteld op { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Minimale beginscore om te banken is { $score }.

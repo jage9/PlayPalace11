@@ -59,3 +59,13 @@ farkle-option-changed-target = Scor țintă setat la { $score }.
 # Disabled action reasons
 farkle-must-take-combo = Trebuie să iei mai întâi o combinație de punctaj.
 farkle-cannot-bank = Nu poți depune acum.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Scor inițial pentru bancare: { $score }
+farkle-enter-initial-bank-score = Introdu scorul inițial pentru bancare (0-1000):
+farkle-option-changed-initial-bank-score = Scorul inițial pentru bancare a fost setat la { $score }.
+farkle-toggle-hot-dice-multiplier = Multiplicator hot dice: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Multiplicatorul hot dice a fost setat la { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Scorul minim inițial pentru bancare este { $score }.

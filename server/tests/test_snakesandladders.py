@@ -9,6 +9,7 @@ import json
 from server.games.snakesandladders.game import SnakesAndLaddersGame, SnakesPlayer
 from server.core.users.test_user import MockUser
 from server.core.users.bot import Bot
+from server.core.ui.keybinds import KeybindState
 
 
 class TestSnakesAndLaddersUnit:
@@ -54,6 +55,23 @@ class TestSnakesAndLaddersUnit:
         assert loaded.players[0].position == 50
         assert loaded.players[0].finished is False
         assert loaded.round == 0 # Base game has round 0 usually unless incremented
+
+    def test_check_positions_not_enabled_while_waiting(self):
+        game = SnakesAndLaddersGame()
+        user = MockUser("Alice")
+        player = game.add_player("Alice", user)
+        assert game._is_check_positions_enabled(player) == "action-not-playing"
+
+    def test_check_positions_keybind_active_not_always(self):
+        game = SnakesAndLaddersGame()
+        game.setup_keybinds()
+        c_bindings = game._keybinds.get("c", [])
+        check_binding = next(
+            (b for b in c_bindings if b.actions == ["check_positions"]),
+            None,
+        )
+        assert check_binding is not None
+        assert check_binding.state == KeybindState.ACTIVE
 
 
 class TestSnakesAndLaddersGameFlow:

@@ -56,3 +56,13 @@ farkle-option-changed-target = Zielpunktzahl auf { $score } gesetzt.
 # Gründe für deaktivierte Aktionen
 farkle-must-take-combo = Sie müssen zuerst eine Bewertungskombination nehmen.
 farkle-cannot-bank = Sie können jetzt nicht sichern.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Anfangs-Bankpunktzahl: { $score }
+farkle-enter-initial-bank-score = Anfangs-Bankpunktzahl eingeben (0-1000):
+farkle-option-changed-initial-bank-score = Anfangs-Bankpunktzahl auf { $score } gesetzt.
+farkle-toggle-hot-dice-multiplier = Hot-Dice-Multiplikator: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Hot-Dice-Multiplikator auf { $enabled } gesetzt.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Mindestwert für die Anfangs-Bankpunktzahl ist { $score }.

@@ -56,3 +56,13 @@ farkle-option-changed-target = Célpontszám beállítva { $score }-ra.
 # Disabled action reasons
 farkle-must-take-combo = Először egy pontozó kombinációt kell választanod.
 farkle-cannot-bank = Most nem rakhatsz be pontokat.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Kezdő bankolási pontszám: { $score }
+farkle-enter-initial-bank-score = Add meg a kezdő bankolási pontszámot (0-1000):
+farkle-option-changed-initial-bank-score = A kezdő bankolási pontszám { $score } értékre állítva.
+farkle-toggle-hot-dice-multiplier = Hot dice szorzó: { $enabled }
+farkle-option-changed-hot-dice-multiplier = A hot dice szorzó { $enabled } értékre állítva.
+
+# Action feedback
+farkle-minimum-initial-bank-score = A minimális kezdő bankolási pontszám { $score }.

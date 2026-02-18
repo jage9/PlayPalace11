@@ -53,3 +53,13 @@ farkle-option-changed-target = Điểm mục tiêu đã đặt là { $score }.
 # Lý do hành động bị vô hiệu hóa
 farkle-must-take-combo = Bạn phải chọn tổ hợp ăn điểm trước.
 farkle-cannot-bank = Bạn không thể chốt điểm lúc này.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Điểm ngân lần đầu: { $score }
+farkle-enter-initial-bank-score = Nhập điểm ngân lần đầu (0-1000):
+farkle-option-changed-initial-bank-score = Điểm ngân lần đầu đã được đặt thành { $score }.
+farkle-toggle-hot-dice-multiplier = Hệ số hot dice: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Hệ số hot dice đã được đặt thành { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Điểm ngân lần đầu tối thiểu là { $score }.

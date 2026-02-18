@@ -47,3 +47,13 @@ farkle-option-changed-target = 목표 점수가 { $score }점으로 설정되었
 # Disabled action reasons
 farkle-must-take-combo = 먼저 점수 조합을 선택해야 합니다.
 farkle-cannot-bank = 지금은 저금할 수 없습니다.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = 초기 뱅크 점수: { $score }
+farkle-enter-initial-bank-score = 초기 뱅크 점수를 입력하세요 (0-1000):
+farkle-option-changed-initial-bank-score = 초기 뱅크 점수가 { $score }(으)로 설정되었습니다.
+farkle-toggle-hot-dice-multiplier = 핫 다이스 배수: { $enabled }
+farkle-option-changed-hot-dice-multiplier = 핫 다이스 배수가 { $enabled }(으)로 설정되었습니다.
+
+# Action feedback
+farkle-minimum-initial-bank-score = 최소 초기 뱅크 점수는 { $score }입니다.

@@ -68,3 +68,13 @@ farkle-option-changed-target = تم تعيين النتيجة المستهدفة
 # Disabled action reasons
 farkle-must-take-combo = يجب أن تأخذ مجموعة تسجيل أولاً.
 farkle-cannot-bank = لا يمكنك الادخار الآن.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = نقاط الإيداع الأولي: { $score }
+farkle-enter-initial-bank-score = أدخل نقاط الإيداع الأولي (0-1000):
+farkle-option-changed-initial-bank-score = تم تعيين نقاط الإيداع الأولي إلى { $score }.
+farkle-toggle-hot-dice-multiplier = مضاعف النرد الساخن: { $enabled }
+farkle-option-changed-hot-dice-multiplier = تم تعيين مضاعف النرد الساخن إلى { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = الحد الأدنى لنقاط الإيداع الأولي هو { $score }.

@@ -56,3 +56,13 @@ farkle-option-changed-target = Skor target diatur ke { $score }.
 # Disabled action reasons
 farkle-must-take-combo = Anda harus mengambil kombinasi skor terlebih dahulu.
 farkle-cannot-bank = Anda tidak dapat menyimpan sekarang.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Skor bank awal: { $score }
+farkle-enter-initial-bank-score = Masukkan skor bank awal (0-1000):
+farkle-option-changed-initial-bank-score = Skor bank awal diatur ke { $score }.
+farkle-toggle-hot-dice-multiplier = Pengali hot dice: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Pengali hot dice diatur ke { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Skor bank awal minimum adalah { $score }.

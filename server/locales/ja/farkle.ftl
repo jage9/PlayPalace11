@@ -47,3 +47,13 @@ farkle-option-changed-target = 目標スコアが{ $score }に設定されまし
 # アクション無効理由
 farkle-must-take-combo = まずスコアリング組み合わせを取る必要があります。
 farkle-cannot-bank = 今はバンクできません。
+
+# Additional Farkle options
+farkle-set-initial-bank-score = 初回バンク必要スコア: { $score }
+farkle-enter-initial-bank-score = 初回バンク必要スコアを入力 (0-1000):
+farkle-option-changed-initial-bank-score = 初回バンク必要スコアを { $score } に設定しました。
+farkle-toggle-hot-dice-multiplier = ホットダイス倍率: { $enabled }
+farkle-option-changed-hot-dice-multiplier = ホットダイス倍率を { $enabled } に設定しました。
+
+# Action feedback
+farkle-minimum-initial-bank-score = 初回バンクの最低必要スコアは { $score } です。

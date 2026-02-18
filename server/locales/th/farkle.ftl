@@ -47,3 +47,13 @@ farkle-option-changed-target = ตั้งคะแนนเป้าหมา�
 # Disabled action reasons
 farkle-must-take-combo = คุณต้องเลือกคอมโบคะแนนก่อน
 farkle-cannot-bank = คุณไม่สามารถเก็บคะแนนได้ตอนนี้
+
+# Additional Farkle options
+farkle-set-initial-bank-score = คะแนนฝากครั้งแรก: { $score }
+farkle-enter-initial-bank-score = กรอกคะแนนฝากครั้งแรก (0-1000):
+farkle-option-changed-initial-bank-score = ตั้งค่าคะแนนฝากครั้งแรกเป็น { $score } แล้ว
+farkle-toggle-hot-dice-multiplier = ตัวคูณฮอตไดซ์: { $enabled }
+farkle-option-changed-hot-dice-multiplier = ตั้งค่าตัวคูณฮอตไดซ์เป็น { $enabled } แล้ว
+
+# Action feedback
+farkle-minimum-initial-bank-score = คะแนนฝากครั้งแรกขั้นต่ำคือ { $score }

@@ -123,3 +123,13 @@ farkle-option-changed-target = Конечный счёт установлен н
 # Disabled action reasons
 farkle-must-take-combo = Сначала нужно выбрать выигрышную комбинацию.
 farkle-cannot-bank = Сейчас нельзя забрать очки в банк.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Начальный порог банка: { $score }
+farkle-enter-initial-bank-score = Введите начальный порог банка (0-1000):
+farkle-option-changed-initial-bank-score = Начальный порог банка установлен на { $score }.
+farkle-toggle-hot-dice-multiplier = Множитель hot dice: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Множитель hot dice установлен на { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Минимальный начальный порог банка: { $score }.

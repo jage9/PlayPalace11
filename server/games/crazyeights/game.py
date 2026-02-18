@@ -242,6 +242,7 @@ class CrazyEightsGame(Game):
                 handler="_action_choose_suit",
                 is_enabled="_is_suit_choice_enabled",
                 is_hidden="_is_suit_choice_hidden",
+                get_label="_get_suit_choice_label",
                 show_in_actions_menu=False,
             )
         )
@@ -252,6 +253,7 @@ class CrazyEightsGame(Game):
                 handler="_action_choose_suit",
                 is_enabled="_is_suit_choice_enabled",
                 is_hidden="_is_suit_choice_hidden",
+                get_label="_get_suit_choice_label",
                 show_in_actions_menu=False,
             )
         )
@@ -262,6 +264,7 @@ class CrazyEightsGame(Game):
                 handler="_action_choose_suit",
                 is_enabled="_is_suit_choice_enabled",
                 is_hidden="_is_suit_choice_hidden",
+                get_label="_get_suit_choice_label",
                 show_in_actions_menu=False,
             )
         )
@@ -272,6 +275,7 @@ class CrazyEightsGame(Game):
                 handler="_action_choose_suit",
                 is_enabled="_is_suit_choice_enabled",
                 is_hidden="_is_suit_choice_hidden",
+                get_label="_get_suit_choice_label",
                 show_in_actions_menu=False,
             )
         )
@@ -867,6 +871,17 @@ class CrazyEightsGame(Game):
         if self._is_turn_action_enabled(player) is not None:
             return self._is_turn_action_enabled(player)
         return None
+
+    def _get_suit_choice_label(self, player: Player, action_id: str) -> str:
+        locale = self._player_locale(player)
+        suit = self._suit_from_action(action_id)
+        if suit is None:
+            return ""
+        suit_name = self._suit_name(suit, locale)
+        if not isinstance(player, CrazyEightsPlayer):
+            return suit_name
+        suit_count = sum(1 for card in player.hand if card.suit == suit)
+        return f"{suit_name} {suit_count}"
 
     def _is_check_enabled(self, player: Player) -> str | None:
         if self.status == "waiting":

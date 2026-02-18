@@ -56,3 +56,13 @@ farkle-option-changed-target = Hedef skor { $score } olarak ayarlandı.
 # Devre dışı eylem nedenleri
 farkle-must-take-combo = Önce bir skor kombinasyonu almalısın.
 farkle-cannot-bank = Şu anda bankaya yatıramazsın.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = İlk bank puanı: { $score }
+farkle-enter-initial-bank-score = İlk bank puanını girin (0-1000):
+farkle-option-changed-initial-bank-score = İlk bank puanı { $score } olarak ayarlandı.
+farkle-toggle-hot-dice-multiplier = Hot dice çarpanı: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Hot dice çarpanı { $enabled } olarak ayarlandı.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Minimum ilk bank puanı { $score }.

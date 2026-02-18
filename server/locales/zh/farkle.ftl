@@ -47,3 +47,13 @@ farkle-option-changed-target = 目标分数设置为 { $score }。
 # 操作禁用原因
 farkle-must-take-combo = 你必须先拿走一个得分组合。
 farkle-cannot-bank = 你现在不能存分。
+
+# Additional Farkle options
+farkle-set-initial-bank-score = 首次存分门槛: { $score }
+farkle-enter-initial-bank-score = 输入首次存分门槛 (0-1000):
+farkle-option-changed-initial-bank-score = 首次存分门槛已设置为 { $score }。
+farkle-toggle-hot-dice-multiplier = 热骰倍率: { $enabled }
+farkle-option-changed-hot-dice-multiplier = 热骰倍率已设置为 { $enabled }。
+
+# Action feedback
+farkle-minimum-initial-bank-score = 首次存分的最低门槛是 { $score }。

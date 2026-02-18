@@ -56,3 +56,13 @@ farkle-option-changed-target = Зорилтот оноо { $score } болж ө�
 # Disabled action reasons
 farkle-must-take-combo = Та эхлээд оноотой хослол авах ёстой.
 farkle-cannot-bank = Та одоо хадгалж чадахгүй.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Эхний банк хийх оноо: { $score }
+farkle-enter-initial-bank-score = Эхний банк хийх оноог оруулна уу (0-1000):
+farkle-option-changed-initial-bank-score = Эхний банк хийх оноог { $score } болголоо.
+farkle-toggle-hot-dice-multiplier = Халуун шооны үржүүлэгч: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Халуун шооны үржүүлэгчийг { $enabled } болголоо.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Эхний банк хийх доод оноо { $score }.

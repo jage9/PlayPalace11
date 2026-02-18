@@ -59,3 +59,13 @@ farkle-option-changed-target = Score cible défini sur { $score }.
 # Raisons d'action désactivée
 farkle-must-take-combo = Vous devez d'abord prendre une combinaison de score.
 farkle-cannot-bank = Vous ne pouvez pas banquer maintenant.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Score initial à banquer : { $score }
+farkle-enter-initial-bank-score = Entrez le score initial à banquer (0-1000) :
+farkle-option-changed-initial-bank-score = Le score initial à banquer est défini sur { $score }.
+farkle-toggle-hot-dice-multiplier = Multiplicateur hot dice : { $enabled }
+farkle-option-changed-hot-dice-multiplier = Le multiplicateur hot dice est défini sur { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Le score initial minimum à banquer est { $score }.

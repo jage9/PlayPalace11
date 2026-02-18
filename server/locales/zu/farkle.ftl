@@ -56,3 +56,13 @@ farkle-option-changed-target = Amaphuzu ahlosiwe asetelwe ku-{ $score }.
 # Disabled action reasons
 farkle-must-take-combo = Kufanele uthathe isihlanganiso samaphuzu kuqala.
 farkle-cannot-bank = Awukwazi ukugcina manje.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Amaphuzu okuqala okubanka: { $score }
+farkle-enter-initial-bank-score = Faka amaphuzu okuqala okubanka (0-1000):
+farkle-option-changed-initial-bank-score = Amaphuzu okuqala okubanka asethwe ku-{ $score }.
+farkle-toggle-hot-dice-multiplier = I-multiplier ye-hot dice: { $enabled }
+farkle-option-changed-hot-dice-multiplier = I-multiplier ye-hot dice isethwe ku-{ $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Amaphuzu amancane okuqala okubanka ngu-{ $score }.

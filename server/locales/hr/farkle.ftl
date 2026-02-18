@@ -56,3 +56,13 @@ farkle-option-changed-target = Ciljani rezultat postavljen na { $score }.
 # Disabled action reasons
 farkle-must-take-combo = Morate prvo uzeti kombinaciju za bodovanje.
 farkle-cannot-bank = Trenutno ne možete spremiti.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Početni bankovni rezultat: { $score }
+farkle-enter-initial-bank-score = Unesite početni bankovni rezultat (0-1000):
+farkle-option-changed-initial-bank-score = Početni bankovni rezultat postavljen na { $score }.
+farkle-toggle-hot-dice-multiplier = Množitelj hot dice: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Množitelj hot dice postavljen na { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Minimalni početni bankovni rezultat je { $score }.

@@ -21,9 +21,10 @@ from ...game_utils.dice import (
     has_n_of_a_kind,
 )
 from ...game_utils.game_result import GameResult, PlayerResult
-from ...game_utils.options import IntOption, option_field
+from ...game_utils.options import BoolOption, IntOption, option_field
 from ...messages.localization import Localization
 from server.core.ui.keybinds import KeybindState
+from .bot import bot_think
 
 
 @dataclass
@@ -35,6 +36,8 @@ class FarklePlayer(Player):
     current_roll: list[int] = field(default_factory=list)  # Dice available to take
     banked_dice: list[int] = field(default_factory=list)  # Dice taken this turn
     has_taken_combo: bool = False  # True after taking a combo (enables roll)
+    hot_dice_multiplier: int = 1  # Turn-only multiplier for combo scoring
+    hot_dice_chain: int = 0  # Number of hot-dice triggers in current turn
     # Stats tracking
     turns_taken: int = 0  # Number of turns completed (for avg points per turn)
     best_turn: int = 0  # Highest points banked in a single turn
@@ -53,6 +56,25 @@ class FarkleOptions(GameOptions):
             label="farkle-set-target-score",
             prompt="farkle-enter-target-score",
             change_msg="farkle-option-changed-target",
+        )
+    )
+    initial_bank_score: int = option_field(
+        IntOption(
+            default=0,
+            min_val=0,
+            max_val=1000,
+            value_key="score",
+            label="farkle-set-initial-bank-score",
+            prompt="farkle-enter-initial-bank-score",
+            change_msg="farkle-option-changed-initial-bank-score",
+        )
+    )
+    hot_dice_multiplier: bool = option_field(
+        BoolOption(
+            default=False,
+            value_key="enabled",
+            label="farkle-toggle-hot-dice-multiplier",
+            change_msg="farkle-option-changed-hot-dice-multiplier",
         )
     )
 
@@ -326,6 +348,8 @@ class FarkleGame(ActionGuardMixin, Game):
             current_roll=[],
             banked_dice=[],
             has_taken_combo=False,
+            hot_dice_multiplier=1,
+            hot_dice_chain=0,
         )
 
     def create_turn_action_set(self, player: FarklePlayer) -> ActionSet:
@@ -481,7 +505,8 @@ class FarkleGame(ActionGuardMixin, Game):
         # Add scoring actions first (sorted by points, highest first)
         for combo_type, number, points in combos:
             action_id = f"score_{combo_type}_{number}"
-            label = self._get_combo_label(locale, combo_type, number, points)
+            display_points = points * max(1, player.hot_dice_multiplier)
+            label = self._get_combo_label(locale, combo_type, number, display_points)
 
             turn_set._actions[action_id] = Action(
                 id=action_id,
@@ -628,6 +653,8 @@ class FarkleGame(ActionGuardMixin, Game):
             farkle_player.turn_score = 0
             farkle_player.current_roll = []
             farkle_player.banked_dice = []
+            farkle_player.hot_dice_multiplier = 1
+            farkle_player.hot_dice_chain = 0
             self.end_turn()
             return
 
@@ -700,7 +727,8 @@ class FarkleGame(ActionGuardMixin, Game):
             self.rebuild_player_menu(farkle_player)
             return
 
-        points = get_combination_points(combo_type, number)
+        base_points = get_combination_points(combo_type, number)
+        points = base_points * max(1, farkle_player.hot_dice_multiplier)
         combo_name = self._get_combo_name(combo_type, number)
 
         # Remove dice from current_roll and add to banked_dice
@@ -723,7 +751,17 @@ class FarkleGame(ActionGuardMixin, Game):
         # Check for hot dice
         if len(farkle_player.banked_dice) == 6 and len(farkle_player.current_roll) == 0:
             self.broadcast_l("farkle-hot-dice")
-            self.play_sound("game_farkle/hotdice.ogg")
+            if self.options.hot_dice_multiplier:
+                farkle_player.hot_dice_chain += 1
+                pitch = self._get_hot_dice_pitch(farkle_player.hot_dice_chain)
+                self.play_sound("game_farkle/hotdice.ogg", pitch=pitch)
+                farkle_player.hot_dice_multiplier += 1
+                self.broadcast(
+                    f"Hot Dice Multiplier {farkle_player.hot_dice_multiplier}",
+                    buffer="table",
+                )
+            else:
+                self.play_sound("game_farkle/hotdice.ogg")
 
         # Mark that we've taken a combo
         farkle_player.has_taken_combo = True
@@ -800,9 +838,32 @@ class FarkleGame(ActionGuardMixin, Game):
             player.banked_dice.extend(player.current_roll)
             player.current_roll = []
 
+    def _get_hot_dice_pitch(self, hot_dice_chain: int) -> int:
+        """Get pitch for hot-dice sound, raising by semitones after the first."""
+        if hot_dice_chain <= 1:
+            return 100
+
+        # 1 semitone up per additional hot-dice trigger in the turn.
+        semitone_steps = hot_dice_chain - 1
+        pitch = round(100 * (2 ** (semitone_steps / 12)))
+        return min(200, max(50, pitch))
+
     def _action_bank(self, player: Player, action_id: str) -> None:
         """Handle bank action."""
         farkle_player: FarklePlayer = player  # type: ignore
+        user = self.get_user(player)
+
+        if (
+            farkle_player.score == 0
+            and self.options.initial_bank_score > 0
+            and farkle_player.turn_score < self.options.initial_bank_score
+        ):
+            if user:
+                user.speak_l(
+                    "farkle-minimum-initial-bank-score",
+                    score=self.options.initial_bank_score,
+                )
+            return
 
         # Track stats before resetting
         farkle_player.turns_taken += 1
@@ -830,6 +891,8 @@ class FarkleGame(ActionGuardMixin, Game):
         farkle_player.current_roll = []
         farkle_player.banked_dice = []
         farkle_player.has_taken_combo = False
+        farkle_player.hot_dice_multiplier = 1
+        farkle_player.hot_dice_chain = 0
 
         self.end_turn()
 
@@ -871,6 +934,8 @@ class FarkleGame(ActionGuardMixin, Game):
             farkle_p.current_roll = []
             farkle_p.banked_dice = []
             farkle_p.has_taken_combo = False
+            farkle_p.hot_dice_multiplier = 1
+            farkle_p.hot_dice_chain = 0
 
         # Play intro music (using pig music as placeholder)
         self.play_music("game_pig/mus.ogg")
@@ -902,6 +967,8 @@ class FarkleGame(ActionGuardMixin, Game):
         farkle_player.current_roll = []
         farkle_player.banked_dice = []
         farkle_player.has_taken_combo = False
+        farkle_player.hot_dice_multiplier = 1
+        farkle_player.hot_dice_chain = 0
 
         # Clear stale scoring actions from previous turn (current_roll is empty now)
         self.update_scoring_actions(farkle_player)
@@ -927,67 +994,7 @@ class FarkleGame(ActionGuardMixin, Game):
         BotHelper.on_tick(self)
 
     def bot_think(self, player: FarklePlayer) -> str | None:
-        """Bot AI decision making."""
-        turn_set = self.get_action_set(player, "turn")
-        if not turn_set:
-            return None
-
-        # Resolve actions to get enabled state
-        resolved = turn_set.resolve_actions(self, player)
-
-        # Take highest-value scoring combo first
-        for ra in resolved:
-            if ra.enabled and ra.action.id.startswith("score_"):
-                return ra.action.id
-
-        # Check roll/bank enabled state
-        roll_enabled = self._is_roll_enabled(player) is None
-        bank_enabled = self._is_bank_enabled(player) is None
-
-        if roll_enabled:
-            # Banking decision based on dice remaining and points
-            dice_remaining = 6 - len(player.banked_dice)
-            if dice_remaining == 0:
-                dice_remaining = 6  # Hot dice
-
-            # Check if someone already reached target score
-            score_to_beat = None
-            for other in self.players:
-                if other != player:
-                    other_farkle: FarklePlayer = other  # type: ignore
-                    if other_farkle.score >= self.options.target_score:
-                        if score_to_beat is None or other_farkle.score > score_to_beat:
-                            score_to_beat = other_farkle.score
-
-            potential_total = player.score + player.turn_score
-
-            # If someone has already won, must beat them or bust trying
-            if score_to_beat is not None and potential_total <= score_to_beat:
-                return "roll"
-
-            # Banking decision based on turn score and dice remaining
-            if player.turn_score >= 35:
-                # Bank probability increases as fewer dice remain
-                bank_probabilities = {
-                    6: 0.40,
-                    5: 0.50,
-                    4: 0.55,
-                    3: 0.65,
-                    2: 0.70,
-                    1: 0.75,
-                }
-                bank_prob = bank_probabilities.get(dice_remaining, 0.50)
-
-                if random.random() < bank_prob:  # nosec B311
-                    if bank_enabled:
-                        return "bank"
-
-            return "roll"
-
-        if bank_enabled:
-            return "bank"
-
-        return None
+        return bot_think(self, player)
 
     def _on_turn_end(self) -> None:
         """Handle end of a player's turn."""

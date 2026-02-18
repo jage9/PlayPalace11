@@ -56,3 +56,13 @@ farkle-option-changed-target = Målpoäng inställt på { $score }.
 # Disabled action reasons
 farkle-must-take-combo = Du måste först ta en poänggivande kombination.
 farkle-cannot-bank = Du kan inte spara just nu.
+
+# Additional Farkle options
+farkle-set-initial-bank-score = Startpoäng för bankning: { $score }
+farkle-enter-initial-bank-score = Ange startpoäng för bankning (0-1000):
+farkle-option-changed-initial-bank-score = Startpoäng för bankning satt till { $score }.
+farkle-toggle-hot-dice-multiplier = Hot dice-multiplikator: { $enabled }
+farkle-option-changed-hot-dice-multiplier = Hot dice-multiplikator satt till { $enabled }.
+
+# Action feedback
+farkle-minimum-initial-bank-score = Minsta startpoäng för bankning är { $score }.

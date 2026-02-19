@@ -89,8 +89,10 @@ Action/menu conventions:
 - Non-turn game actions (e.g., view board, read top card/pot) should be Actions-menu only, not turn menu.
 - Keep Actions menu order consistent: turn actions → game-specific actions → standard/global actions.
 - If the game uses a custom status readout (e.g., Pirates/Mile by Mile), hide base `check_scores`/`check_scores_detailed` and wire `S`/`Shift+S` to the custom status.
-- If you want the global score system to work, initialize and update `TeamManager` (even in individual mode) unless you have a game-specific alternative.
+- If you want the global score system to work, initialize and update `TeamManager` (even in individual mode) unless you have a game-specific alternative. If your game tracks scores on player objects instead of TeamManager, you must override `_action_check_scores`, `_action_check_scores_detailed`, `_is_check_scores_enabled`, and `_is_check_scores_detailed_enabled` — otherwise the S key will always say "no scores available."
 - Keep keybinds consistent across games for common actions (e.g., `R` roll, `D` draw, `S` status/score).
+
+**Menu focus bug — READ THIS:** When the client receives a rebuilt menu, it preserves focus on the previously selected item *by ID*. If your game has actions that are always visible regardless of whose turn it is (e.g., "view pipe", "read board"), those actions shift position when turn-specific actions appear or disappear. The client follows the item to its new position, which can leave the cursor stuck at the bottom of the menu (down arrow does nothing). **Fix:** In your `_start_turn` method, use `self.rebuild_player_menu(player, position=1)` for the current player to reset focus to the first item. See Rolling Balls for an example. Any game where some menu actions are visible between turns is susceptible to this bug.
 
 ## Step 4: Test with the CLI
 

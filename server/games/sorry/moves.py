@@ -12,6 +12,11 @@ from .state import (
     normalize_track_position,
 )
 
+_SLIDE_START_TO_STEPS_BY_OFFSET: dict[int, int] = {
+    5: 4,
+    12: 3,
+}
+
 
 @dataclass(frozen=True)
 class PawnDestination:
@@ -489,6 +494,50 @@ def _capture_opponents_on_track(
                     _send_pawn_to_start(pawn)
 
 
+def _resolve_slide_for_pawn(
+    state: SorryGameState,
+    player_state: SorryPlayerState,
+    pawn: SorryPawnState,
+    rules: SorryRulesProfile,
+) -> None:
+    if pawn.zone != "track" or pawn.track_position is None:
+        return
+
+    start = normalize_track_position(pawn.track_position)
+    side_offset = start % 15
+    slide_steps = _SLIDE_START_TO_STEPS_BY_OFFSET.get(side_offset)
+    if slide_steps is None:
+        return
+
+    slide_owner_seat = start // 15
+    same_color_slide = slide_owner_seat == player_state.seat_index
+
+    policy_id = rules.slide_policy_id()
+    if policy_id == "a5065_core":
+        should_slide = same_color_slide
+    else:
+        # Classic and unknown policy ids keep classic behavior.
+        should_slide = not same_color_slide
+    if not should_slide:
+        return
+
+    end = normalize_track_position(start + slide_steps)
+    slide_positions = {
+        normalize_track_position(start + step)
+        for step in range(slide_steps + 1)
+    }
+    for other_state in state.player_states.values():
+        for other_pawn in other_state.pawns:
+            if other_pawn is pawn:
+                continue
+            if other_pawn.zone != "track" or other_pawn.track_position is None:
+                continue
+            if normalize_track_position(other_pawn.track_position) in slide_positions:
+                _send_pawn_to_start(other_pawn)
+
+    pawn.track_position = end
+
+
 def apply_move(
     state: SorryGameState,
     player_state: SorryPlayerState,
@@ -496,7 +545,6 @@ def apply_move(
     rules: SorryRulesProfile,
 ) -> None:
     """Apply a legal move to mutable game state."""
-    _ = rules
 
     if move.move_type == "start":
         pawn = _get_pawn(player_state, move.pawn_index)
@@ -514,6 +562,7 @@ def apply_move(
             raise ValueError("Start square blocked by own pawn")
         _apply_destination(pawn, destination)
         _capture_opponents_on_track(state, player_state, pawn.track_position)
+        _resolve_slide_for_pawn(state, player_state, pawn, rules)
         return
 
     if move.move_type in {"forward", "sorry_fallback_forward"}:
@@ -532,6 +581,7 @@ def apply_move(
         _apply_destination(pawn, destination)
         if pawn.zone == "track":
             _capture_opponents_on_track(state, player_state, pawn.track_position)
+            _resolve_slide_for_pawn(state, player_state, pawn, rules)
         return
 
     if move.move_type == "backward":
@@ -549,6 +599,7 @@ def apply_move(
             raise ValueError("Backward destination blocked by own pawn")
         _apply_destination(pawn, destination)
         _capture_opponents_on_track(state, player_state, pawn.track_position)
+        _resolve_slide_for_pawn(state, player_state, pawn, rules)
         return
 
     if move.move_type == "swap":
@@ -572,6 +623,7 @@ def apply_move(
             opponent_pawn.track_position,
             pawn.track_position,
         )
+        _resolve_slide_for_pawn(state, player_state, pawn, rules)
         return
 
     if move.move_type == "sorry":
@@ -603,6 +655,7 @@ def apply_move(
         _send_pawn_to_start(opponent_pawn)
         _apply_destination(pawn, destination)
         _capture_opponents_on_track(state, player_state, pawn.track_position)
+        _resolve_slide_for_pawn(state, player_state, pawn, rules)
         return
 
     if move.move_type == "split7":
@@ -657,9 +710,11 @@ def apply_move(
         _apply_destination(primary, first_destination)
         if primary.zone == "track":
             _capture_opponents_on_track(state, player_state, primary.track_position)
+            _resolve_slide_for_pawn(state, player_state, primary, rules)
         _apply_destination(secondary, second_destination)
         if secondary.zone == "track":
             _capture_opponents_on_track(state, player_state, secondary.track_position)
+            _resolve_slide_for_pawn(state, player_state, secondary, rules)
         return
 
     raise ValueError(f"Unsupported move type: {move.move_type}")

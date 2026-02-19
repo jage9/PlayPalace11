@@ -1,25 +1,41 @@
 # Sorry Developer Notes
 
-This package implements the `sorry` board game using the Classic `00390` rules
-profile as the current baseline.
+This package implements the `sorry` board game with profile-selectable rules:
+`classic_00390` and `a5065_core`.
 
 ## Module map
 
 - `game.py`: game integration (turn flow, actions, menus, keybinds, bot ticks).
 - `state.py`: serializable game/player/pawn state plus deck/track helpers.
-- `rules.py`: rules-profile interface and classic ruleset declaration.
+- `rules.py`: rules-profile interface and profile declarations.
 - `moves.py`: legal move generation and move application.
 - `bot.py`: deterministic move chooser over legal move candidates.
 
 ## Core invariants
 
-- Each player has exactly 4 pawns with mutually exclusive zones:
+- Each player's pawn count is profile-driven (`4` classic, `3` A5065 core),
+  with mutually exclusive zones:
   `start`, `track`, `home_path`, `home`.
 - A player's own pawns cannot share a track position or home-path step.
 - Entry to `home` requires exact count (no overshoot).
 - Turn flow is phase-based:
   `draw -> choose_move (if needed) -> end/advance`.
-- Card `2` grants another turn after resolving the move.
+- Card `2` extra-turn behavior is profile-driven.
+
+## Rules profile matrix
+
+- `classic_00390`:
+  - 4 pawns per player
+  - leave start with cards `1` and `2`
+  - card `2` grants extra turn
+  - `SORRY!` requires replacement target from start
+  - slide triggers on other-color slide starts only
+- `a5065_core`:
+  - 3 pawns per player
+  - leave start with any forward-value card
+  - card `2` does not grant extra turn
+  - `SORRY!` falls back to forward 4 when no replacement target exists
+  - slide triggers on own-color slide starts only
 
 ## Action and keybind behavior
 

@@ -136,6 +136,89 @@ def test_a5065_sorry_card_does_not_add_fallback_when_replace_exists() -> None:
     assert not any(move.move_type == "sorry_fallback_forward" for move in moves)
 
 
+def test_classic_slide_triggers_on_other_color_and_bumps_path() -> None:
+    state = build_initial_game_state(["p1", "p2"], shuffle_deck=False)
+    p1 = state.player_states["p1"]
+    p2 = state.player_states["p2"]
+    _set_track(p1.pawns[0], 19)
+    _set_track(p2.pawns[0], 20)
+    _set_track(p2.pawns[1], 22)
+    _set_track(p2.pawns[2], 24)
+
+    moves = generate_legal_moves(state, p1, "1", Classic00390Rules())
+    move = _find_move(moves, move_type="forward", pawn_index=1, steps=1)
+    apply_move(state, p1, move, Classic00390Rules())
+
+    assert p1.pawns[0].zone == "track"
+    assert p1.pawns[0].track_position == 24
+    assert p2.pawns[0].zone == "start"
+    assert p2.pawns[1].zone == "start"
+    assert p2.pawns[2].zone == "start"
+
+
+def test_classic_slide_does_not_trigger_on_own_color_start() -> None:
+    state = build_initial_game_state(["p1", "p2"], shuffle_deck=False)
+    p1 = state.player_states["p1"]
+    _set_track(p1.pawns[0], 4)
+
+    moves = generate_legal_moves(state, p1, "1", Classic00390Rules())
+    move = _find_move(moves, move_type="forward", pawn_index=1, steps=1)
+    apply_move(state, p1, move, Classic00390Rules())
+
+    assert p1.pawns[0].track_position == 5
+
+
+def test_a5065_slide_triggers_on_own_color_and_bumps_path() -> None:
+    state = build_initial_game_state(["p1", "p2"], pawns_per_player=3, shuffle_deck=False)
+    p1 = state.player_states["p1"]
+    p2 = state.player_states["p2"]
+    _set_track(p1.pawns[0], 4)
+    _set_track(p1.pawns[1], 9)
+    _set_track(p2.pawns[0], 7)
+
+    moves = generate_legal_moves(state, p1, "1", A5065CoreRules())
+    move = _find_move(moves, move_type="forward", pawn_index=1, steps=1)
+    apply_move(state, p1, move, A5065CoreRules())
+
+    assert p1.pawns[0].zone == "track"
+    assert p1.pawns[0].track_position == 9
+    assert p1.pawns[1].zone == "start"
+    assert p2.pawns[0].zone == "start"
+
+
+def test_a5065_slide_does_not_trigger_on_other_color_start() -> None:
+    state = build_initial_game_state(["p1", "p2"], pawns_per_player=3, shuffle_deck=False)
+    p1 = state.player_states["p1"]
+    p2 = state.player_states["p2"]
+    _set_track(p1.pawns[0], 19)
+    _set_track(p2.pawns[0], 22)
+
+    moves = generate_legal_moves(state, p1, "1", A5065CoreRules())
+    move = _find_move(moves, move_type="forward", pawn_index=1, steps=1)
+    apply_move(state, p1, move, A5065CoreRules())
+
+    assert p1.pawns[0].track_position == 20
+    assert p2.pawns[0].zone == "track"
+    assert p2.pawns[0].track_position == 22
+
+
+def test_classic_swap_into_other_color_slide_triggers_slide() -> None:
+    state = build_initial_game_state(["p1", "p2"], shuffle_deck=False)
+    p1 = state.player_states["p1"]
+    p2 = state.player_states["p2"]
+    _set_track(p1.pawns[0], 0)
+    _set_track(p1.pawns[1], 22)
+    _set_track(p2.pawns[0], 20)
+
+    moves = generate_legal_moves(state, p1, "11", Classic00390Rules())
+    swap_move = _find_move(moves, move_type="swap", pawn_index=1)
+    apply_move(state, p1, swap_move, Classic00390Rules())
+
+    assert p1.pawns[0].track_position == 24
+    assert p1.pawns[1].zone == "start"
+    assert p2.pawns[0].track_position == 0
+
+
 def test_forward_move_captures_opponent_on_landing_square() -> None:
     state = build_initial_game_state(["p1", "p2"], shuffle_deck=False)
     p1 = state.player_states["p1"]

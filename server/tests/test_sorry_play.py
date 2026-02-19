@@ -61,11 +61,13 @@ def _run_bot_game(
     auto_apply_single_move: bool,
     faster_setup_one_pawn_out: bool,
     max_ticks: int,
+    rules_profile: str = "classic_00390",
     reload_every: int | None = None,
 ) -> tuple[SorryGame, int]:
     random.seed(seed)
     game = SorryGame(
         options=SorryOptions(
+            rules_profile=rules_profile,
             auto_apply_single_move=auto_apply_single_move,
             faster_setup_one_pawn_out=faster_setup_one_pawn_out,
         )
@@ -123,6 +125,20 @@ def test_two_bot_game_completes_with_save_reload_cycles() -> None:
     assert ticks < 4000
 
 
+def test_two_bot_game_completes_from_fresh_start_a5065_core() -> None:
+    """A5065 core bot game should complete from a fresh start."""
+    game, ticks = _run_bot_game(
+        seed=4444,
+        rules_profile="a5065_core",
+        auto_apply_single_move=False,
+        faster_setup_one_pawn_out=False,
+        max_ticks=4000,
+    )
+    assert game.status == "finished"
+    assert game.game_active is False
+    assert ticks < 4000
+
+
 def test_mixed_human_bot_table_progresses_cleanly() -> None:
     """Human + bot turn flow should stay stable in one table."""
     game = SorryGame(
@@ -167,7 +183,8 @@ def test_mixed_human_bot_table_progresses_cleanly() -> None:
     assert game.game_state.current_card is None
 
     game.on_tick()
-    assert bot_state.pawns[0].track_position == 35
+    # Bot lands on another color's slide start (35) and slides to 39 in classic.
+    assert bot_state.pawns[0].track_position == 39
     assert game.current_player is not None
     assert game.current_player.id == human_player.id
     assert game.game_state.turn_phase == "draw"

@@ -4,7 +4,7 @@ from server.core.users.bot import Bot
 from server.games.sorry.bot import choose_move
 from server.games.sorry.game import SorryGame, SorryOptions
 from server.games.sorry.moves import generate_legal_moves
-from server.games.sorry.rules import Classic00390Rules
+from server.games.sorry.rules import A5065CoreRules, Classic00390Rules
 from server.games.sorry.state import SAFETY_LENGTH, build_initial_game_state
 
 
@@ -77,6 +77,20 @@ def test_bot_prefers_leaving_start_when_other_move_is_plain() -> None:
     assert choice.pawn_index == 2
 
 
+def test_a5065_bot_handles_sorry_fallback_move_type() -> None:
+    state = build_initial_game_state(["p1", "p2"], pawns_per_player=3, shuffle_deck=False)
+    p1 = state.player_states["p1"]
+    _set_track(p1.pawns[0], 0)
+
+    moves = generate_legal_moves(state, p1, "sorry", A5065CoreRules())
+    choice = choose_move(state, p1, moves, A5065CoreRules())
+
+    assert choice is not None
+    assert choice.move_type == "sorry_fallback_forward"
+    assert choice.pawn_index == 1
+    assert choice.steps == 4
+
+
 def test_bot_on_tick_uses_heuristic_not_first_slot() -> None:
     game = SorryGame(
         options=SorryOptions(
@@ -134,6 +148,37 @@ def test_bot_can_finish_turn_cycle_to_win() -> None:
     _set_home(p1.pawns[1])
     _set_home(p1.pawns[2])
     _set_home(p1.pawns[3])
+    game._sync_player_counts()
+
+    game.game_state.draw_pile = ["1"]
+    game.on_tick()
+
+    assert game.status == "finished"
+    assert game.game_active is False
+
+
+def test_a5065_bot_can_finish_turn_cycle_to_win() -> None:
+    game = SorryGame(
+        options=SorryOptions(
+            rules_profile="a5065_core",
+            auto_apply_single_move=True,
+            faster_setup_one_pawn_out=False,
+        )
+    )
+    bot1 = Bot("Bot1")
+    bot2 = Bot("Bot2")
+    game.add_player("Bot1", bot1)
+    game.add_player("Bot2", bot2)
+    game.on_start()
+
+    current = game.current_player
+    assert current is not None
+    assert current.id == bot1.uuid
+
+    p1 = game.game_state.player_states[bot1.uuid]
+    _set_home_path(p1.pawns[0], SAFETY_LENGTH)
+    _set_home(p1.pawns[1])
+    _set_home(p1.pawns[2])
     game._sync_player_counts()
 
     game.game_state.draw_pile = ["1"]

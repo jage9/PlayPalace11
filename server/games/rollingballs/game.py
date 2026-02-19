@@ -371,7 +371,7 @@ class RollingBallsGame(ActionGuardMixin, Game):
         self.broadcast_personal_l(
             player, "rb-you-take", "rb-player-takes", count=count
         )
-        self.play_sound("game_pig/roll.ogg")
+        self.play_sound(f"game_rollingballs/take{count}.ogg")
 
         # Jolt bot to pause before next action
         BotHelper.jolt_bot(player, ticks=random.randint(10, 20))  # nosec B311
@@ -383,7 +383,9 @@ class RollingBallsGame(ActionGuardMixin, Game):
             ball = self.pipe.pop(0)
             rb_player.score += ball["value"]
 
+            self.play_sound("game_rollingballs/takeball.ogg")
             if ball["value"] > 0:
+                self.play_sound(f"game_rollingballs/plus{ball['value']}.ogg")
                 self.broadcast_l(
                     "rb-ball-plus",
                     num=i,
@@ -391,6 +393,9 @@ class RollingBallsGame(ActionGuardMixin, Game):
                     value=ball["value"],
                 )
             elif ball["value"] < 0:
+                self.play_sound(
+                    f"game_rollingballs/minus{abs(ball['value'])}.ogg"
+                )
                 self.broadcast_l(
                     "rb-ball-minus",
                     num=i,
@@ -415,7 +420,9 @@ class RollingBallsGame(ActionGuardMixin, Game):
         self.broadcast_personal_l(
             player, "rb-you-reshuffle", "rb-player-reshuffles"
         )
-        self.play_sound("game_pig/roll.ogg")
+        self.play_sound(
+            f"game_rollingballs/disrupt{random.randint(1, 2)}.ogg"  # nosec B311
+        )
 
         # Shuffle the first min(len(pipe), 15) balls
         shuffle_count = min(len(self.pipe), 15)
@@ -504,6 +511,15 @@ class RollingBallsGame(ActionGuardMixin, Game):
         # Announce
         self.broadcast_l("rb-pipe-filled", count=total_balls)
 
+        # Pipe filling sounds
+        delay = 0
+        for _ in range(10):
+            self.schedule_sound(
+                f"game_uno/intercept{random.randint(1, 4)}.ogg",  # nosec B311
+                delay_ticks=delay,
+            )
+            delay += 3  # ~150ms at 20 ticks/sec
+
         # Start first round
         self._start_round()
 
@@ -514,6 +530,7 @@ class RollingBallsGame(ActionGuardMixin, Game):
         # Refresh turn order
         self.set_turn_players(self.get_active_players())
 
+        self.play_sound("game_pig/roundstart.ogg", volume=60)
         self.broadcast_l("game-round-start", round=self.round)
         self.broadcast_l("rb-balls-remaining", count=len(self.pipe))
 
@@ -534,6 +551,7 @@ class RollingBallsGame(ActionGuardMixin, Game):
             return
 
         # Announce turn
+        self.play_sound("game_3cardpoker/turn.ogg", volume=70)
         self.announce_turn()
 
         # Set up bot if needed
@@ -634,7 +652,7 @@ class RollingBallsGame(ActionGuardMixin, Game):
         if len(winners) == 1:
             winner = winners[0]
             rb_winner: RollingBallsPlayer = winner  # type: ignore
-            self.play_sound("game_pig/win.ogg")
+            self.play_sound("game_rollingballs/wingame.ogg")
             self.broadcast_personal_l(
                 winner,
                 "rb-you-win",

@@ -40,6 +40,11 @@ def create_default_pawns() -> list[SorryPawnState]:
     return [SorryPawnState(pawn_index=i + 1) for i in range(PAWNS_PER_PLAYER)]
 
 
+def create_pawns_for_count(pawns_per_player: int) -> list[SorryPawnState]:
+    """Create pawn states for the requested profile pawn count."""
+    return [SorryPawnState(pawn_index=i + 1) for i in range(pawns_per_player)]
+
+
 @dataclass
 class SorryPlayerState:
     """Serializable board state for one player."""
@@ -142,6 +147,7 @@ def get_track_occupancy(
 def build_initial_game_state(
     player_ids: list[str],
     *,
+    pawns_per_player: int = PAWNS_PER_PLAYER,
     faster_setup_one_pawn_out: bool = False,
     shuffle_deck: bool = True,
     rng: random.Random | None = None,
@@ -149,6 +155,8 @@ def build_initial_game_state(
     """Build initial serializable state for a new game."""
     if len(player_ids) > MAX_PLAYERS:
         raise ValueError("Sorry supports at most 4 players")
+    if pawns_per_player < 1:
+        raise ValueError("Sorry requires at least one pawn per player")
 
     player_states: dict[str, SorryPlayerState] = {}
     ordered_player_ids = player_ids[:]
@@ -160,6 +168,7 @@ def build_initial_game_state(
             seat_index=seat_index,
             start_track=start_track,
             home_entry_track=home_entry_track,
+            pawns=create_pawns_for_count(pawns_per_player),
         )
         if faster_setup_one_pawn_out and player_state.pawns:
             player_state.pawns[0].zone = "track"

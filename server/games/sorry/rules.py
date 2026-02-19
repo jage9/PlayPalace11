@@ -106,7 +106,7 @@ class A5065CoreRules:
 
     profile_id: str = "a5065_core"
     display_name: str = "A5065 Core"
-    pawns_per_player: int = 4
+    pawns_per_player: int = 3
 
     def card_faces(self) -> tuple[str, ...]:
         return Classic00390Rules().card_faces()

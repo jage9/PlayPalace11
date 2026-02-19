@@ -105,7 +105,12 @@ class SorryGame(Game):
         self, player_id: str, name: str, is_bot: bool = False
     ) -> SorryPlayer:
         """Create a new Sorry player."""
-        return SorryPlayer(id=player_id, name=name, is_bot=is_bot)
+        return SorryPlayer(
+            id=player_id,
+            name=name,
+            is_bot=is_bot,
+            pawns_in_start=self.get_rules_profile().pawns_per_player,
+        )
 
     def _resolve_rules_profile_id(self) -> str:
         requested = self.options.rules_profile or self.rules_profile_id
@@ -505,6 +510,7 @@ class SorryGame(Game):
         Milestone 1 scaffold: initialize serializable player/deck state and turn order.
         """
         self._resolve_rules_profile_id()
+        rules = self.get_rules_profile()
         self.status = "playing"
         self.game_active = True
         self.round = 0
@@ -515,10 +521,15 @@ class SorryGame(Game):
 
         self.game_state = build_initial_game_state(
             [player.id for player in active_players],
+            pawns_per_player=rules.pawns_per_player,
             faster_setup_one_pawn_out=self.options.faster_setup_one_pawn_out,
         )
 
-        pawns_in_start = 3 if self.options.faster_setup_one_pawn_out else 4
+        pawns_in_start = (
+            rules.pawns_per_player - 1
+            if self.options.faster_setup_one_pawn_out
+            else rules.pawns_per_player
+        )
         for player in active_players:
             player.pawns_in_start = pawns_in_start
             player.pawns_in_home = 0

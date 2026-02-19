@@ -22,9 +22,10 @@ def _set_home(pawn) -> None:
 
 def _assert_state_invariants(game: SorryGame) -> None:
     valid_zones = {"start", "track", "home_path", "home"}
+    expected_pawns = game.get_rules_profile().pawns_per_player
     for player in game.players:
         state = game.game_state.player_states[player.id]
-        assert len(state.pawns) == 4
+        assert len(state.pawns) == expected_pawns
 
         track_positions: list[int] = []
         home_steps: list[int] = []

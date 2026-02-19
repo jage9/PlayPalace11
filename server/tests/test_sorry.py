@@ -6,10 +6,11 @@ import random
 from server.core.users.test_user import MockUser
 from server.games.registry import GameRegistry
 from server.games.sorry.game import SorryGame, SorryOptions, SorryPlayer
-from server.games.sorry.rules import Classic00390Rules
+from server.games.sorry.rules import A5065CoreRules, Classic00390Rules
 from server.games.sorry.state import (
     TRACK_LENGTH,
     build_initial_game_state,
+    create_pawns_for_count,
     clockwise_distance,
     discard_current_card,
     draw_next_card,
@@ -76,6 +77,19 @@ def test_player_creation_defaults() -> None:
     assert player.pawns_in_home == 0
 
 
+def test_player_creation_uses_selected_profile_pawn_count() -> None:
+    game = SorryGame(
+        options=SorryOptions(
+            rules_profile="a5065_core",
+            auto_apply_single_move=False,
+            faster_setup_one_pawn_out=False,
+        )
+    )
+    user = MockUser("Alice")
+    player = game.add_player("Alice", user)
+    assert player.pawns_in_start == 3
+
+
 def test_on_start_initializes_state_with_faster_setup() -> None:
     """Fast setup should place one pawn out for each player."""
     game = SorryGame(
@@ -103,6 +117,54 @@ def test_on_start_initializes_state_with_faster_setup() -> None:
     assert s2.pawns[0].zone == "track"
     assert s1.pawns[0].track_position == s1.start_track
     assert s2.pawns[0].track_position == s2.start_track
+
+
+def test_on_start_a5065_core_uses_three_pawns() -> None:
+    game = SorryGame(
+        options=SorryOptions(
+            rules_profile="a5065_core",
+            auto_apply_single_move=False,
+            faster_setup_one_pawn_out=False,
+        )
+    )
+    user1 = MockUser("Alice")
+    user2 = MockUser("Bob")
+    p1 = game.add_player("Alice", user1)
+    p2 = game.add_player("Bob", user2)
+
+    game.on_start()
+
+    s1 = game.game_state.player_states[p1.id]
+    s2 = game.game_state.player_states[p2.id]
+    assert len(s1.pawns) == 3
+    assert len(s2.pawns) == 3
+    assert p1.pawns_in_start == 3
+    assert p2.pawns_in_start == 3
+
+
+def test_on_start_a5065_core_faster_setup_reduces_start_count() -> None:
+    game = SorryGame(
+        options=SorryOptions(
+            rules_profile="a5065_core",
+            auto_apply_single_move=False,
+            faster_setup_one_pawn_out=True,
+        )
+    )
+    user1 = MockUser("Alice")
+    user2 = MockUser("Bob")
+    p1 = game.add_player("Alice", user1)
+    p2 = game.add_player("Bob", user2)
+
+    game.on_start()
+
+    s1 = game.game_state.player_states[p1.id]
+    s2 = game.game_state.player_states[p2.id]
+    assert len(s1.pawns) == 3
+    assert len(s2.pawns) == 3
+    assert p1.pawns_in_start == 2
+    assert p2.pawns_in_start == 2
+    assert sum(1 for pawn in s1.pawns if pawn.zone == "track") == 1
+    assert sum(1 for pawn in s2.pawns if pawn.zone == "track") == 1
 
 
 def test_serialization_round_trip_preserves_options() -> None:
@@ -159,6 +221,10 @@ def test_a5065_core_rules_profile_is_selectable() -> None:
     assert game.options.rules_profile == "a5065_core"
 
 
+def test_a5065_core_rules_profile_pawn_count() -> None:
+    assert A5065CoreRules().pawns_per_player == 3
+
+
 def test_legacy_payload_without_rules_profile_defaults_to_classic() -> None:
     game = SorryGame(
         options=SorryOptions(
@@ -197,6 +263,22 @@ def test_state_builder_assigns_seat_tracks() -> None:
     assert state.player_states["p4"].start_track == get_start_track_for_seat(3)
     assert state.player_states["p1"].home_entry_track == get_home_entry_track_for_seat(0)
     assert state.player_states["p4"].home_entry_track == get_home_entry_track_for_seat(3)
+
+
+def test_create_pawns_for_count_builds_requested_count() -> None:
+    pawns = create_pawns_for_count(3)
+    assert len(pawns) == 3
+    assert [pawn.pawn_index for pawn in pawns] == [1, 2, 3]
+
+
+def test_state_builder_supports_profile_pawn_count() -> None:
+    state = build_initial_game_state(
+        ["p1", "p2"],
+        pawns_per_player=3,
+        shuffle_deck=False,
+    )
+    assert len(state.player_states["p1"].pawns) == 3
+    assert len(state.player_states["p2"].pawns) == 3
 
 
 def test_clockwise_distance_wraps_track_length() -> None:

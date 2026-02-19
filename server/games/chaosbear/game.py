@@ -308,7 +308,14 @@ class ChaosBearGame(Game):
         self.advance_turn(announce=False)
         self._announce_turn()
 
-        self.rebuild_all_menus()
+        # Rebuild menus, resetting focus to first item for current player
+        # (always-visible actions shift position when turn actions appear)
+        current = self.current_player
+        for p in self.players:
+            if p == current:
+                self.rebuild_player_menu(p, position=1)
+            else:
+                self.rebuild_player_menu(p)
 
         # Jolt bots
         BotHelper.jolt_bots(self, ticks=random.randint(30, 60))  # nosec B311

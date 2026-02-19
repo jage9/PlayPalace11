@@ -154,3 +154,12 @@ milebymile-between-races = Așteaptă următoarea cursă să înceapă.
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = Regula karmei necesită cel puțin 3 mașini/echipe distincte.
+
+milebymile-you-play-safety-with-effect = Joci { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } joacă { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Joci { $card } ca un Truc Murdar. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } joacă { $card } ca un Truc Murdar. { $effect }
+milebymile-safety-effect-extra-tank = Acum protejat împotriva Fără Combustibil.
+milebymile-safety-effect-puncture-proof = Acum protejat împotriva Pană.
+milebymile-safety-effect-driving-ace = Acum protejat împotriva Accident.
+milebymile-safety-effect-right-of-way = Acum protejat împotriva Stop și Limită de viteză.

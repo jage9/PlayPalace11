@@ -151,3 +151,12 @@ milebymile-between-races = Linda ukuqala kokugijima okulandelayo.
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = Umthetho we-karma udinga okungenani izimoto/amathimba amathathu ahlukene.
+
+milebymile-you-play-safety-with-effect = Udlala i-{ $card }. { $effect }
+milebymile-player-plays-safety-with-effect = U-{ $player } udlala i-{ $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Udlala i-{ $card } njengeQhinga Elingcolile. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = U-{ $player } udlala i-{ $card } njengeQhinga Elingcolile. { $effect }
+milebymile-safety-effect-extra-tank = Manje uvikelekile kuKuphele Uphethiloli.
+milebymile-safety-effect-puncture-proof = Manje uvikelekile ekuPuncture.
+milebymile-safety-effect-driving-ace = Manje uvikelekile engozini.
+milebymile-safety-effect-right-of-way = Manje uvikelekile kuStop nakuMkhawulo Wejubane.

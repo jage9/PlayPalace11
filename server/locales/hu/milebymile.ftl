@@ -152,3 +152,12 @@ milebymile-between-races = Várja meg a következő verseny kezdetét.
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = A karma szabályhoz legalább 3 különböző autó/csapat szükséges.
+
+milebymile-you-play-safety-with-effect = Kijátszod: { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } kijátssza: { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Kijátszod a { $card } lapot piszkos trükként. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } kijátssza a { $card } lapot piszkos trükkként. { $effect }
+milebymile-safety-effect-extra-tank = Most védett az Üzemanyaghiány ellen.
+milebymile-safety-effect-puncture-proof = Most védett a Defekt ellen.
+milebymile-safety-effect-driving-ace = Most védett a Baleset ellen.
+milebymile-safety-effect-right-of-way = Most védett a Stop és a Sebességkorlátozás ellen.

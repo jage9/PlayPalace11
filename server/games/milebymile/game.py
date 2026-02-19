@@ -566,6 +566,17 @@ class MileByMileGame(Game):
         key = key_map.get(safety, "")
         return Localization.get(locale, key) if key else safety
 
+    def _get_localized_safety_effect(self, safety: str, locale: str) -> str:
+        """Get localized effect text for a safety card."""
+        key_map = {
+            SafetyType.EXTRA_TANK: "milebymile-safety-effect-extra-tank",
+            SafetyType.PUNCTURE_PROOF: "milebymile-safety-effect-puncture-proof",
+            SafetyType.DRIVING_ACE: "milebymile-safety-effect-driving-ace",
+            SafetyType.RIGHT_OF_WAY: "milebymile-safety-effect-right-of-way",
+        }
+        key = key_map.get(safety, "")
+        return Localization.get(locale, key) if key else safety
+
     def _get_localized_card_name(self, card: Card, locale: str) -> str:
         """Get localized name for a card."""
         from ...messages.localization import Localization
@@ -1292,8 +1303,10 @@ class MileByMileGame(Game):
 
         if is_dirty_trick:
             race_state.dirty_trick_count += 1
-            self._broadcast_card_message(
-                "milebymile-plays-dirty-trick", card, player=player.name
+            self._broadcast_safety_play_with_effect(
+                player=player,
+                card=card,
+                is_dirty_trick=True,
             )
             self.play_sound("mention.ogg")
 
@@ -1309,8 +1322,10 @@ class MileByMileGame(Game):
             if len(race_state.problems) == 1 and HazardType.STOP in race_state.problems:
                 race_state.remove_problem(HazardType.STOP)
         else:
-            self._broadcast_card_message(
-                "milebymile-plays-card", card, player=player.name
+            self._broadcast_safety_play_with_effect(
+                player=player,
+                card=card,
+                is_dirty_trick=False,
             )
             self.play_sound(f"game_cards/play{random.randint(1, 4)}.ogg")  # nosec B311
 
@@ -1342,7 +1357,7 @@ class MileByMileGame(Game):
             user = self.get_user(player)
             if user:
                 card_name = self._get_localized_card_name(new_card, user.locale)
-                user.speak_l("milebymile-you-drew", card=card_name)
+                user.speak_l("milebymile-you-drew", card=card_name, buffer="table")
 
         self._update_turn_actions(player)
         self.rebuild_player_menu(player)
@@ -1508,7 +1523,7 @@ class MileByMileGame(Game):
             user = self.get_user(player)
             if user:
                 card_name = self._get_localized_card_name(card, user.locale)
-                user.speak_l("milebymile-you-drew", card=card_name)
+                user.speak_l("milebymile-you-drew", card=card_name, buffer="table")
 
         # Announce turn
         self.announce_turn()
@@ -1775,16 +1790,19 @@ class MileByMileGame(Game):
                 if not user:
                     continue
                 if p == attacker:
-                    user.speak_l("milebymile-karma-clash-you-target")
+                    user.speak_l("milebymile-karma-clash-you-target", buffer="table")
                 elif p.name == target_name:
                     user.speak_l(
-                        "milebymile-karma-clash-you-attacker", attacker=attacker.name
+                        "milebymile-karma-clash-you-attacker",
+                        attacker=attacker.name,
+                        buffer="table",
                     )
                 else:
                     user.speak_l(
                         "milebymile-karma-clash-others",
                         attacker=attacker.name,
                         target=target_name,
+                        buffer="table",
                     )
         else:
             for p in self.players:
@@ -1792,17 +1810,19 @@ class MileByMileGame(Game):
                 if not user:
                     continue
                 if p.team_index == attacker_team_idx:
-                    user.speak_l("milebymile-karma-clash-your-team")
+                    user.speak_l("milebymile-karma-clash-your-team", buffer="table")
                 elif p.team_index == target_team_idx:
                     user.speak_l(
                         "milebymile-karma-clash-target-team",
                         team=attacker_team_idx + 1,
+                        buffer="table",
                     )
                 else:
                     user.speak_l(
                         "milebymile-karma-clash-other-teams",
                         attacker=attacker_team_idx + 1,
                         target=target_team_idx + 1,
+                        buffer="table",
                     )
 
     def _announce_attacker_shunned(
@@ -1815,20 +1835,25 @@ class MileByMileGame(Game):
                 if not user:
                     continue
                 if p == attacker:
-                    user.speak_l("milebymile-karma-shunned-you")
+                    user.speak_l("milebymile-karma-shunned-you", buffer="table")
                 else:
-                    user.speak_l("milebymile-karma-shunned-other", player=attacker.name)
+                    user.speak_l(
+                        "milebymile-karma-shunned-other",
+                        player=attacker.name,
+                        buffer="table",
+                    )
         else:
             for p in self.players:
                 user = self.get_user(p)
                 if not user:
                     continue
                 if p.team_index == attacker_team_idx:
-                    user.speak_l("milebymile-karma-shunned-your-team")
+                    user.speak_l("milebymile-karma-shunned-your-team", buffer="table")
                 else:
                     user.speak_l(
                         "milebymile-karma-shunned-other-team",
                         team=attacker_team_idx + 1,
+                        buffer="table",
                     )
 
     def _announce_false_virtue(
@@ -1841,19 +1866,25 @@ class MileByMileGame(Game):
                 if not user:
                     continue
                 if p == player:
-                    user.speak_l("milebymile-false-virtue-you")
+                    user.speak_l("milebymile-false-virtue-you", buffer="table")
                 else:
-                    user.speak_l("milebymile-false-virtue-other", player=player.name)
+                    user.speak_l(
+                        "milebymile-false-virtue-other",
+                        player=player.name,
+                        buffer="table",
+                    )
         else:
             for p in self.players:
                 user = self.get_user(p)
                 if not user:
                     continue
                 if p.team_index == team_idx:
-                    user.speak_l("milebymile-false-virtue-your-team")
+                    user.speak_l("milebymile-false-virtue-your-team", buffer="table")
                 else:
                     user.speak_l(
-                        "milebymile-false-virtue-other-team", team=team_idx + 1
+                        "milebymile-false-virtue-other-team",
+                        team=team_idx + 1,
+                        buffer="table",
                     )
 
     def _broadcast_card_message(self, message_key: str, card: Card, **kwargs) -> None:
@@ -1863,7 +1894,44 @@ class MileByMileGame(Game):
             if not user:
                 continue
             card_name = self._get_localized_card_name(card, user.locale)
-            user.speak_l(message_key, card=card_name, **kwargs)
+            user.speak_l(message_key, card=card_name, buffer="table", **kwargs)
+
+    def _broadcast_safety_play_with_effect(
+        self,
+        player: MileByMilePlayer,
+        card: Card,
+        *,
+        is_dirty_trick: bool,
+    ) -> None:
+        """Broadcast a safety play with a short explanation of its effect."""
+        for p in self.players:
+            user = self.get_user(p)
+            if not user:
+                continue
+
+            card_name = self._get_localized_card_name(card, user.locale)
+            effect = self._get_localized_safety_effect(card.value, user.locale)
+
+            if p == player:
+                key = (
+                    "milebymile-you-play-dirty-trick-with-effect"
+                    if is_dirty_trick
+                    else "milebymile-you-play-safety-with-effect"
+                )
+                user.speak_l(key, card=card_name, effect=effect, buffer="table")
+            else:
+                key = (
+                    "milebymile-player-plays-dirty-trick-with-effect"
+                    if is_dirty_trick
+                    else "milebymile-player-plays-safety-with-effect"
+                )
+                user.speak_l(
+                    key,
+                    player=player.name,
+                    card=card_name,
+                    effect=effect,
+                    buffer="table",
+                )
 
     # ==========================================================================
     # Bot AI

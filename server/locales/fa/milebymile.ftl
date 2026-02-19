@@ -152,3 +152,12 @@ milebymile-between-races = منتظر شروع مسابقه بعدی بمانی�
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = قانون کارما حداقل به ۳ ماشین/تیم متمایز نیاز دارد.
+
+milebymile-you-play-safety-with-effect = شما { $card } بازی می‌کنید. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } { $card } بازی می‌کند. { $effect }
+milebymile-you-play-dirty-trick-with-effect = شما { $card } را به عنوان یک ترفند کثیف بازی می‌کنید. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } { $card } را به عنوان یک ترفند کثیف بازی می‌کند. { $effect }
+milebymile-safety-effect-extra-tank = اکنون در برابر اتمام سوخت محافظت می‌شوید.
+milebymile-safety-effect-puncture-proof = اکنون در برابر پنچری محافظت می‌شوید.
+milebymile-safety-effect-driving-ace = اکنون در برابر تصادف محافظت می‌شوید.
+milebymile-safety-effect-right-of-way = اکنون در برابر توقف و محدودیت سرعت محافظت می‌شوید.

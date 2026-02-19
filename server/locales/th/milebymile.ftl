@@ -146,3 +146,12 @@ milebymile-between-races = รอให้การแข่งถัดไป�
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = กฎกรรมต้องการอย่างน้อย 3 รถ/ทีมที่แตกต่างกัน
+
+milebymile-you-play-safety-with-effect = คุณเล่น { $card } { $effect }
+milebymile-player-plays-safety-with-effect = { $player } เล่น { $card } { $effect }
+milebymile-you-play-dirty-trick-with-effect = คุณเล่น { $card } เป็นลูกเล่นสกปรก { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } เล่น { $card } เป็นลูกเล่นสกปรก { $effect }
+milebymile-safety-effect-extra-tank = ตอนนี้ป้องกันจากน้ำมันหมดแล้ว
+milebymile-safety-effect-puncture-proof = ตอนนี้ป้องกันจากยางแตกแล้ว
+milebymile-safety-effect-driving-ace = ตอนนี้ป้องกันจากอุบัติเหตุแล้ว
+milebymile-safety-effect-right-of-way = ตอนนี้ป้องกันจากหยุดและจำกัดความเร็วแล้ว

@@ -289,7 +289,8 @@ class GemSeekerSkill(Skill):
                         "pirates-gem-seeker-reveal",
                         gem=gem_name,
                         position=pos,
-                        uses=self.get_uses(player)
+                        uses=self.get_uses(player),
+                        buffer="table",
                     )
                 break
 
@@ -313,7 +314,11 @@ class SwordFighterSkill(BuffSkill):
 
         user = game.get_user(player)
         if user:
-            user.speak_l("pirates-sword-fighter-activated", turns=self.get_active(player))
+            user.speak_l(
+                "pirates-sword-fighter-activated",
+                turns=self.get_active(player),
+                buffer="table",
+            )
         game.broadcast_l("pirates-skill-activated", player=player.name, skill=self.name, exclude=player)
 
         return "end_turn"
@@ -337,7 +342,7 @@ class PushSkill(BuffSkill):
 
         user = game.get_user(player)
         if user:
-            user.speak_l("pirates-push-activated", turns=self.get_active(player))
+            user.speak_l("pirates-push-activated", turns=self.get_active(player), buffer="table")
         game.broadcast_l("pirates-skill-activated", player=player.name, skill=self.name, exclude=player)
 
         return "end_turn"
@@ -361,7 +366,11 @@ class SkilledCaptainSkill(BuffSkill):
 
         user = game.get_user(player)
         if user:
-            user.speak_l("pirates-skilled-captain-activated", turns=self.get_active(player))
+            user.speak_l(
+                "pirates-skilled-captain-activated",
+                turns=self.get_active(player),
+                buffer="table",
+            )
         game.broadcast_l("pirates-skill-activated", player=player.name, skill=self.name, exclude=player)
 
         return "end_turn"
@@ -420,7 +429,11 @@ class DoubleDevastationSkill(BuffSkill):
 
         user = game.get_user(player)
         if user:
-            user.speak_l("pirates-double-devastation-activated", turns=self.get_active(player))
+            user.speak_l(
+                "pirates-double-devastation-activated",
+                turns=self.get_active(player),
+                buffer="table",
+            )
         game.broadcast_l("pirates-skill-activated", player=player.name, skill=self.name, exclude=player)
 
         return "end_turn"

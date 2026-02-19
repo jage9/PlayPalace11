@@ -152,3 +152,12 @@ milebymile-between-races = Tunggu balapan berikutnya untuk dimulai.
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = Aturan karma memerlukan setidaknya 3 mobil/tim yang berbeda.
+
+milebymile-you-play-safety-with-effect = Kamu memainkan { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } memainkan { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Kamu memainkan { $card } sebagai Trik Kotor. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } memainkan { $card } sebagai Trik Kotor. { $effect }
+milebymile-safety-effect-extra-tank = Sekarang terlindungi dari Kehabisan Bensin.
+milebymile-safety-effect-puncture-proof = Sekarang terlindungi dari Ban Kempis.
+milebymile-safety-effect-driving-ace = Sekarang terlindungi dari Kecelakaan.
+milebymile-safety-effect-right-of-way = Sekarang terlindungi dari Berhenti dan Batas Kecepatan.

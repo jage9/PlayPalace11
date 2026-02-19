@@ -152,3 +152,12 @@ milebymile-between-races = Pričekajte početak sljedeće utrke.
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = Pravilo karme zahtijeva najmanje 3 različita automobila/tima.
+
+milebymile-you-play-safety-with-effect = Igrate { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } igra { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Igrate { $card } kao Prljavi trik. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } igra { $card } kao Prljavi trik. { $effect }
+milebymile-safety-effect-extra-tank = Sada zaštićeni od Nedostatka goriva.
+milebymile-safety-effect-puncture-proof = Sada zaštićeni od Probušene gume.
+milebymile-safety-effect-driving-ace = Sada zaštićeni od Nesreće.
+milebymile-safety-effect-right-of-way = Sada zaštićeni od Stopa i Ograničenja brzine.

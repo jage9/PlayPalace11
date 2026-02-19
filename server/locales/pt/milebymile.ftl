@@ -138,3 +138,12 @@ milebymile-card-driving-ace = Ás do Volante
 milebymile-card-right-of-way = Direito de Passagem
 milebymile-card-false-virtue = Falsa Virtude
 milebymile-card-miles = { $miles } milhas
+
+milebymile-you-play-safety-with-effect = Você joga { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } joga { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Você joga { $card } como um Truque Sujo. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } joga { $card } como um Truque Sujo. { $effect }
+milebymile-safety-effect-extra-tank = Agora protegido contra Sem Combustível.
+milebymile-safety-effect-puncture-proof = Agora protegido contra Pneu Furado.
+milebymile-safety-effect-driving-ace = Agora protegido contra Acidente.
+milebymile-safety-effect-right-of-way = Agora protegido contra Pare e Limite de Velocidade.

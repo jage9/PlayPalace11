@@ -152,3 +152,12 @@ milebymile-between-races = Дараагийн уралдаан эхлэхийг 
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = Карма дүрэмд багадаа 3 өөр машин/баг хэрэгтэй.
+
+milebymile-you-play-safety-with-effect = Та { $card }-г тоглолоо. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } { $card }-г тоглолоо. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Та { $card }-г бохир мэх болгон тоглолоо. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } { $card }-г бохир мэх болгон тоглолоо. { $effect }
+milebymile-safety-effect-extra-tank = Одоо Шатахуун дуусахаас хамгаалагдсан.
+milebymile-safety-effect-puncture-proof = Одоо Дугуй хагарахаас хамгаалагдсан.
+milebymile-safety-effect-driving-ace = Одоо Ослоос хамгаалагдсан.
+milebymile-safety-effect-right-of-way = Одоо Зогс болон Хурдны хязгаараас хамгаалагдсан.

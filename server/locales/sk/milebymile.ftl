@@ -156,3 +156,12 @@ milebymile-between-races = Počkajte na začiatok ďalších pretekov.
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = Pravidlo karmy vyžaduje aspoň 3 odlišné autá/tímy.
+
+milebymile-you-play-safety-with-effect = Hrali ste { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } hrá { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Hrali ste { $card } ako Špinavý trik. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } hrá { $card } ako Špinavý trik. { $effect }
+milebymile-safety-effect-extra-tank = Teraz chránení pred Bez paliva.
+milebymile-safety-effect-puncture-proof = Teraz chránení pred Defektom.
+milebymile-safety-effect-driving-ace = Teraz chránení pred Nehodou.
+milebymile-safety-effect-right-of-way = Teraz chránení pred Stopkou a Obmedzením rýchlosti.

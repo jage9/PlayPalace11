@@ -152,3 +152,12 @@ milebymile-between-races = Wacht op de volgende race om te starten.
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = Karmaregel vereist minstens 3 verschillende auto's/teams.
+
+milebymile-you-play-safety-with-effect = Je speelt { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } speelt { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Je speelt { $card } als een Vuil Streekje. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } speelt { $card } als een Vuil Streekje. { $effect }
+milebymile-safety-effect-extra-tank = Nu beschermd tegen Zonder Benzine.
+milebymile-safety-effect-puncture-proof = Nu beschermd tegen Lekke Band.
+milebymile-safety-effect-driving-ace = Nu beschermd tegen Ongeluk.
+milebymile-safety-effect-right-of-way = Nu beschermd tegen Stop en Snelheidslimiet.

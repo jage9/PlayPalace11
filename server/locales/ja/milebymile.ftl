@@ -145,3 +145,12 @@ milebymile-between-races = 次のレース開始を待ってください。
 
 # 検証エラー
 milebymile-error-karma-needs-three-teams = カルマルールには少なくとも3つの異なる車/チームが必要です。
+
+milebymile-you-play-safety-with-effect = あなたは { $card } をプレイします。{ $effect }
+milebymile-player-plays-safety-with-effect = { $player } が { $card } をプレイします。{ $effect }
+milebymile-you-play-dirty-trick-with-effect = あなたは { $card } をダーティートリックとしてプレイします。{ $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } が { $card } をダーティートリックとしてプレイします。{ $effect }
+milebymile-safety-effect-extra-tank = ガス欠から保護されました。
+milebymile-safety-effect-puncture-proof = パンクから保護されました。
+milebymile-safety-effect-driving-ace = 事故から保護されました。
+milebymile-safety-effect-right-of-way = 停止と速度制限から保護されました。

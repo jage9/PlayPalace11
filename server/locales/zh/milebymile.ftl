@@ -138,3 +138,12 @@ milebymile-card-driving-ace = 王牌司机
 milebymile-card-right-of-way = 优先通行
 milebymile-card-false-virtue = 虚假美德
 milebymile-card-miles = { $miles } 英里
+
+milebymile-you-play-safety-with-effect = 你打出 { $card }。{ $effect }
+milebymile-player-plays-safety-with-effect = { $player } 打出 { $card }。{ $effect }
+milebymile-you-play-dirty-trick-with-effect = 你将 { $card } 作为反击打出。{ $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } 将 { $card } 作为反击打出。{ $effect }
+milebymile-safety-effect-extra-tank = 现在可防止缺油。
+milebymile-safety-effect-puncture-proof = 现在可防止爆胎。
+milebymile-safety-effect-driving-ace = 现在可防止事故。
+milebymile-safety-effect-right-of-way = 现在可防止停车和限速。

@@ -152,3 +152,12 @@ milebymile-between-races = Vänta på att nästa race ska börja.
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = Karmaregeln kräver minst 3 distinkta bilar/lag.
+
+milebymile-you-play-safety-with-effect = Du spelar { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } spelar { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Du spelar { $card } som ett Smutsigt Trick. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } spelar { $card } som ett Smutsigt Trick. { $effect }
+milebymile-safety-effect-extra-tank = Nu skyddad mot Slut på bensin.
+milebymile-safety-effect-puncture-proof = Nu skyddad mot Punktering.
+milebymile-safety-effect-driving-ace = Nu skyddad mot Olycka.
+milebymile-safety-effect-right-of-way = Nu skyddad mot Stopp och Hastighetsgräns.

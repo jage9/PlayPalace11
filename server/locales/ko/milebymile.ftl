@@ -146,3 +146,12 @@ milebymile-between-races = 다음 레이스가 시작될 때까지 기다리세�
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = 카르마 규칙은 최소 3개의 구별되는 차량/팀이 필요합니다.
+
+milebymile-you-play-safety-with-effect = 당신이 { $card } 카드를 냅니다. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } 님이 { $card } 카드를 냅니다. { $effect }
+milebymile-you-play-dirty-trick-with-effect = 당신이 { $card } 카드를 더티 트릭으로 냅니다. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } 님이 { $card } 카드를 더티 트릭으로 냅니다. { $effect }
+milebymile-safety-effect-extra-tank = 이제 연료 부족으로부터 보호됩니다.
+milebymile-safety-effect-puncture-proof = 이제 펑크로부터 보호됩니다.
+milebymile-safety-effect-driving-ace = 이제 사고로부터 보호됩니다.
+milebymile-safety-effect-right-of-way = 이제 정지와 속도 제한으로부터 보호됩니다.

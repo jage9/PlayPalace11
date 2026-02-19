@@ -152,3 +152,12 @@ milebymile-between-races = Sonraki yarışın başlamasını bekle.
 
 # Doğrulama hataları
 milebymile-error-karma-needs-three-teams = Karma kuralı en az 3 farklı araba/takım gerektirir.
+
+milebymile-you-play-safety-with-effect = { $card } oynuyorsun. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } { $card } oynuyor. { $effect }
+milebymile-you-play-dirty-trick-with-effect = { $card } kartını Kirli Numara olarak oynuyorsun. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } { $card } kartını Kirli Numara olarak oynuyor. { $effect }
+milebymile-safety-effect-extra-tank = Artık Benzinsiz Kalma'ya karşı korumalı.
+milebymile-safety-effect-puncture-proof = Artık Lastik Patlaması'na karşı korumalı.
+milebymile-safety-effect-driving-ace = Artık Kaza'ya karşı korumalı.
+milebymile-safety-effect-right-of-way = Artık Dur ve Hız Sınırı'na karşı korumalı.

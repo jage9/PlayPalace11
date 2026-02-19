@@ -142,7 +142,7 @@ class LevelingSystem(DataClassJSONMixin):
 
             if levels_gained == 1:
                 if user:
-                    user.speak_l("pirates-level-up-you", level=self.level)
+                    user.speak_l("pirates-level-up-you", level=self.level, buffer="table")
                 game.broadcast_l(
                     "pirates-level-up",
                     player=player_name,
@@ -154,7 +154,8 @@ class LevelingSystem(DataClassJSONMixin):
                     user.speak_l(
                         "pirates-level-up-multiple-you",
                         levels=levels_gained,
-                        level=self.level
+                        level=self.level,
+                        buffer="table",
                     )
                 game.broadcast_l(
                     "pirates-level-up-multiple",
@@ -168,7 +169,11 @@ class LevelingSystem(DataClassJSONMixin):
             if skills_unlocked:
                 skill_names = ", ".join(skill.name for skill in skills_unlocked)
                 if user:
-                    user.speak_l("pirates-skills-unlocked-you", skills=skill_names)
+                    user.speak_l(
+                        "pirates-skills-unlocked-you",
+                        skills=skill_names,
+                        buffer="table",
+                    )
                 game.broadcast_l(
                     "pirates-skills-unlocked",
                     player=player_name,

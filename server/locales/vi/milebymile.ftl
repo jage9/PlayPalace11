@@ -152,3 +152,12 @@ milebymile-between-races = Hãy đợi cuộc đua tiếp theo bắt đầu.
 
 # Lỗi xác thực
 milebymile-error-karma-needs-three-teams = Luật Karma yêu cầu ít nhất 3 xe/đội riêng biệt.
+
+milebymile-you-play-safety-with-effect = Bạn chơi { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } chơi { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Bạn chơi { $card } như một Đòn Bẩn. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } chơi { $card } như một Đòn Bẩn. { $effect }
+milebymile-safety-effect-extra-tank = Giờ được bảo vệ khỏi Hết Xăng.
+milebymile-safety-effect-puncture-proof = Giờ được bảo vệ khỏi Xịt Lốp.
+milebymile-safety-effect-driving-ace = Giờ được bảo vệ khỏi Tai Nạn.
+milebymile-safety-effect-right-of-way = Giờ được bảo vệ khỏi Dừng và Giới Hạn Tốc Độ.

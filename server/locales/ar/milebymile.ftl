@@ -159,3 +159,12 @@ milebymile-between-races = انتظر بدء السباق التالي.
 
 # Validation errors
 milebymile-error-karma-needs-three-teams = تتطلب قاعدة الكارما 3 سيارات/فرق متميزة على الأقل.
+
+milebymile-you-play-safety-with-effect = أنت تلعب { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } يلعب { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = أنت تلعب { $card } كخدعة قذرة. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } يلعب { $card } كخدعة قذرة. { $effect }
+milebymile-safety-effect-extra-tank = محمي الآن من نفاد الوقود.
+milebymile-safety-effect-puncture-proof = محمي الآن من ثقب الإطار.
+milebymile-safety-effect-driving-ace = محمي الآن من الحوادث.
+milebymile-safety-effect-right-of-way = محمي الآن من التوقف وحد السرعة.

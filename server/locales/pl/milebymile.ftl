@@ -149,3 +149,12 @@ milebymile-card-miles = { $miles } miles
 milebymile-no-dirty-trick-window = No dirty trick window is active.
 milebymile-not-your-dirty-trick = It's not your team's dirty trick window.
 milebymile-between-races = Wait for the next race to start.
+
+milebymile-you-play-safety-with-effect = Zagrywasz { $card }. { $effect }
+milebymile-player-plays-safety-with-effect = { $player } zagrywa { $card }. { $effect }
+milebymile-you-play-dirty-trick-with-effect = Zagrywasz { $card } jako Brudna Sztuczka. { $effect }
+milebymile-player-plays-dirty-trick-with-effect = { $player } zagrywa { $card } jako Brudna Sztuczka. { $effect }
+milebymile-safety-effect-extra-tank = Teraz ochrona przed Brakiem Paliwa.
+milebymile-safety-effect-puncture-proof = Teraz ochrona przed Przebitą Oponą.
+milebymile-safety-effect-driving-ace = Teraz ochrona przed Wypadkiem.
+milebymile-safety-effect-right-of-way = Teraz ochrona przed Stopem i Ograniczeniem Prędkości.

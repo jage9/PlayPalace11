@@ -161,8 +161,6 @@ class ChaosBearGame(Game):
         """Check if roll dice is hidden."""
         if self.status != "playing":
             return Visibility.HIDDEN
-        if self.is_animating:
-            return Visibility.HIDDEN
         if self.current_player != player:
             return Visibility.HIDDEN
         cb_player: ChaosBearPlayer = player  # type: ignore
@@ -189,8 +187,6 @@ class ChaosBearGame(Game):
     def _is_draw_card_hidden(self, player: Player) -> Visibility:
         """Check if draw card is hidden."""
         if self.status != "playing":
-            return Visibility.HIDDEN
-        if self.is_animating:
             return Visibility.HIDDEN
         if self.current_player != player:
             return Visibility.HIDDEN
@@ -414,19 +410,32 @@ class ChaosBearGame(Game):
         # Otherwise roll the dice
         return "roll_dice"
 
-    def _start_next_turn(self) -> None:
-        """Start the next player's turn with menu rebuild and bot jolt."""
+    def _start_next_turn(self, previous_player: "ChaosPlayer | None" = None) -> None:
+        """Start the next player's turn with menu rebuild and bot jolt.
+
+        Args:
+            previous_player: The player whose turn just ended. Only that player
+                and the new current player need menu rebuilds (their turn actions
+                changed). Pass None to rebuild all players (e.g. on round start).
+        """
         self.is_animating = False
         self._announce_turn()
 
-        # Rebuild menus, resetting focus to first item for current player
-        # (always-visible actions shift position when turn actions appear)
         current = self.current_player
-        for p in self.players:
-            if p == current:
-                self.rebuild_player_menu(p, position=1)
-            else:
-                self.rebuild_player_menu(p)
+        if previous_player is not None:
+            # Only rebuild the two affected players:
+            # - previous player: turn actions disappeared
+            # - current player: turn actions appeared
+            self.rebuild_player_menu(current, position=1)
+            if previous_player != current:
+                self.rebuild_player_menu(previous_player)
+        else:
+            # Round start or first turn — rebuild everyone
+            for p in self.players:
+                if p == current:
+                    self.rebuild_player_menu(p, position=1)
+                else:
+                    self.rebuild_player_menu(p)
 
         # Jolt bots
         BotHelper.jolt_bots(self, ticks=random.randint(30, 60))  # nosec B311
@@ -443,9 +452,11 @@ class ChaosBearGame(Game):
             self._start_bear_turn()
             return
 
-        # Advance to next player within the round
-        self.advance_turn(announce=False)
-        self._start_next_turn()
+        # Advance to next player within the round (no advance_turn — it
+        # rebuilds menus, and _start_next_turn already handles that)
+        previous = self.current_player
+        self.turn_index = (self.turn_index + self.turn_direction) % len(self.turn_player_ids)
+        self._start_next_turn(previous_player=previous)
 
     def _handle_end_bear_turn(self) -> None:
         """Handle end of the bear's turn (called from event queue)."""
@@ -688,7 +699,6 @@ class ChaosBearGame(Game):
             return
 
         self.is_animating = True
-        self.rebuild_all_menus()
 
         # Roll sound (immediate)
         self.play_sound("game_pig/roll.ogg")
@@ -728,7 +738,6 @@ class ChaosBearGame(Game):
             return
 
         self.is_animating = True
-        self.rebuild_all_menus()
 
         # Draw sound (immediate)
         self.play_sound(f"game_chaosbear/draw{random.randint(1, 2)}.ogg")  # nosec B311

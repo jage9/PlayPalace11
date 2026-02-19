@@ -98,8 +98,14 @@ class SnakesAndLaddersGame(Game):
 
         self._start_turn()
 
-    def _start_turn(self) -> None:
-        """Start the current player's turn."""
+    def _start_turn(self, previous_player: "SnakesPlayer | None" = None) -> None:
+        """Start the current player's turn.
+
+        Args:
+            previous_player: The player whose turn just ended. Only that player
+                and the new current player need menu rebuilds. Pass None to
+                rebuild all players (e.g. on game start).
+        """
         player = self.current_player
         if not player:
             return
@@ -123,13 +129,21 @@ class SnakesAndLaddersGame(Game):
         if player.is_bot:
             BotHelper.jolt_bot(player, ticks=random.randint(20, 40))
 
-        # Rebuild menus, resetting focus to first item for current player
-        # (always-visible actions shift position when turn actions appear)
-        for p in self.players:
-            if p == player:
-                self.rebuild_player_menu(p, position=1)
-            else:
-                self.rebuild_player_menu(p)
+        # Rebuild menus only for affected players
+        if previous_player is not None:
+            # Only rebuild the two affected players:
+            # - previous player: turn actions disappeared
+            # - current player: turn actions appeared
+            self.rebuild_player_menu(player, position=1)
+            if previous_player != player:
+                self.rebuild_player_menu(previous_player)
+        else:
+            # Game start — rebuild everyone
+            for p in self.players:
+                if p == player:
+                    self.rebuild_player_menu(p, position=1)
+                else:
+                    self.rebuild_player_menu(p)
 
     def create_turn_action_set(self, player: SnakesPlayer) -> ActionSet:
         action_set = ActionSet(name="turn")
@@ -248,7 +262,6 @@ class SnakesAndLaddersGame(Game):
         """Handle roll action with sequential events."""
         snakes_player: SnakesPlayer = player # type: ignore
         self.is_animating = True
-        self.rebuild_all_menus() # Update UI to disable button
 
         # Roll dice (1-6)
         roll = random.randint(1, 6)
@@ -422,8 +435,9 @@ class SnakesAndLaddersGame(Game):
 
     def end_turn(self) -> None:
         """Advance turn."""
-        self.advance_turn(announce=False)
-        self._start_turn()
+        previous = self.current_player
+        self.turn_index = (self.turn_index + self.turn_direction) % len(self.turn_player_ids)
+        self._start_turn(previous_player=previous)
 
     def on_tick(self) -> None:
         super().on_tick()

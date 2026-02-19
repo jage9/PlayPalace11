@@ -161,6 +161,40 @@ def test_on_server_menu_diff_updates_existing_items():
     assert window.menu_list.selection == 1
 
 
+def test_on_server_menu_update_keeps_previous_menu_settings_when_omitted():
+    window = make_window()
+    window.current_menu_id = "options_menu"
+    window.current_menu_state = {
+        "menu_id": "options_menu",
+        "items": ["A", "B"],
+        "item_sounds": [None, None],
+        "multiletter_enabled": True,
+        "escape_behavior": "select_last_option",
+        "grid_enabled": False,
+        "grid_width": 1,
+    }
+    window.current_menu_item_ids = ["a", "b"]
+    window.menu_list.items = ["A", "B"]
+    window.menu_list.selection = 0
+
+    # Simulate server update_menu packet (omits escape_behavior/multiletter/grid fields)
+    packet = {
+        "menu_id": "options_menu",
+        "items": [
+            {"text": "A", "id": "a"},
+            {"text": "B*", "id": "b"},
+        ],
+        "selection_id": "b",
+    }
+
+    window.on_server_menu(packet)
+
+    assert window.escape_behavior == "select_last_option"
+    assert window.menu_list.multiletter is True
+    assert window.menu_list.grid == (False, 1)
+    assert window.menu_list.selection == 1
+
+
 def test_on_server_request_input_switches_to_edit_mode_and_sends_packet():
     window = make_window()
     packet = {

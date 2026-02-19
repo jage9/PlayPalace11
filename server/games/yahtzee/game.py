@@ -11,6 +11,7 @@ import random
 
 from ..base import Game, Player, GameOptions
 from ..registry import register_game
+from .bot import bot_think as yahtzee_bot_think
 from ...game_utils.action_guard_mixin import ActionGuardMixin
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
@@ -793,106 +794,13 @@ class YahtzeeGame(ActionGuardMixin, Game, DiceGameMixin):
 
     def bot_think(self, player: YahtzeePlayer) -> str | None:
         """Bot AI decision making."""
-        turn_set = self.get_action_set(player, "turn")
-        if not turn_set:
-            return None
-
-        # If haven't rolled yet, roll
-        if not player.dice.has_rolled:
-            return "roll"
-
-        # Analyze current dice
-        dice_values = player.dice.values
-        counts = count_dice(dice_values)
-
-        # Check for Yahtzee - always score it
-        if is_yahtzee(dice_values):
-            return self._bot_pick_best_category(player)
-
-        # If rolls left, consider keeping/rolling
-        if player.rolls_left > 0:
-            # Keep dice that contribute to good combinations
-            best_keep = self._bot_decide_keeps(player)
-
-            # Convert current kept indices to bool list for comparison
-            current_kept = [player.dice.is_kept(i) for i in range(5)]
-            if best_keep != current_kept:
-                # Find first difference and toggle
-                for i in range(5):
-                    if best_keep[i] != current_kept[i]:
-                        return f"toggle_die_{i}"
-
-            # If happy with keeps, roll again
-            if player.rolls_left > 0 and len(player.dice.kept) < 5:
-                return "roll"
-
-        # Must score - pick best category
-        return self._bot_pick_best_category(player)
-
-    def _bot_decide_keeps(self, player: YahtzeePlayer) -> list[bool]:
-        """Decide which dice to keep for bot."""
-        dice_values = player.dice.values
-        counts = count_dice(dice_values)
-
-        # Find best value to keep multiples of
-        best_count = 0
-        best_value = 0
-        for val, count in counts.items():
-            if count > best_count or (count == best_count and val > best_value):
-                best_count = count
-                best_value = val
-
-        # Keep all dice of the best value
-        keeps = [d == best_value for d in dice_values]
-
-        # Also keep 1s and 5s (valuable for upper section)
-        for i, d in enumerate(dice_values):
-            if d in (1, 5, 6) and counts[d] >= 2:
-                keeps[i] = True
-
-        return keeps
-
-    def _bot_pick_best_category(self, player: YahtzeePlayer) -> str | None:
-        """Pick the best category to score in."""
-        open_cats = player.get_open_categories()
-        if not open_cats:
-            return None
-
-        # Calculate score for each open category
-        scores = [(cat, calculate_score(player.dice.values, cat)) for cat in open_cats]
-
-        # Sort by score descending
-        scores.sort(key=lambda x: x[1], reverse=True)
-
-        # Pick highest non-zero score, or lowest-value zero if all zero
-        for cat, score in scores:
-            if score > 0:
-                return f"score_{cat}"
-
-        # All zeros - pick the "least bad" category to waste
-        # Prefer wasting lower section categories over upper
-        waste_order = [
-            "yahtzee",  # Worst to waste but sometimes necessary
-            "large_straight",
-            "small_straight",
-            "full_house",
-            "four_kind",
-            "three_kind",
-            "chance",
-            "ones",
-            "twos",
-            "threes",
-            "fours",
-            "fives",
-            "sixes",
-        ]
-
-        for cat in waste_order:
-            if cat in open_cats:
-                return f"score_{cat}"
-
-        # Fallback
-        return f"score_{open_cats[0]}"
+        return yahtzee_bot_think(
+            self,
+            player,
+            calculate_score=calculate_score,
+            all_categories=ALL_CATEGORIES,
+            upper_categories=UPPER_CATEGORIES,
+        )
 
 
 # =============================================================================

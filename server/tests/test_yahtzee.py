@@ -232,6 +232,52 @@ class TestYahtzeePlayTest:
 
         assert game.status == "finished"
 
+
+class TestYahtzeeBotStrategy:
+    """Focused tests for Yahtzee bot decision flow."""
+
+    def test_bot_rolls_before_first_roll(self):
+        game = YahtzeeGame()
+        bot = Bot("Bot1")
+        player = game.add_player("Bot1", bot)
+        game.on_start()
+        game.current_player = player
+
+        assert game.bot_think(player) == "roll"
+
+    def test_bot_keeps_then_rolls_for_multiples(self):
+        game = YahtzeeGame()
+        bot = Bot("Bot1")
+        player: YahtzeePlayer = game.add_player("Bot1", bot)  # type: ignore
+        game.on_start()
+        game.current_player = player
+
+        player.dice.values = [6, 6, 6, 2, 3]
+        player.rolls_left = 2
+        player.dice.kept = []
+        player.dice.locked = []
+
+        first_action = game.bot_think(player)
+        assert first_action == "toggle_die_0"
+
+        player.dice.kept = [0, 1, 2]
+        second_action = game.bot_think(player)
+        assert second_action == "roll"
+
+    def test_bot_scores_when_no_rolls_left(self):
+        game = YahtzeeGame()
+        bot = Bot("Bot1")
+        player: YahtzeePlayer = game.add_player("Bot1", bot)  # type: ignore
+        game.on_start()
+        game.current_player = player
+
+        player.dice.values = [6, 6, 6, 6, 2]
+        player.rolls_left = 0
+        action = game.bot_think(player)
+
+        assert action is not None
+        assert action.startswith("score_")
+
     def test_single_player_game_completes(self):
         """Test that a single-player bot game completes."""
         game = YahtzeeGame()

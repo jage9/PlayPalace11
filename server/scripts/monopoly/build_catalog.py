@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import sys
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 
 # Allow direct script execution: python server/scripts/monopoly/build_catalog.py
@@ -52,17 +53,45 @@ def _load_offline_records(fixture_dir: Path):
 
 def _load_live_records(root_sitemap_url: str):
     records = []
+    fetch_errors: list[dict] = []
     index_xml = _fetch_text(root_sitemap_url)
     locale_sitemaps = parse_sitemap_index(index_xml)
+    print(f"Discovered {len(locale_sitemaps)} locale sitemaps")
 
     for locale_sitemap_url in locale_sitemaps:
-        locale_xml = _fetch_text(locale_sitemap_url)
+        try:
+            locale_xml = _fetch_text(locale_sitemap_url)
+        except (HTTPError, URLError, OSError) as error:
+            fetch_errors.append(
+                {
+                    "stage": "locale_sitemap",
+                    "url": locale_sitemap_url,
+                    "error": str(error),
+                }
+            )
+            print(f"Skipping locale sitemap due to error: {locale_sitemap_url} ({error})")
+            continue
+
         instruction_urls = parse_monopoly_instruction_urls(locale_xml)
+        print(
+            f"Processing locale sitemap {locale_sitemap_url} "
+            f"with {len(instruction_urls)} monopoly URLs"
+        )
         for instruction_url in instruction_urls:
-            html = _fetch_text(instruction_url)
-            payload = extract_next_data_json(html)
-            records.extend(extract_raw_records(payload, instruction_url))
-    return records
+            try:
+                html = _fetch_text(instruction_url)
+                payload = extract_next_data_json(html)
+                records.extend(extract_raw_records(payload, instruction_url))
+            except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError) as error:
+                fetch_errors.append(
+                    {
+                        "stage": "instruction_page",
+                        "url": instruction_url,
+                        "error": str(error),
+                    }
+                )
+                continue
+    return records, fetch_errors
 
 
 def _stable_dump(path: Path, data) -> None:
@@ -90,7 +119,9 @@ def run_pipeline(
             raise ValueError("offline mode requires fixture_dir")
         records = _load_offline_records(fixture_dir)
     else:
-        records = _load_live_records(root_sitemap_url)
+        records, fetch_errors = _load_live_records(root_sitemap_url)
+    if offline:
+        fetch_errors = []
 
     catalog = build_canonical_catalog(records)
 
@@ -116,12 +147,14 @@ def run_pipeline(
         "editions_count": len(editions),
         "manual_variants_count": len(manual_variants),
         "locales_count": len({record.locale for record in records}),
+        "fetch_errors_count": len(fetch_errors),
         "offline": offline,
     }
 
     _stable_dump(output_dir / "monopoly_editions.json", editions)
     _stable_dump(output_dir / "monopoly_manual_variants.json", manual_variants)
     _stable_dump(output_dir / "catalog_stats.json", stats)
+    _stable_dump(output_dir / "catalog_fetch_errors.json", fetch_errors)
 
 
 def main() -> None:
@@ -167,4 +200,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

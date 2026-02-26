@@ -23,7 +23,7 @@ DEFAULT_CITY_PROFILE = CityProfile(
     anchor_edition_id="monopoly-1790",
     source_policy="anchor-first",
     win_rule_key="richest_final_value",
-    win_threshold=0,
+    win_threshold=5_000_000,
     rule_flags=(
         "rent_dodge_card",
         "planning_permission",

@@ -541,6 +541,7 @@ class MonopolyGame(ActionGuardMixin, Game):
     turn_doubles_count: int = 0
     turn_can_roll_again: bool = False
     junior_endgame_evaluating: bool = False
+    city_endgame_evaluating: bool = False
 
     chance_deck_order: list[str] = field(default_factory=lambda: CHANCE_CARD_IDS.copy())
     chance_deck_index: int = 0
@@ -2276,6 +2277,79 @@ class MonopolyGame(ActionGuardMixin, Game):
             team.round_score = 0
         if self._is_junior_preset() and not self.junior_endgame_evaluating:
             self._check_junior_endgame()
+        if self._is_city_preset() and not self.city_endgame_evaluating:
+            self._check_city_endgame()
+
+    def _city_rent_value_total(self, player: MonopolyPlayer) -> int:
+        """Return summed City rent value for all currently owned districts."""
+        total = 0
+        for space_id in player.owned_space_ids:
+            if self.property_owners.get(space_id) != player.id:
+                continue
+            if space_id in self.mortgaged_space_ids:
+                continue
+            space = SPACE_BY_ID.get(space_id)
+            if not space or not self._is_street_property(space):
+                continue
+            total += max(0, self._calculate_rent_due(space, player.id, dice_total=None))
+        return total
+
+    def _city_final_value(self, player: MonopolyPlayer) -> int:
+        """Return City final value used by anchor-backed winner resolution."""
+        return max(0, self._current_liquid_balance(player)) + self._city_rent_value_total(player)
+
+    def _finish_city_game_by_value(
+        self,
+        winner: MonopolyPlayer,
+        totals: dict[str, int],
+    ) -> bool:
+        """Finish City game selecting richest player by final value."""
+        self.status = "finished"
+        self.game_active = False
+        self.set_turn_players([winner])
+        self.turn_index = 0
+        self.broadcast_l(
+            "monopoly-city-winner-by-value",
+            player=winner.name,
+            total=totals.get(winner.id, self._city_final_value(winner)),
+        )
+        return True
+
+    def _check_city_endgame(self) -> bool:
+        """Evaluate City-specific win condition when threshold is reached."""
+        if not self._is_city_preset() or self.city_engine is None or self.city_profile is None:
+            return False
+        if self.status != "playing" or not self.game_active:
+            return False
+
+        self.city_endgame_evaluating = True
+        try:
+            contenders = [
+                player
+                for player in self.turn_players
+                if isinstance(player, MonopolyPlayer) and not player.bankrupt
+            ]
+            if len(contenders) <= 1:
+                if contenders:
+                    totals = {contenders[0].id: self._city_final_value(contenders[0])}
+                    return self._finish_city_game_by_value(contenders[0], totals)
+                return False
+
+            contender_ids = tuple(player.id for player in contenders)
+            threshold_trigger = self.city_engine.evaluate_winner(contender_ids)
+            if threshold_trigger is None:
+                return False
+
+            totals = {player.id: self._city_final_value(player) for player in contenders}
+            winner_id = self.city_engine.evaluate_richest(contender_ids, totals)
+            if winner_id is None:
+                return False
+            winner = next((player for player in contenders if player.id == winner_id), None)
+            if winner is None:
+                return False
+            return self._finish_city_game_by_value(winner, totals)
+        finally:
+            self.city_endgame_evaluating = False
 
     def _junior_property_pool_limit(self) -> int:
         """Return purchasable property count for junior completion checks."""
@@ -4133,6 +4207,9 @@ class MonopolyGame(ActionGuardMixin, Game):
             ):
                 self.rebuild_all_menus()
                 return
+        if self._is_city_preset() and self._check_city_endgame():
+            self.rebuild_all_menus()
+            return
         if self._is_junior_preset() and self._check_junior_endgame():
             self.rebuild_all_menus()
             return
@@ -4140,6 +4217,9 @@ class MonopolyGame(ActionGuardMixin, Game):
         next_player = self.advance_turn(announce=True)
         self._start_cheaters_turn(next_player)
         self._start_city_turn(next_player)
+        if self._is_city_preset() and self._check_city_endgame():
+            self.rebuild_all_menus()
+            return
         if self._is_junior_preset() and self._check_junior_endgame():
             self.rebuild_all_menus()
             return
@@ -4313,6 +4393,7 @@ class MonopolyGame(ActionGuardMixin, Game):
         self.free_parking_pool = 0
         self._clear_pending_auction()
         self.junior_endgame_evaluating = False
+        self.city_endgame_evaluating = False
         self._reset_turn_state()
         self.turn_doubles_count = 0
 

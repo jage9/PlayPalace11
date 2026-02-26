@@ -37,3 +37,12 @@
 | `mario_celebration` | `monopoly-e9517` | `classic_standard` | `mario_celebration` | `partial` | 200 | Wave 1 Mario board; unimplemented mechanics fall back to classic behavior. |
 | `mario_movie` | `monopoly-f6818` | `classic_standard` | `mario_movie` | `partial` | 200 | Wave 1 Mario board; unimplemented mechanics fall back to classic behavior. |
 | `junior_super_mario` | `monopoly-f4817` | `junior`, `junior_modern`, `junior_legacy` | `junior_super_mario` | `partial` | 2 | Junior path board profile; incompatible presets auto-fix to `junior`. |
+
+## Wave 4 Promotions
+- `mario_kart`: added `card_id_remap` behavior (partial_rules+).
+- `mario_movie`: added `card_cash_override` behavior (partial_rules+).
+
+## Next Mario Targets
+1. Promote `mario_collectors` with one card capability.
+2. Promote `mario_celebration` with one card capability.
+3. Define Junior-safe mechanic plan for `junior_super_mario`.

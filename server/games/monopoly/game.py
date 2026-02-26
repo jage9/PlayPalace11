@@ -26,8 +26,10 @@ from .banking_sim import (
 from .board_profile import (
     DEFAULT_BOARD_ID,
     DEFAULT_BOARD_RULES_MODE,
+    get_board_profile,
     get_available_board_ids as _board_profile_ids,
     get_available_board_rules_modes as _board_rules_modes,
+    resolve_board_plan,
 )
 from .city_engine import CityEngine
 from .city_profile import CityProfile, resolve_city_profile
@@ -551,6 +553,13 @@ class MonopolyGame(ActionGuardMixin, Game):
     active_family_key: str = ""
     active_edition_ids: list[str] = field(default_factory=list)
     active_anchor_edition_id: str = ""
+    active_board_id: str = DEFAULT_BOARD_ID
+    active_board_anchor_edition_id: str = ""
+    active_board_rules_mode: str = DEFAULT_BOARD_RULES_MODE
+    active_board_effective_mode: str = "skin_only"
+    active_board_rule_pack_id: str = ""
+    active_board_rule_pack_status: str = "none"
+    active_board_auto_fixed_from_preset_id: str = ""
     junior_ruleset: JuniorRuleset | None = None
     cheaters_profile: CheatersProfile | None = None
     cheaters_engine: CheatersEngine | None = None
@@ -4377,12 +4386,32 @@ class MonopolyGame(ActionGuardMixin, Game):
         self._team_manager.setup_teams([player.name for player in active_players])
         self.set_turn_players(active_players)
 
+        board_plan = resolve_board_plan(
+            self.options.preset_id,
+            self.options.board_id,
+            self.options.board_rules_mode,
+        )
+        if board_plan.auto_fixed_from_preset_id is not None:
+            self.options.preset_id = board_plan.effective_preset_id
+        self.options.board_id = board_plan.effective_board_id
+        self.options.board_rules_mode = board_plan.requested_mode
+
         preset = self._resolve_selected_preset()
         self.active_preset_id = preset.preset_id
         self.active_preset_name = preset.name
         self.active_family_key = preset.family_key
         self.active_edition_ids = list(preset.edition_ids)
         self.active_anchor_edition_id = preset.anchor_edition_id
+        active_board_profile = get_board_profile(board_plan.effective_board_id)
+        self.active_board_id = board_plan.effective_board_id
+        self.active_board_anchor_edition_id = active_board_profile.anchor_edition_id
+        self.active_board_rules_mode = board_plan.requested_mode
+        self.active_board_effective_mode = board_plan.effective_mode
+        self.active_board_rule_pack_id = board_plan.rule_pack_id or ""
+        self.active_board_rule_pack_status = board_plan.rule_pack_status
+        self.active_board_auto_fixed_from_preset_id = (
+            board_plan.auto_fixed_from_preset_id or ""
+        )
         self.junior_ruleset = (
             get_junior_ruleset(self.active_preset_id)
             if is_junior_ruleset_preset(self.active_preset_id)

@@ -69,3 +69,19 @@ def test_voice_transfer_requires_confirm_then_executes():
     assert host.id not in game.voice_pending_transfer_by_player_id
     assert game._bank_balance(host) == 1300
     assert game._bank_balance(guest) == 1700
+
+
+def test_voice_transfer_insufficient_funds_keeps_balances_unchanged():
+    game = _start_two_player_game(MonopolyOptions(preset_id="voice_banking"))
+    host = game.current_player
+    assert host is not None
+    guest = game.players[1]
+    assert game.banking_state is not None
+    game.banking_state.accounts[host.id].balance = 100
+    game._sync_player_cash_from_banking(host)
+
+    game.execute_action(host, "voice_command", input_value=f"voice: transfer 200 to {guest.name}")
+    game.execute_action(host, "voice_command", input_value="voice: confirm transfer")
+
+    assert game._bank_balance(host) == 100
+    assert game._bank_balance(guest) == 1500

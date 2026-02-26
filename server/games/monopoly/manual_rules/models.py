@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -21,15 +22,15 @@ class ManualRuleSet:
 
     board_id: str
     anchor_edition_id: str
-    board: dict[str, object]
-    economy: dict[str, object]
-    cards: dict[str, object]
-    mechanics: dict[str, object]
-    win_condition: dict[str, object]
+    board: dict[str, Any]
+    economy: dict[str, Any]
+    cards: dict[str, Any]
+    mechanics: dict[str, Any]
+    win_condition: dict[str, Any]
     citations: tuple[Citation, ...]
 
     @classmethod
-    def from_dict(cls, payload: dict[str, object]) -> "ManualRuleSet":
+    def from_dict(cls, payload: dict[str, Any]) -> "ManualRuleSet":
         """Build a validated manual rule set from dictionary payload."""
         citations = tuple(Citation(**row) for row in payload.get("citations", ()))
         if not citations:

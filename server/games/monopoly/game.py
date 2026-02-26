@@ -55,6 +55,8 @@ from .voice_banking_profile import (
     resolve_voice_banking_profile,
 )
 from .hardware_emulation import HardwareEvent, HardwareResult, resolve_hardware_event
+from .manual_rules.loader import load_manual_rule_set
+from .manual_rules.models import ManualRuleSet
 from .deck_provider import resolve_deck_provider
 from .presets import (
     DEFAULT_PRESET_ID,
@@ -567,6 +569,7 @@ class MonopolyGame(ActionGuardMixin, Game):
     active_board_deck_mode: str = "classic"
     active_board_parity_fidelity_status: str = "none"
     active_board_hardware_capability_ids: tuple[str, ...] = ()
+    active_manual_rule_set: ManualRuleSet | None = None
     active_sound_mode: str = "none"
     last_hardware_event_id: str = ""
     last_hardware_event_status: str = "none"
@@ -2228,6 +2231,17 @@ class MonopolyGame(ActionGuardMixin, Game):
         if override is None:
             return max(0, base_credit)
         return max(0, override)
+
+    def _load_active_manual_rule_set(self) -> ManualRuleSet | None:
+        """Load active board manual rules when board-rules mode is enabled."""
+        if self.active_board_effective_mode != "board_rules":
+            return None
+        if not self.active_board_rule_pack_id:
+            return None
+        try:
+            return load_manual_rule_set(self.active_board_id)
+        except (FileNotFoundError, ValueError):
+            return None
 
     def _ensure_valid_board_specific_deck_mode(self) -> bool:
         """Validate board-specific deck mode against current rule-pack state."""
@@ -4751,6 +4765,7 @@ class MonopolyGame(ActionGuardMixin, Game):
             self.active_board_id,
             self.active_board_deck_mode,
         ).mode
+        self.active_manual_rule_set = self._load_active_manual_rule_set()
         self.active_sound_mode = "none"
         self.last_hardware_event_id = ""
         self.last_hardware_event_status = "none"

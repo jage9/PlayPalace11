@@ -19,7 +19,7 @@ Head: `3db0285`
 - `cd server && ../.venv/bin/pytest tests/test_monopoly_manual_rule_payload_completeness.py -v`
   - Result: `55 passed`
 - `cd server && ../.venv/bin/pytest -k monopoly -q`
-  - Result: `1088 passed, 598 deselected`
+  - Result: `1090 passed, 598 deselected`
 
 ## New Progress: Manual Source Extraction (Marvel + Star Wars)
 
@@ -48,6 +48,9 @@ Head: `3db0285`
   - `star_wars_mandalorian`, `star_wars_mandalorian_s2`: `Signet`, `Hyperspace Jump`, `Imperial Credits`, `Imperial Advance`
 - Added seed verification tests:
   - `server/tests/test_monopoly_manual_extraction_seed.py`
+  - Includes Marvel action/deck label assertions for:
+    - `marvel_spider_man` (`Daily Bugle`, `Spider-Sense`)
+    - `marvel_super_villains` (`Chance`, `Reshape the Universe`)
 
 ## What Has Been Done (Whole Rollout to Date)
 

@@ -35,7 +35,7 @@
       {
         "position": 2,
         "space_id": "community_chest_1",
-        "name": "Community Chest",
+        "name": "Reshape the Universe",
         "kind": "community_chest",
         "price": 0,
         "rent": 0,
@@ -256,7 +256,7 @@
       {
         "position": 17,
         "space_id": "community_chest_2",
-        "name": "Community Chest",
+        "name": "Reshape the Universe",
         "kind": "community_chest",
         "price": 0,
         "rent": 0,
@@ -502,7 +502,7 @@
       {
         "position": 33,
         "space_id": "community_chest_3",
-        "name": "Community Chest",
+        "name": "Reshape the Universe",
         "kind": "community_chest",
         "price": 0,
         "rent": 0,
@@ -1088,6 +1088,10 @@
       "pdf_sha256": "5557222bfd03e11c92399c5382af16c75b90872086ea5573d73bf199321d86fb",
       "pdf_size_bytes": 101489368,
       "page_count": 2
+    },
+    "decks": {
+      "chance": "Chance",
+      "community_chest": "Reshape the Universe"
     }
   },
   "win_condition": {
@@ -1135,6 +1139,24 @@
       "edition_id": "monopoly-f5270",
       "page_ref": "manual-extract:pypdf",
       "confidence": "high"
+    },
+    {
+      "rule_path": "board.spaces.chance.name",
+      "edition_id": "monopoly-f5270",
+      "page_ref": "manual-extract:action-space-labels",
+      "confidence": "medium"
+    },
+    {
+      "rule_path": "board.spaces.community_chest.name",
+      "edition_id": "monopoly-f5270",
+      "page_ref": "manual-extract:action-space-labels",
+      "confidence": "medium"
+    },
+    {
+      "rule_path": "mechanics.decks",
+      "edition_id": "monopoly-f5270",
+      "page_ref": "manual-extract:deck-labels",
+      "confidence": "medium"
     }
   ]
 }

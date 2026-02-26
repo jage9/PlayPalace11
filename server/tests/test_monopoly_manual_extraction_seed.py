@@ -116,3 +116,54 @@ def test_star_wars_seed_applies_manual_action_space_labels(
     }
     for space_id, expected_name in expected.items():
         assert by_space_id.get(space_id) == expected_name
+
+
+@pytest.mark.parametrize(
+    ("board_id", "expected_names", "expected_decks"),
+    [
+        (
+            "marvel_spider_man",
+            {
+                "chance_1": "Daily Bugle",
+                "chance_2": "Daily Bugle",
+                "chance_3": "Daily Bugle",
+                "community_chest_1": "Spider-Sense",
+                "community_chest_2": "Spider-Sense",
+                "community_chest_3": "Spider-Sense",
+            },
+            {
+                "chance": "Daily Bugle",
+                "community_chest": "Spider-Sense",
+            },
+        ),
+        (
+            "marvel_super_villains",
+            {
+                "chance_1": "Chance",
+                "chance_2": "Chance",
+                "chance_3": "Chance",
+                "community_chest_1": "Reshape the Universe",
+                "community_chest_2": "Reshape the Universe",
+                "community_chest_3": "Reshape the Universe",
+            },
+            {
+                "chance": "Chance",
+                "community_chest": "Reshape the Universe",
+            },
+        ),
+    ],
+)
+def test_marvel_seed_applies_manual_action_labels_and_deck_metadata(
+    board_id: str,
+    expected_names: dict[str, str],
+    expected_decks: dict[str, str],
+) -> None:
+    rule_set = load_manual_rule_set(board_id)
+    by_space_id = {
+        row["space_id"]: row["name"]
+        for row in rule_set.board.get("spaces", [])
+    }
+    for space_id, expected_name in expected_names.items():
+        assert by_space_id.get(space_id) == expected_name
+
+    assert rule_set.mechanics.get("decks") == expected_decks

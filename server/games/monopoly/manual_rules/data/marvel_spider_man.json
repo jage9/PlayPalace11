@@ -35,7 +35,7 @@
       {
         "position": 2,
         "space_id": "community_chest_1",
-        "name": "Community Chest",
+        "name": "Spider-Sense",
         "kind": "community_chest",
         "price": 0,
         "rent": 0,
@@ -104,7 +104,7 @@
       {
         "position": 7,
         "space_id": "chance_1",
-        "name": "Chance",
+        "name": "Daily Bugle",
         "kind": "chance",
         "price": 0,
         "rent": 0,
@@ -256,7 +256,7 @@
       {
         "position": 17,
         "space_id": "community_chest_2",
-        "name": "Community Chest",
+        "name": "Spider-Sense",
         "kind": "community_chest",
         "price": 0,
         "rent": 0,
@@ -332,7 +332,7 @@
       {
         "position": 22,
         "space_id": "chance_2",
-        "name": "Chance",
+        "name": "Daily Bugle",
         "kind": "chance",
         "price": 0,
         "rent": 0,
@@ -502,7 +502,7 @@
       {
         "position": 33,
         "space_id": "community_chest_3",
-        "name": "Community Chest",
+        "name": "Spider-Sense",
         "kind": "community_chest",
         "price": 0,
         "rent": 0,
@@ -542,7 +542,7 @@
       {
         "position": 36,
         "space_id": "chance_3",
-        "name": "Chance",
+        "name": "Daily Bugle",
         "kind": "chance",
         "price": 0,
         "rent": 0,
@@ -1088,6 +1088,10 @@
       "pdf_sha256": "9a2a039ede525761dad0feef66b3c21552cc50972eec95c3c1ba9af8320fdf82",
       "pdf_size_bytes": 3800839,
       "page_count": 2
+    },
+    "decks": {
+      "chance": "Daily Bugle",
+      "community_chest": "Spider-Sense"
     }
   },
   "win_condition": {
@@ -1135,6 +1139,24 @@
       "edition_id": "monopoly-f3968",
       "page_ref": "manual-extract:pypdf",
       "confidence": "high"
+    },
+    {
+      "rule_path": "board.spaces.chance.name",
+      "edition_id": "monopoly-f3968",
+      "page_ref": "manual-extract:action-space-labels",
+      "confidence": "medium"
+    },
+    {
+      "rule_path": "board.spaces.community_chest.name",
+      "edition_id": "monopoly-f3968",
+      "page_ref": "manual-extract:action-space-labels",
+      "confidence": "medium"
+    },
+    {
+      "rule_path": "mechanics.decks",
+      "edition_id": "monopoly-f3968",
+      "page_ref": "manual-extract:deck-labels",
+      "confidence": "medium"
     }
   ]
 }

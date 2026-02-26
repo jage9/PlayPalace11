@@ -1135,6 +1135,18 @@
       "edition_id": "monopoly-b0324",
       "page_ref": "manual-extract:pypdf",
       "confidence": "high"
+    },
+    {
+      "rule_path": "board.spaces.chance.name",
+      "edition_id": "monopoly-b0324",
+      "page_ref": "manual-extract:action-space-labels",
+      "confidence": "medium"
+    },
+    {
+      "rule_path": "board.spaces.community_chest.name",
+      "edition_id": "monopoly-b0324",
+      "page_ref": "manual-extract:action-space-labels",
+      "confidence": "medium"
     }
   ]
 }

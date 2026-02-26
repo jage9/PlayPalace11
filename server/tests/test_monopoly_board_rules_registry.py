@@ -163,3 +163,54 @@ def test_star_wars_family_card_cash_override_contract(
     amount: int,
 ):
     assert get_card_cash_override(rule_pack_id, card_id) == amount
+
+
+@pytest.mark.parametrize(
+    ("rule_pack_id", "deck_type", "source_card_id", "target_card_id"),
+    (
+        ("disney_animation", "chance", "bank_dividend_50", "go_back_three"),
+        ("disney_lightyear", "chance", "poor_tax_15", "bank_dividend_50"),
+        ("disney_lion_king", "community_chest", "doctor_fee_pay_50", "income_tax_refund_20"),
+        ("disney_mickey_friends", "chance", "bank_dividend_50", "advance_to_go"),
+        ("disney_villains", "chance", "go_back_three", "bank_dividend_50"),
+        ("disney_legacy", "community_chest", "doctor_fee_pay_50", "bank_error_collect_200"),
+        ("disney_the_edition", "chance", "bank_dividend_50", "go_to_jail"),
+        ("marvel_80_years", "chance", "poor_tax_15", "bank_dividend_50"),
+        ("marvel_spider_man", "chance", "bank_dividend_50", "go_back_three"),
+        ("marvel_black_panther_wf", "community_chest", "doctor_fee_pay_50", "income_tax_refund_20"),
+        ("marvel_super_villains", "chance", "bank_dividend_50", "go_to_jail"),
+        ("marvel_deadpool", "chance", "go_back_three", "advance_to_go"),
+        ("marvel_avengers_legacy", "community_chest", "doctor_fee_pay_50", "bank_error_collect_200"),
+        ("marvel_eternals", "chance", "poor_tax_15", "bank_dividend_50"),
+        ("marvel_falcon_winter_soldier", "chance", "bank_dividend_50", "go_back_three"),
+        ("marvel_flip", "chance", "bank_dividend_50", "go_to_jail"),
+    ),
+)
+def test_disney_marvel_family_card_id_remap_contract(
+    rule_pack_id: str,
+    deck_type: str,
+    source_card_id: str,
+    target_card_id: str,
+):
+    assert get_card_id_remap(rule_pack_id, deck_type, source_card_id) == target_card_id
+
+
+@pytest.mark.parametrize(
+    ("rule_pack_id", "card_id", "amount"),
+    (
+        ("disney_lightyear", "bank_dividend_50", 88),
+        ("disney_lion_king", "income_tax_refund_20", 75),
+        ("disney_villains", "bank_dividend_50", 68),
+        ("disney_legacy", "bank_error_collect_200", 210),
+        ("marvel_80_years", "bank_dividend_50", 92),
+        ("marvel_black_panther_wf", "income_tax_refund_20", 70),
+        ("marvel_avengers_legacy", "bank_error_collect_200", 215),
+        ("marvel_eternals", "bank_dividend_50", 85),
+    ),
+)
+def test_disney_marvel_family_card_cash_override_contract(
+    rule_pack_id: str,
+    card_id: str,
+    amount: int,
+):
+    assert get_card_cash_override(rule_pack_id, card_id) == amount

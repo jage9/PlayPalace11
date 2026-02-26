@@ -45,8 +45,8 @@
     "rule_pack_id": "disney_animation",
     "anchor_edition_id": "monopoly-c2116",
     "canonical_manual_edition_id": "monopoly-c2116",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -55,8 +55,8 @@
     "rule_pack_id": "disney_legacy",
     "anchor_edition_id": "monopoly-19643",
     "canonical_manual_edition_id": "monopoly-19643",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -65,8 +65,8 @@
     "rule_pack_id": "disney_lightyear",
     "anchor_edition_id": "monopoly-f8046",
     "canonical_manual_edition_id": "monopoly-f8046",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -75,8 +75,8 @@
     "rule_pack_id": "disney_lion_king",
     "anchor_edition_id": "monopoly-e6707",
     "canonical_manual_edition_id": "monopoly-e6707",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -85,8 +85,8 @@
     "rule_pack_id": "disney_mickey_friends",
     "anchor_edition_id": "monopoly-f5267",
     "canonical_manual_edition_id": "monopoly-f5267",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -115,8 +115,8 @@
     "rule_pack_id": "disney_the_edition",
     "anchor_edition_id": "monopoly-40224",
     "canonical_manual_edition_id": "monopoly-40224",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -125,8 +125,8 @@
     "rule_pack_id": "disney_villains",
     "anchor_edition_id": "monopoly-f0091",
     "canonical_manual_edition_id": "monopoly-f0091",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -277,8 +277,8 @@
     "rule_pack_id": "marvel_80_years",
     "anchor_edition_id": "monopoly-e7866",
     "canonical_manual_edition_id": "monopoly-e7866",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -297,8 +297,8 @@
     "rule_pack_id": "marvel_avengers_legacy",
     "anchor_edition_id": "monopoly-b0323",
     "canonical_manual_edition_id": "monopoly-b0323",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -307,8 +307,8 @@
     "rule_pack_id": "marvel_black_panther_wf",
     "anchor_edition_id": "monopoly-f5405",
     "canonical_manual_edition_id": "monopoly-f5405",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -317,8 +317,8 @@
     "rule_pack_id": "marvel_deadpool",
     "anchor_edition_id": "monopoly-e2033",
     "canonical_manual_edition_id": "monopoly-e2033",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -327,8 +327,8 @@
     "rule_pack_id": "marvel_eternals",
     "anchor_edition_id": "monopoly-f1659",
     "canonical_manual_edition_id": "monopoly-f1659",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -337,8 +337,8 @@
     "rule_pack_id": "marvel_falcon_winter_soldier",
     "anchor_edition_id": "monopoly-f5851",
     "canonical_manual_edition_id": "monopoly-f5851",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -347,8 +347,8 @@
     "rule_pack_id": "marvel_flip",
     "anchor_edition_id": "monopoly-f9931",
     "canonical_manual_edition_id": "monopoly-f9931",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -357,8 +357,8 @@
     "rule_pack_id": "marvel_spider_man",
     "anchor_edition_id": "monopoly-f3968",
     "canonical_manual_edition_id": "monopoly-f3968",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {
@@ -367,8 +367,8 @@
     "rule_pack_id": "marvel_super_villains",
     "anchor_edition_id": "monopoly-f5270",
     "canonical_manual_edition_id": "monopoly-f5270",
-    "fidelity_status": "partial",
-    "deck_mode": "classic",
+    "fidelity_status": "partial_plus",
+    "deck_mode": "board_specific",
     "hardware_capability_ids": []
   },
   {

@@ -136,6 +136,7 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
         ),
     ),
     "disney_lion_king": BoardRulePack(
@@ -144,6 +145,8 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
+            "card_cash_override",
         ),
     ),
     "disney_mickey_friends": BoardRulePack(
@@ -152,6 +155,7 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
         ),
     ),
     "disney_villains": BoardRulePack(
@@ -160,6 +164,8 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
+            "card_cash_override",
         ),
     ),
     "disney_lightyear": BoardRulePack(
@@ -168,6 +174,8 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
+            "card_cash_override",
         ),
     ),
     "marvel_80_years": BoardRulePack(
@@ -176,6 +184,8 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
+            "card_cash_override",
         ),
     ),
     "marvel_avengers": BoardRulePack(
@@ -194,6 +204,7 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
         ),
     ),
     "marvel_black_panther_wf": BoardRulePack(
@@ -202,6 +213,8 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
+            "card_cash_override",
         ),
     ),
     "marvel_super_villains": BoardRulePack(
@@ -210,6 +223,7 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
         ),
     ),
     "marvel_deadpool": BoardRulePack(
@@ -218,6 +232,7 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
         ),
     ),
     "star_wars_40th": BoardRulePack(
@@ -353,6 +368,8 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
+            "card_cash_override",
         ),
     ),
     "disney_the_edition": BoardRulePack(
@@ -361,6 +378,7 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
         ),
     ),
     "lord_of_the_rings_trilogy": BoardRulePack(
@@ -387,6 +405,8 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
+            "card_cash_override",
         ),
     ),
     "star_wars_legacy": BoardRulePack(
@@ -472,6 +492,8 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
+            "card_cash_override",
         ),
     ),
     "transformers": BoardRulePack(
@@ -522,6 +544,7 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
         ),
     ),
     "fortnite_flip": BoardRulePack(
@@ -538,6 +561,7 @@ RULE_PACKS: dict[str, BoardRulePack] = {
         capability_ids=(
             "pass_go_credit_override",
             "startup_board_announcement",
+            "card_id_remap",
         ),
     ),
     "pokemon": BoardRulePack(

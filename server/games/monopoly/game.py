@@ -37,6 +37,7 @@ from .board_rules_registry import (
     get_card_cash_override,
     get_card_id_remap,
     get_pass_go_credit_override,
+    get_rule_pack,
     supports_capability,
 )
 from .city_engine import CityEngine
@@ -2228,11 +2229,23 @@ class MonopolyGame(ActionGuardMixin, Game):
             return max(0, base_credit)
         return max(0, override)
 
+    def _ensure_valid_board_specific_deck_mode(self) -> bool:
+        """Validate board-specific deck mode against current rule-pack state."""
+        if self.active_board_deck_mode != "board_specific":
+            return True
+        rule_pack_id = self.active_board_rule_pack_id
+        if not rule_pack_id or get_rule_pack(rule_pack_id) is None:
+            self.active_board_deck_mode = "classic"
+            return False
+        return True
+
     def _resolve_board_card_id(self, deck_type: str, card_id: str) -> str:
         """Resolve board-specific remap for one drawn card id."""
         if self.active_board_effective_mode != "board_rules":
             return card_id
         if self.active_board_deck_mode != "board_specific":
+            return card_id
+        if not self._ensure_valid_board_specific_deck_mode():
             return card_id
         rule_pack_id = self.active_board_rule_pack_id
         if not rule_pack_id:
@@ -2247,6 +2260,8 @@ class MonopolyGame(ActionGuardMixin, Game):
         if self.active_board_effective_mode != "board_rules":
             return amount
         if self.active_board_deck_mode != "board_specific":
+            return amount
+        if not self._ensure_valid_board_specific_deck_mode():
             return amount
         rule_pack_id = self.active_board_rule_pack_id
         if not rule_pack_id:
@@ -2306,6 +2321,9 @@ class MonopolyGame(ActionGuardMixin, Game):
     ) -> HardwareResult | None:
         """Resolve and record one board hardware event when hardware capabilities are active."""
         if self.active_board_effective_mode != "board_rules":
+            return None
+        if self.active_board_rule_pack_id and get_rule_pack(self.active_board_rule_pack_id) is None:
+            self.active_board_hardware_capability_ids = ()
             return None
         if not self.active_board_hardware_capability_ids:
             return None

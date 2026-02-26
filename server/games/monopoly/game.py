@@ -2215,6 +2215,34 @@ class MonopolyGame(ActionGuardMixin, Game):
             return amount
         return max(0, override)
 
+    def _is_junior_super_mario_manual_core_active(self) -> bool:
+        """Return True when junior Super Mario manual-core behavior is active."""
+        if self.active_board_id != "junior_super_mario":
+            return False
+        if self.active_board_effective_mode != "board_rules":
+            return False
+        if not self.active_board_rule_pack_id:
+            return False
+        return supports_capability(self.active_board_rule_pack_id, "junior_manual_core")
+
+    def _junior_super_mario_starting_cash(self) -> int:
+        """Return manual-core starting cash based on active player count."""
+        player_count = len([player for player in self.turn_players if isinstance(player, MonopolyPlayer)])
+        if player_count <= 2:
+            return 20
+        if player_count == 3:
+            return 18
+        return 16
+
+    def _apply_junior_super_mario_starting_cash(self) -> None:
+        """Apply manual-core starting cash table to active Monopoly players."""
+        if not self._is_junior_super_mario_manual_core_active():
+            return
+        starting_cash = self._junior_super_mario_starting_cash()
+        for player in self.turn_players:
+            if isinstance(player, MonopolyPlayer):
+                player.cash = starting_cash
+
     def _move_player(
         self, player: MonopolyPlayer, steps: int, *, collect_pass_go: bool
     ) -> MonopolySpace:
@@ -3576,7 +3604,15 @@ class MonopolyGame(ActionGuardMixin, Game):
         if self.turn_has_rolled or mono_player.bankrupt or self.turn_pending_purchase_space_id:
             return
 
-        if self._is_junior_preset() and self.junior_ruleset:
+        if self._is_junior_super_mario_manual_core_active():
+            numbered_die = random.randint(1, 6)
+            power_up_die = random.randint(1, 6)
+            die_1 = numbered_die
+            die_2 = power_up_die
+            total = numbered_die
+            is_doubles = False
+            self.turn_last_roll = [die_1, die_2]
+        elif self._is_junior_preset() and self.junior_ruleset:
             rolls = [random.randint(1, 6) for _ in range(self.junior_ruleset.dice_count)]
             die_1 = rolls[0]
             die_2 = rolls[1] if len(rolls) > 1 else 0
@@ -4542,6 +4578,8 @@ class MonopolyGame(ActionGuardMixin, Game):
                 player.jail_turns = 0
                 player.get_out_of_jail_cards = 0
                 player.builder_blocks = 0
+
+        self._apply_junior_super_mario_starting_cash()
 
         if self.banking_profile is not None:
             player_ids = [

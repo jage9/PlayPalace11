@@ -995,7 +995,8 @@
           "type": "move_absolute",
           "position": 0,
           "collect_pass_go": true
-        }
+        },
+        "text": "Avança para a CASA DE PARTIDA. Recebe A200."
       },
       {
         "id": "bank_dividend_50",
@@ -1019,7 +1020,8 @@
         "text_key": "monopoly-card-go-to-jail",
         "effect": {
           "type": "go_to_jail"
-        }
+        },
+        "text": "Move o teu peão de imediato para a Prisão! Não recebas A200 se passares na CASA DE PARTIDA."
       },
       {
         "id": "poor_tax_15",
@@ -1060,11 +1062,13 @@
         "text_key": "monopoly-card-go-to-jail",
         "effect": {
           "type": "go_to_jail"
-        }
+        },
+        "text": "Move o teu peão de imediato para a Prisão! Não recebas A200 se passares na CASA DE PARTIDA."
       },
       {
         "id": "get_out_of_jail_free",
-        "text_key": "monopoly-card-get-out-of-jail"
+        "text_key": "monopoly-card-get-out-of-jail",
+        "text": "Usa a carta Estás Livre Da Prisão no início da tua próxima jogada (ou tenta comprar uma a outro jogador)."
       }
     ]
   },

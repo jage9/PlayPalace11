@@ -1019,7 +1019,8 @@
         "text_key": "monopoly-card-go-to-jail",
         "effect": {
           "type": "go_to_jail"
-        }
+        },
+        "text": "Go directly to Jail. Do not pass GO."
       },
       {
         "id": "poor_tax_15",
@@ -1060,7 +1061,8 @@
         "text_key": "monopoly-card-go-to-jail",
         "effect": {
           "type": "go_to_jail"
-        }
+        },
+        "text": "Go directly to Jail. Do not pass GO."
       },
       {
         "id": "get_out_of_jail_free",

@@ -159,3 +159,38 @@ def test_disney_marvel_manual_rule_payload_includes_literal_card_text(
     literal_text = row.get("text")
     assert isinstance(literal_text, str)
     assert expected_substring in literal_text
+
+
+@pytest.mark.parametrize(
+    ("deck_type", "card_id", "expected_substring"),
+    [
+        ("chance", "advance_to_go", "CASA DE PARTIDA"),
+        ("chance", "go_to_jail", "Prisão"),
+        ("community_chest", "go_to_jail", "Prisão"),
+        ("community_chest", "get_out_of_jail_free", "Estás Livre Da Prisão"),
+    ],
+)
+def test_disney_marvel_manual_rule_payload_includes_literal_card_text_for_disney_princesses(
+    deck_type: str,
+    card_id: str,
+    expected_substring: str,
+) -> None:
+    rule_set = load_manual_rule_set("disney_princesses")
+    deck_rows = rule_set.cards.get(deck_type, [])
+    row = next(row for row in deck_rows if row.get("id") == card_id)
+    literal_text = row.get("text")
+    assert isinstance(literal_text, str)
+    assert expected_substring in literal_text
+
+
+@pytest.mark.parametrize(("deck_type", "card_id"), [("chance", "go_to_jail"), ("community_chest", "go_to_jail")])
+def test_disney_marvel_manual_rule_payload_includes_partial_literal_card_text_for_avengers_legacy(
+    deck_type: str,
+    card_id: str,
+) -> None:
+    rule_set = load_manual_rule_set("marvel_avengers_legacy")
+    deck_rows = rule_set.cards.get(deck_type, [])
+    row = next(row for row in deck_rows if row.get("id") == card_id)
+    literal_text = row.get("text")
+    assert isinstance(literal_text, str)
+    assert "Do not pass GO." in literal_text

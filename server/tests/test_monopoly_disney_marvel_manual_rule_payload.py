@@ -183,12 +183,14 @@ def test_disney_marvel_manual_rule_payload_includes_literal_card_text_for_disney
     assert expected_substring in literal_text
 
 
+@pytest.mark.parametrize("board_id", ["marvel_avengers_legacy", "marvel_flip"])
 @pytest.mark.parametrize(("deck_type", "card_id"), [("chance", "go_to_jail"), ("community_chest", "go_to_jail")])
-def test_disney_marvel_manual_rule_payload_includes_partial_literal_card_text_for_avengers_legacy(
+def test_disney_marvel_manual_rule_payload_includes_partial_literal_card_text_for_remaining_marvel_boards(
+    board_id: str,
     deck_type: str,
     card_id: str,
 ) -> None:
-    rule_set = load_manual_rule_set("marvel_avengers_legacy")
+    rule_set = load_manual_rule_set(board_id)
     deck_rows = rule_set.cards.get(deck_type, [])
     row = next(row for row in deck_rows if row.get("id") == card_id)
     literal_text = row.get("text")

@@ -1019,7 +1019,8 @@
         "text_key": "monopoly-card-go-to-jail",
         "effect": {
           "type": "go_to_jail"
-        }
+        },
+        "text": "Move your token to the In Jail space immediately. Do not pass GO. Do not collect 2 BP."
       },
       {
         "id": "poor_tax_15",
@@ -1060,7 +1061,8 @@
         "text_key": "monopoly-card-go-to-jail",
         "effect": {
           "type": "go_to_jail"
-        }
+        },
+        "text": "Move your token to the In Jail space immediately. Do not pass GO. Do not collect 2 BP."
       },
       {
         "id": "get_out_of_jail_free",

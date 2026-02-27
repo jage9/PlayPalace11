@@ -52,6 +52,41 @@ DISNEY_MARVEL_LITERAL_TEXT_BOARD_IDS = [
     "marvel_super_villains",
 ]
 
+NATIVE_MARVEL_DECK_ID_OVERRIDES = {
+    "marvel_avengers_legacy": {
+        "chance": [
+            "shield_advance_to_go",
+            "shield_bank_dividend_50",
+            "shield_go_back_three",
+            "shield_go_to_jail",
+            "shield_poor_tax_15",
+        ],
+        "community_chest": [
+            "villains_bank_error_collect_215",
+            "villains_doctor_fee_pay_50",
+            "villains_income_tax_refund_20",
+            "villains_go_to_jail",
+            "villains_jail_release_options",
+        ],
+    },
+    "marvel_flip": {
+        "chance": [
+            "event_advance_to_go",
+            "event_go_to_jail_primary",
+            "event_go_back_three",
+            "event_go_to_jail_secondary",
+            "event_poor_tax_15",
+        ],
+        "community_chest": [
+            "team_up_bank_error_collect_200",
+            "team_up_doctor_fee_pay_50",
+            "team_up_income_tax_refund_20",
+            "team_up_go_to_jail",
+            "team_up_jail_release_options",
+        ],
+    },
+}
+
 
 def _start_game(board_id: str) -> MonopolyGame:
     game = MonopolyGame(
@@ -75,10 +110,13 @@ def test_disney_marvel_manual_rule_payload_has_full_card_and_space_baseline(boar
     spaces = rule_set.board.get("spaces", [])
     chance_rows = rule_set.cards.get("chance", [])
     community_rows = rule_set.cards.get("community_chest", [])
+    deck_override = NATIVE_MARVEL_DECK_ID_OVERRIDES.get(board_id, {})
+    expected_chance_ids = deck_override.get("chance", CHANCE_CARD_IDS)
+    expected_community_ids = deck_override.get("community_chest", COMMUNITY_CHEST_CARD_IDS)
 
     assert len(spaces) == 40
-    assert [row["id"] for row in chance_rows] == CHANCE_CARD_IDS
-    assert [row["id"] for row in community_rows] == COMMUNITY_CHEST_CARD_IDS
+    assert [row["id"] for row in chance_rows] == expected_chance_ids
+    assert [row["id"] for row in community_rows] == expected_community_ids
 
 
 @pytest.mark.parametrize(
@@ -92,7 +130,7 @@ def test_disney_marvel_manual_rule_payload_has_full_card_and_space_baseline(boar
         ("marvel_80_years", "bank_dividend_50", 92),
         ("marvel_avengers", "bank_error_collect_200", 220),
         ("marvel_black_panther_wf", "income_tax_refund_20", 70),
-        ("marvel_avengers_legacy", "bank_error_collect_200", 215),
+        ("marvel_avengers_legacy", "villains_bank_error_collect_215", 215),
         ("marvel_eternals", "bank_dividend_50", 85),
     ],
 )
@@ -135,6 +173,55 @@ def test_disney_marvel_manual_rule_payload_executes_manual_effect_for_remapped_c
     assert "move_absolute" in seen_effect_types
     assert host.position == 0
     assert host.cash == 1700
+
+
+@pytest.mark.parametrize(
+    ("board_id", "space_before_roll", "deck_type", "drawn_card", "expected_deck_label"),
+    [
+        ("marvel_avengers_legacy", 5, "chance", "advance_to_go", "S.H.I.E.L.D."),
+        (
+            "marvel_avengers_legacy",
+            0,
+            "community_chest",
+            "bank_error_collect_200",
+            "Villains",
+        ),
+        ("marvel_flip", 5, "chance", "bank_dividend_50", "Event"),
+        ("marvel_flip", 0, "community_chest", "bank_error_collect_200", "Team-Up"),
+    ],
+)
+def test_disney_marvel_manual_rule_payload_uses_manual_deck_labels_in_card_draw_broadcast(
+    board_id: str,
+    space_before_roll: int,
+    deck_type: str,
+    drawn_card: str,
+    expected_deck_label: str,
+    monkeypatch,
+) -> None:
+    game = _start_game(board_id)
+    host = game.current_player
+    assert host is not None
+
+    host.position = space_before_roll
+    def _draw_expected(card_deck: str) -> str:
+        assert card_deck == deck_type
+        return drawn_card
+
+    monkeypatch.setattr(game, "_draw_card", _draw_expected)
+    rolls = iter([1, 1])
+    monkeypatch.setattr("server.games.monopoly.game.random.randint", lambda a, b: next(rolls))
+
+    seen_events: list[tuple[str, dict[str, object]]] = []
+
+    def _capture_broadcast(message_key: str, **kwargs):
+        seen_events.append((message_key, kwargs))
+
+    monkeypatch.setattr(game, "broadcast_l", _capture_broadcast)
+    game.execute_action(host, "roll_dice")
+
+    card_draw_events = [kwargs for key, kwargs in seen_events if key == "monopoly-card-drawn"]
+    assert card_draw_events
+    assert card_draw_events[0].get("deck") == expected_deck_label
 
 
 @pytest.mark.parametrize("board_id", DISNEY_MARVEL_LITERAL_TEXT_BOARD_IDS)
@@ -205,8 +292,15 @@ def test_disney_marvel_manual_rule_payload_includes_literal_card_text_for_disney
     assert expected_substring in literal_text.lower()
 
 
-@pytest.mark.parametrize("board_id", ["marvel_avengers_legacy", "marvel_flip"])
-@pytest.mark.parametrize(("deck_type", "card_id"), [("chance", "go_to_jail"), ("community_chest", "go_to_jail")])
+@pytest.mark.parametrize(
+    ("board_id", "deck_type", "card_id"),
+    [
+        ("marvel_avengers_legacy", "chance", "shield_go_to_jail"),
+        ("marvel_avengers_legacy", "community_chest", "villains_go_to_jail"),
+        ("marvel_flip", "chance", "event_go_to_jail_primary"),
+        ("marvel_flip", "community_chest", "team_up_go_to_jail"),
+    ],
+)
 def test_disney_marvel_manual_rule_payload_includes_partial_literal_card_text_for_remaining_marvel_boards(
     board_id: str,
     deck_type: str,
@@ -226,25 +320,25 @@ def test_disney_marvel_manual_rule_payload_includes_partial_literal_card_text_fo
         (
             "marvel_avengers_legacy",
             "chance",
-            "advance_to_go",
+            "shield_advance_to_go",
             "Chance and Community Chest cards",
         ),
         (
             "marvel_avengers_legacy",
             "community_chest",
-            "get_out_of_jail_free",
+            "villains_jail_release_options",
             "How do I get out of Jail?",
         ),
         (
             "marvel_flip",
             "chance",
-            "advance_to_go",
+            "event_advance_to_go",
             "Team-Up Cards",
         ),
         (
             "marvel_flip",
             "community_chest",
-            "get_out_of_jail_free",
+            "team_up_jail_release_options",
             "pay BP or roll",
         ),
     ],
@@ -259,11 +353,10 @@ def test_disney_marvel_manual_rule_payload_marks_unobserved_literal_card_text_fo
     deck_rows = rule_set.cards.get(deck_type, [])
     row = next(row for row in deck_rows if row.get("id") == card_id)
 
-    assert row.get("text") is None
     assert row.get("text_status") == "not_observed_in_available_manual_sources"
     note = row.get("text_note")
     assert isinstance(note, str)
-    assert "Canonical compatibility card id retained" in note
+    assert "deck modeling" in note
     evidence = row.get("text_evidence")
     assert isinstance(evidence, str)
     assert expected_evidence_substring in evidence

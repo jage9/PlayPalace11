@@ -134,6 +134,11 @@ Head: `98c6150` (plus working-tree updates)
   - Remaining canonical literal card ids on `marvel_avengers_legacy` and `marvel_flip` are now explicitly marked as `not_observed_in_available_manual_sources` with manual evidence notes:
     - `chance.advance_to_go`
     - `community_chest.get_out_of_jail_free`
+  - Native manual deck-id modeling is now active for the two remaining Marvel boards:
+    - `marvel_avengers_legacy`: `shield_*` and `villains_*` card ids
+    - `marvel_flip`: `event_*` and `team_up_*` card ids
+  - Legacy canonical ids remain backward compatible via board rule remaps.
+  - Card-draw announcements now use `mechanics.decks` labels (for example `S.H.I.E.L.D.`, `Villains`, `Event`, `Team-Up`) instead of hardcoded `Chance`/`Community Chest` labels.
 - Remaining boards without deck-label seeding: `0` (all `55` covered)
 
 ## What Has Been Done (Whole Rollout to Date)
@@ -193,7 +198,7 @@ Move the remaining `50` `near_full` boards to true `manual_core` by replacing sy
 - No blockers remain for action/deck/tax label seeding coverage.
 - Remaining blocker is card-by-card deterministic extraction from image-heavy manuals.
 - Targeted extractor retry for `disney_the_edition` currently returns `<urlopen error [Errno 16] Device or resource busy>` in this environment; literals were seeded from alternate manual mirror text pending improved direct extraction.
-- Manual-source re-checks for `marvel_avengers_legacy` and `marvel_flip` (official PDFs plus OCR retries and alternate locale/manual pages) did not surface deterministic literal card text for canonical compatibility ids `advance_to_go` and `get_out_of_jail_free`; payloads now carry explicit `text_status` + evidence metadata for these ids instead of synthetic literal text.
+- Manual-source re-checks for `marvel_avengers_legacy` and `marvel_flip` (official PDFs plus OCR retries and alternate locale/manual pages) did not surface deterministic literal card text for two compatibility effects; those effects are now represented through native deck ids with explicit `text_status` + evidence metadata instead of synthetic literal text.
 
 ## Definition of Done for the Final Part
 

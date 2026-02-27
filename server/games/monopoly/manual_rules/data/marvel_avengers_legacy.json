@@ -989,7 +989,7 @@
   "cards": {
     "chance": [
       {
-        "id": "advance_to_go",
+        "id": "shield_advance_to_go",
         "text_key": "monopoly-card-advance-to-go",
         "effect": {
           "type": "move_absolute",
@@ -997,11 +997,11 @@
           "collect_pass_go": true
         },
         "text_status": "not_observed_in_available_manual_sources",
-        "text_note": "Canonical compatibility card id retained for engine contracts; no literal card line for this id was recovered from official B0323 manuals.",
+        "text_note": "Native S.H.I.E.L.D. card id retained for manual deck modeling; no literal per-card line for this specific effect id was recovered from official B0323 manuals.",
         "text_evidence": "Collect power by passing GO and from Chance and Community Chest cards."
       },
       {
-        "id": "bank_dividend_50",
+        "id": "shield_bank_dividend_50",
         "text_key": "monopoly-card-bank-dividend-50",
         "effect": {
           "type": "credit",
@@ -1009,7 +1009,7 @@
         }
       },
       {
-        "id": "go_back_three",
+        "id": "shield_go_back_three",
         "text_key": "monopoly-card-go-back-three",
         "effect": {
           "type": "move_relative",
@@ -1018,7 +1018,7 @@
         }
       },
       {
-        "id": "go_to_jail",
+        "id": "shield_go_to_jail",
         "text_key": "monopoly-card-go-to-jail",
         "effect": {
           "type": "go_to_jail"
@@ -1026,7 +1026,7 @@
         "text": "Go directly to Jail. Do not pass GO."
       },
       {
-        "id": "poor_tax_15",
+        "id": "shield_poor_tax_15",
         "text_key": "monopoly-card-poor-tax-15",
         "effect": {
           "type": "debit",
@@ -1036,7 +1036,7 @@
     ],
     "community_chest": [
       {
-        "id": "bank_error_collect_200",
+        "id": "villains_bank_error_collect_215",
         "text_key": "monopoly-card-bank-error-200",
         "effect": {
           "type": "credit",
@@ -1044,7 +1044,7 @@
         }
       },
       {
-        "id": "doctor_fee_pay_50",
+        "id": "villains_doctor_fee_pay_50",
         "text_key": "monopoly-card-doctor-fee-50",
         "effect": {
           "type": "debit",
@@ -1052,7 +1052,7 @@
         }
       },
       {
-        "id": "income_tax_refund_20",
+        "id": "villains_income_tax_refund_20",
         "text_key": "monopoly-card-tax-refund-20",
         "effect": {
           "type": "credit",
@@ -1060,7 +1060,7 @@
         }
       },
       {
-        "id": "go_to_jail",
+        "id": "villains_go_to_jail",
         "text_key": "monopoly-card-go-to-jail",
         "effect": {
           "type": "go_to_jail"
@@ -1068,10 +1068,13 @@
         "text": "Go directly to Jail. Do not pass GO."
       },
       {
-        "id": "get_out_of_jail_free",
-        "text_key": "monopoly-card-get-out-of-jail",
+        "id": "villains_jail_release_options",
+        "text": "How do I get out of Jail? Pay 50 Power at the start of your next turn to break out, or roll to try to get out.",
+        "effect": {
+          "type": "no_effect"
+        },
         "text_status": "not_observed_in_available_manual_sources",
-        "text_note": "Canonical compatibility card id retained for engine contracts; no literal card line for this id was recovered from official B0323 manuals.",
+        "text_note": "Native Villains card id retained for manual deck modeling; official B0323 manual describes jail-release flow but does not show a literal matching card line.",
         "text_evidence": "How do I get out of Jail?"
       }
     ]

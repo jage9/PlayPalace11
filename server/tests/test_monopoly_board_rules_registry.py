@@ -180,10 +180,15 @@ def test_star_wars_family_card_cash_override_contract(
         ("marvel_black_panther_wf", "community_chest", "doctor_fee_pay_50", "income_tax_refund_20"),
         ("marvel_super_villains", "chance", "bank_dividend_50", "go_to_jail"),
         ("marvel_deadpool", "chance", "go_back_three", "advance_to_go"),
-        ("marvel_avengers_legacy", "community_chest", "doctor_fee_pay_50", "bank_error_collect_200"),
+        (
+            "marvel_avengers_legacy",
+            "community_chest",
+            "doctor_fee_pay_50",
+            "villains_bank_error_collect_215",
+        ),
         ("marvel_eternals", "chance", "poor_tax_15", "bank_dividend_50"),
         ("marvel_falcon_winter_soldier", "chance", "bank_dividend_50", "go_back_three"),
-        ("marvel_flip", "chance", "bank_dividend_50", "go_to_jail"),
+        ("marvel_flip", "chance", "bank_dividend_50", "event_go_to_jail_primary"),
     ),
 )
 def test_disney_marvel_family_card_id_remap_contract(

@@ -3024,6 +3024,25 @@ class MonopolyGame(ActionGuardMixin, Game):
         default_text_key = CARD_DESCRIPTION_KEYS.get(card_id, card_id)
         return Localization.get("en", default_text_key)
 
+    def _resolve_card_deck_label(self, deck_type: str) -> str:
+        """Resolve deck label for card draw announcements."""
+        default_label = "Chance" if deck_type == "chance" else "Community Chest"
+        if deck_type not in {"chance", "community_chest"}:
+            return default_label
+        if self.active_manual_rule_set is None:
+            return default_label
+        mechanics = self.active_manual_rule_set.mechanics
+        decks = mechanics.get("decks") if isinstance(mechanics, dict) else None
+        if not isinstance(decks, dict):
+            return default_label
+        label = decks.get(deck_type)
+        if not isinstance(label, str):
+            return default_label
+        normalized = label.strip()
+        if not normalized:
+            return default_label
+        return normalized
+
     def _resolve_card_effect(
         self,
         player: MonopolyPlayer,
@@ -3036,7 +3055,7 @@ class MonopolyGame(ActionGuardMixin, Game):
         """Apply one Chance/Community Chest card and return resolution state."""
         card_id = self._resolve_board_card_id(deck_type, card_id)
         manual_card = self._manual_card_definition(deck_type, card_id)
-        deck_label = "Chance" if deck_type == "chance" else "Community Chest"
+        deck_label = self._resolve_card_deck_label(deck_type)
         card_text = self._resolve_card_draw_text(manual_card, card_id)
         self.broadcast_l(
             "monopoly-card-drawn",

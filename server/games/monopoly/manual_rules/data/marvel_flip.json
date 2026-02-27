@@ -997,8 +997,8 @@
           "collect_pass_go": true
         },
         "text_status": "not_observed_in_available_manual_sources",
-        "text_note": "Native Event card id retained for manual deck modeling; official F9931 manuals and external manual mirrors reviewed on 2026-02-27 surface Event/Team-Up deck mechanics but no literal matching card line for this specific effect id.",
-        "text_evidence": "16 Location Cards * 16 Team-Up Cards * 16 Event Cards",
+        "text_note": "Native Event card id retained for manual deck modeling; official F9931 manual sources plus targeted OCR sweep (300/450 DPI with psm4/6/11/12) and mirror review on 2026-02-27 recovered Event/Team-Up deck mechanics and generic GO movement text, but no literal Event card line uniquely matching this effect id.",
+        "text_evidence": "16 Location Cards * 16 Team-Up Cards * 16 Event Cards; When you reach the GO space, stop there and collect 2 BP.",
         "legacy_id": "advance_to_go"
       },
       {
@@ -1083,8 +1083,8 @@
           "type": "no_effect"
         },
         "text_status": "not_observed_in_available_manual_sources",
-        "text_note": "Native Team-Up card id retained for manual deck modeling; official F9931 manuals and external manual mirrors reviewed on 2026-02-27 describe pay-or-roll release flow but do not list a literal matching card line.",
-        "text_evidence": "You have 2 options: pay BP or roll the numbered die to get out of Jail.",
+        "text_note": "Native Team-Up card id retained for manual deck modeling; official F9931 manual sources plus targeted OCR sweep and mirror review on 2026-02-27 recovered pay-or-roll jail flow text and a generic Team-Up retention line, but no literal Team-Up card line that can be deterministically mapped to this legacy slot.",
+        "text_evidence": "You have 2 options: pay BP or roll the numbered die to get out of Jail. Keep this card until you're ready to use it.",
         "legacy_id": "get_out_of_jail_free"
       }
     ]

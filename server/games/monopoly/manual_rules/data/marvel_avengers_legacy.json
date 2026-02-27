@@ -997,7 +997,7 @@
           "collect_pass_go": true
         },
         "text_status": "not_observed_in_available_manual_sources",
-        "text_note": "Native S.H.I.E.L.D. card id retained for manual deck modeling; no literal per-card line for this specific effect id was recovered from official B0323 manuals or external manual mirrors reviewed on 2026-02-27.",
+        "text_note": "Native S.H.I.E.L.D. card id retained for manual deck modeling; official B0323 manual sources plus targeted OCR sweep (300/450/600 DPI with psm4/6/11/12) and mirror review on 2026-02-27 recovered only generic pass-GO guidance, not a literal per-card line uniquely matching this effect id.",
         "text_evidence": "Collect power by passing GO and from Chance and Community Chest cards.",
         "legacy_id": "advance_to_go"
       },
@@ -1083,8 +1083,8 @@
           "type": "no_effect"
         },
         "text_status": "not_observed_in_available_manual_sources",
-        "text_note": "Native Villains card id retained for manual deck modeling; official B0323 manuals and external manual mirrors reviewed on 2026-02-27 describe jail-release flow but do not show a literal matching card line.",
-        "text_evidence": "How do I get out of Jail?",
+        "text_note": "Native Villains card id retained for manual deck modeling; official B0323 manual sources plus targeted OCR sweep and mirror review on 2026-02-27 recovered jail-flow instructions but no literal Villains-card line that can be deterministically bound to this legacy slot.",
+        "text_evidence": "How do I get out of Jail? Pay 50 Power at the start of your next turn to break out!",
         "legacy_id": "get_out_of_jail_free"
       }
     ]

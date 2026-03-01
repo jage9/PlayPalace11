@@ -41,5 +41,6 @@ def test_pipeline_outputs_are_stably_sorted_and_repeatable(tmp_path: Path):
 
 def test_runbook_lists_pipeline_commands():
     """Runbook must include executable pipeline command examples."""
-    text = Path("plans/monopoly_catalog_pipeline.md").read_text(encoding="utf-8")
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    text = (repo_root / "docs" / "design" / "plans" / "monopoly_catalog_pipeline.md").read_text(encoding="utf-8")
     assert "uv run python scripts/monopoly/build_catalog.py" in text

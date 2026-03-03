@@ -71,6 +71,7 @@ class WebSocketServer:
         ssl_cert: str | Path | None = None,
         ssl_key: str | Path | None = None,
         max_message_size: int | None = None,
+        process_request: Callable | None = None,
     ):
         self.host = host
         self.port = port
@@ -82,6 +83,7 @@ class WebSocketServer:
         self._running = False
         self._ssl_context = None
         self._max_message_size = max_message_size
+        self._process_request = process_request
 
         # Configure SSL if certificates provided
         if ssl_cert and ssl_key:
@@ -111,6 +113,7 @@ class WebSocketServer:
                 self.port,
                 ssl=self._ssl_context,
                 max_size=self._max_message_size,
+                process_request=self._process_request,
             ).__aenter__()
         except OSError as exc:
             print(

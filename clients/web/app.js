@@ -98,6 +98,72 @@ function getDefaultServerUrl() {
   return `${wsScheme}://${host}${portSuffix}`;
 }
 
+function getServerUserCountUrl(serverUrl) {
+  if (!serverUrl) {
+    return null;
+  }
+  try {
+    const parsed = new URL(serverUrl);
+    const scheme = parsed.protocol === "wss:" ? "https" : "http";
+    return `${scheme}://${parsed.host}/api/user_count`;
+  } catch {
+    return null;
+  }
+}
+
+let _userCountTimerId = null;
+
+async function fetchAndShowUserCount(serverUrl) {
+  const countUrl = getServerUserCountUrl(serverUrl);
+  const el = document.getElementById("server-user-count");
+  if (!el) {
+    return;
+  }
+  if (!countUrl) {
+    el.hidden = true;
+    return;
+  }
+  try {
+    const response = await fetch(countUrl, { signal: AbortSignal.timeout(4000) });
+    if (!response.ok) {
+      el.hidden = true;
+      return;
+    }
+    const data = await response.json();
+    const count = typeof data.user_count === "number" ? data.user_count : null;
+    if (count === null) {
+      el.hidden = true;
+      return;
+    }
+    if (count === 1) {
+      el.textContent = "1 user connected";
+    } else {
+      el.textContent = `${count} users connected`;
+    }
+    el.hidden = false;
+  } catch {
+    el.hidden = true;
+  }
+}
+
+function startUserCountPolling(serverUrl) {
+  stopUserCountPolling();
+  // Show an initial count immediately, then refresh every 30 seconds.
+  fetchAndShowUserCount(serverUrl);
+  _userCountTimerId = window.setInterval(() => fetchAndShowUserCount(serverUrl), 30_000);
+}
+
+function stopUserCountPolling() {
+  if (_userCountTimerId !== null) {
+    window.clearInterval(_userCountTimerId);
+    _userCountTimerId = null;
+  }
+  const el = document.getElementById("server-user-count");
+  if (el) {
+    el.hidden = true;
+  }
+}
+
 function normalizeUsername(username) {
   return String(username || "").trim();
 }
@@ -694,6 +760,7 @@ function openLoginDialog() {
     elements.togglePassword.textContent = "Show password";
   }
   elements.username.focus();
+  startUserCountPolling(getDefaultServerUrl());
 }
 
 function installLoginKeyboardFlow() {
@@ -937,6 +1004,7 @@ function handleAuthorizeSuccess(packet, { refreshed = false } = {}) {
   const versionLabel = packet.version ? ` (${packet.version})` : "";
   setStatus(`Connected as ${packet.username}${versionLabel}`);
   closeLoginDialog();
+  stopUserCountPolling();
   setConnectedUi(true);
   historyView.addEntry(`Connected as ${packet.username}${packet.version ? ` (server ${packet.version})` : ""}`, {
     buffer: "activity",

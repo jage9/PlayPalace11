@@ -77,12 +77,23 @@ async def test_user_count_returns_correct_count(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_unknown_path_returns_404(tmp_path):
+async def test_non_api_path_returns_none_for_websocket_upgrade(tmp_path):
+    """Non-API paths must return None so the WebSocket handshake can proceed."""
     srv = _make_server(tmp_path)
     conn = DummyConnection()
-    req = _make_request("/unknown")
+    for path in ("/", "/ws", "/unknown"):
+        result = await srv._handle_user_count_request(conn, _make_request(path))
+        assert result is None, f"Expected None for path {path!r}, got {result!r}"
+
+
+@pytest.mark.asyncio
+async def test_user_count_response_has_cors_header(tmp_path):
+    srv = _make_server(tmp_path)
+    conn = DummyConnection()
+    req = _make_request()
     response = await srv._handle_user_count_request(conn, req)
-    assert response.status_code == http.HTTPStatus.NOT_FOUND
+    assert response.status_code == http.HTTPStatus.OK
+    assert response.headers["access-control-allow-origin"] == "*"
 
 
 @pytest.mark.asyncio

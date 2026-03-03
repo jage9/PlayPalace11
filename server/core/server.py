@@ -591,11 +591,14 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         """Handle HTTP requests on the WebSocket port.
 
         Serves GET /api/user_count with the number of logged-in users.
-        All other paths receive 404.
+        All other paths return None so the websockets library can proceed
+        with the normal WebSocket upgrade handshake.
         Rate-limited to prevent abuse.
         """
         if request.path != "/api/user_count":
-            return connection.respond(http.HTTPStatus.NOT_FOUND, "Not Found\n")
+            # Returning None tells the websockets library to continue with the
+            # normal WebSocket handshake for this connection.
+            return None
 
         remote = connection.remote_address
         client_ip = remote[0] if remote else "unknown"
@@ -608,6 +611,7 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
             ("Content-Type", "application/json"),
             ("Content-Length", str(len(body))),
             ("Cache-Control", "no-store"),
+            ("Access-Control-Allow-Origin", "*"),
         ])
         return HttpResponse(http.HTTPStatus.OK, "OK", headers, body)
 

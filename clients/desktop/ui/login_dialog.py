@@ -32,30 +32,63 @@ def _ws_url_to_http_url(ws_url: str) -> str | None:
     return None
 
 
-def _fetch_user_count_sync(http_url: str, timeout: float = 3.0) -> int | None:
+def _fetch_user_count_sync(
+    http_url: str, timeout: float = 3.0, trusted_cert_pem: str | None = None
+) -> int | None:
     """Fetch the user count from the server over HTTP.
+
+    For HTTPS URLs the request is first attempted with system certificate
+    verification.  When that fails (e.g. a self-signed certificate), a second
+    attempt is made using the PEM certificate explicitly stored as trusted for
+    this server, if one is available.
 
     Args:
         http_url: Full HTTP URL to the user count endpoint.
         timeout: Request timeout in seconds.
+        trusted_cert_pem: PEM-encoded certificate to trust, or None to use the
+            system store only.
 
     Returns:
-        Integer user count, or None if the request fails.
+        Integer user count, or None if the request fails or the server is
+        unreachable.
     """
-    try:
-        # Create an unverified SSL context so self-signed certificates work.
-        # The user count endpoint returns non-sensitive public information.
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE  # nosec B501
-        with urllib.request.urlopen(http_url, timeout=timeout, context=ctx) as resp:  # nosec B310
-            data = json.loads(resp.read())
-            count = data.get("user_count")
-            if isinstance(count, int) and count >= 0:
-                return count
-    except Exception:  # noqa: BLE001
-        pass
-    return None
+    def _try_fetch(ctx) -> int | None:
+        try:
+            with urllib.request.urlopen(http_url, timeout=timeout, context=ctx) as resp:  # nosec B310
+                data = json.loads(resp.read())
+                count = data.get("user_count")
+                if isinstance(count, int) and count >= 0:
+                    return count
+        except Exception:  # noqa: BLE001
+            pass
+        return None
+
+    # First attempt: use the default SSL context (system-trusted certificates).
+    default_ctx = ssl.create_default_context() if http_url.startswith("https://") else None
+    result = _try_fetch(default_ctx)
+    if result is not None:
+        return result
+
+    # Second attempt for HTTPS: try the explicitly trusted server certificate.
+    if http_url.startswith("https://") and trusted_cert_pem:
+        try:
+            import tempfile
+            import os
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".pem", delete=False
+            ) as f:
+                f.write(trusted_cert_pem)
+                tmp_path = f.name
+            try:
+                ctx = ssl.create_default_context(cafile=tmp_path)
+                ctx.check_hostname = False
+                result = _try_fetch(ctx)
+            finally:
+                os.unlink(tmp_path)
+        except Exception:  # noqa: BLE001
+            pass
+
+    return result
 
 
 class LoginDialog(wx.Dialog):
@@ -208,14 +241,18 @@ class LoginDialog(wx.Dialog):
             self.user_count_label.SetLabel("")
             return
 
-        self.user_count_label.SetLabel("Fetching users…")
+        self.user_count_label.SetLabel("Fetching users...")
+
+        # Retrieve the trusted certificate PEM (if stored) for HTTPS fallback.
+        cert = self.config_manager.get_trusted_certificate(server_id)
+        trusted_pem = cert.get("pem") if isinstance(cert, dict) else None
 
         # Increment the fetch ID so stale results from previous requests are ignored.
         self._user_count_fetch_id += 1
         fetch_id = self._user_count_fetch_id
 
         def _bg_fetch():
-            count = _fetch_user_count_sync(http_url)
+            count = _fetch_user_count_sync(http_url, trusted_cert_pem=trusted_pem)
             wx.CallAfter(self._on_user_count_result, fetch_id, count)
 
         threading.Thread(target=_bg_fetch, daemon=True).start()

@@ -2,7 +2,6 @@
 
 import http
 import json
-import time
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -37,7 +36,7 @@ class DummyConnection:
         return (self._remote_ip, 9999)
 
     def respond(self, status, body: str):
-        return SimpleNamespace(status_code=int(status), body=body.encode())
+        return SimpleNamespace(status_code=int(status), body=body.encode(), headers={})
 
 
 def _make_request(path: str = "/api/user_count"):
@@ -53,6 +52,16 @@ async def test_user_count_returns_zero_when_no_users(tmp_path):
     assert response.status_code == http.HTTPStatus.OK
     data = json.loads(response.body)
     assert data == {"user_count": 0}
+
+
+@pytest.mark.asyncio
+async def test_user_count_response_has_json_content_type(tmp_path):
+    srv = _make_server(tmp_path)
+    conn = DummyConnection()
+    req = _make_request()
+    response = await srv._handle_user_count_request(conn, req)
+    assert response.status_code == http.HTTPStatus.OK
+    assert response.headers["content-type"] == "application/json"
 
 
 @pytest.mark.asyncio

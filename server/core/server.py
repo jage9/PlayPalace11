@@ -45,6 +45,8 @@ from ..messages.localization import Localization
 from .ui.common_flows import show_yes_no_menu
 from .documents.manager import DocumentManager
 from ..network.packet_models import CLIENT_TO_SERVER_PACKET_ADAPTER
+from websockets.http11 import Response as HttpResponse
+from websockets.datastructures import Headers as HttpHeaders
 
 
 VERSION = "11.0.0"
@@ -589,7 +591,7 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         """Handle HTTP requests on the WebSocket port.
 
         Serves GET /api/user_count with the number of logged-in users.
-        All other paths receive 404. Non-GET methods receive 405.
+        All other paths receive 404.
         Rate-limited to prevent abuse.
         """
         if request.path != "/api/user_count":
@@ -601,8 +603,13 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
             return connection.respond(http.HTTPStatus.TOO_MANY_REQUESTS, "Too Many Requests\n")
 
         count = len(self._users)
-        body = json.dumps({"user_count": count})
-        return connection.respond(http.HTTPStatus.OK, body)
+        body = json.dumps({"user_count": count}).encode()
+        headers = HttpHeaders([
+            ("Content-Type", "application/json"),
+            ("Content-Length", str(len(body))),
+            ("Cache-Control", "no-store"),
+        ])
+        return HttpResponse(http.HTTPStatus.OK, "OK", headers, body)
 
     def _warn_if_no_users(self) -> None:
         """Print a warning if no user accounts exist yet."""

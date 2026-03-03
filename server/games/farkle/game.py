@@ -12,6 +12,7 @@ import random
 from ..base import Game, Player, GameOptions
 from ..registry import register_game
 from ...game_utils.action_guard_mixin import ActionGuardMixin
+from ...game_utils.round_based_game_mixin import RoundBasedGameMixin
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.dice import (
@@ -283,7 +284,7 @@ def get_available_combinations(dice: list[int]) -> list[tuple[str, int, int]]:
 
 @dataclass
 @register_game
-class FarkleGame(ActionGuardMixin, Game):
+class FarkleGame(ActionGuardMixin, RoundBasedGameMixin, Game):
     """
     Farkle dice game.
 
@@ -292,6 +293,8 @@ class FarkleGame(ActionGuardMixin, Game):
     Rolling dice with no scoring combinations (Farkle!) loses all turn points.
     First player to reach the target score wins.
     """
+
+    round_start_sound = None
 
     players: list[FarklePlayer] = field(default_factory=list)
     options: FarkleOptions = field(default_factory=FarkleOptions)
@@ -912,76 +915,29 @@ class FarkleGame(ActionGuardMixin, Game):
             return
         user.speak_l("farkle-no-turn")
 
-    def on_start(self) -> None:
-        """Called when the game starts."""
-        self.status = "playing"
-        self.game_active = True
-        self.round = 0
+    def _reset_player_for_game(self, player) -> None:
+        farkle_p: FarklePlayer = player  # type: ignore
+        farkle_p.score = 0
+        farkle_p.turn_score = 0
+        farkle_p.current_roll = []
+        farkle_p.banked_dice = []
+        farkle_p.has_taken_combo = False
+        farkle_p.hot_dice_multiplier = 1
+        farkle_p.hot_dice_chain = 0
 
-        # Initialize turn order
-        active_players = self.get_active_players()
-        self.set_turn_players(active_players)
-
-        # Set up TeamManager for score tracking (individual mode)
-        self._team_manager.team_mode = "individual"
-        self._team_manager.setup_teams([p.name for p in active_players])
-
-        # Reset all player state
-        for p in active_players:
-            farkle_p: FarklePlayer = p  # type: ignore
-            farkle_p.score = 0
-            farkle_p.turn_score = 0
-            farkle_p.current_roll = []
-            farkle_p.banked_dice = []
-            farkle_p.has_taken_combo = False
-            farkle_p.hot_dice_multiplier = 1
-            farkle_p.hot_dice_chain = 0
-
-        # Play intro music (using pig music as placeholder)
-        self.play_music("game_pig/mus.ogg")
-
-        # Start first round
-        self._start_round()
-
-    def _start_round(self) -> None:
-        """Start a new round."""
-        self.round += 1
-
-        # Refresh turn order
-        self.set_turn_players(self.get_active_players())
-
-        self.broadcast_l("game-round-start", round=self.round)
-
-        self._start_turn()
-
-    def _start_turn(self) -> None:
-        """Start a player's turn."""
-        player = self.current_player
-        if not player:
-            return
-
+    def _reset_player_for_turn(self, player) -> None:
         farkle_player: FarklePlayer = player  # type: ignore
-
-        # Reset turn state
         farkle_player.turn_score = 0
         farkle_player.current_roll = []
         farkle_player.banked_dice = []
         farkle_player.has_taken_combo = False
         farkle_player.hot_dice_multiplier = 1
         farkle_player.hot_dice_chain = 0
-
-        # Clear stale scoring actions from previous turn (current_roll is empty now)
         self.update_scoring_actions(farkle_player)
 
-        # Announce turn
-        self.announce_turn()
-
-        # Set up bot if needed
+    def _setup_bot_for_turn(self, player) -> None:
         if player.is_bot:
-            BotHelper.set_target(player, 0)  # Bot will calculate during think
-
-        # Rebuild menus
-        self.rebuild_all_menus()
+            BotHelper.set_target(player, 0)
 
     def on_tick(self) -> None:
         """Called every tick. Handle bot AI and scheduled sounds."""
@@ -995,15 +951,6 @@ class FarkleGame(ActionGuardMixin, Game):
 
     def bot_think(self, player: FarklePlayer) -> str | None:
         return bot_think(self, player)
-
-    def _on_turn_end(self) -> None:
-        """Handle end of a player's turn."""
-        # Check if round is over
-        if self.turn_index >= len(self.turn_players) - 1:
-            self._on_round_end()
-        else:
-            self.advance_turn(announce=False)
-            self._start_turn()
 
     def _on_round_end(self) -> None:
         """Handle end of a round."""

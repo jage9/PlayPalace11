@@ -3570,13 +3570,13 @@ class MonopolyGame(ActionGuardMixin, Game):
         )
         return "pending_purchase"
 
-    def _resolve_owned_purchasable_space(
+    def _resolve_owned_space_no_rent_case(
         self,
         player: MonopolyPlayer,
         landed_space: MonopolySpace,
         owner_id: str,
-        dice_total: int | None,
-    ) -> str:
+    ) -> str | None:
+        """Resolve owned-space outcomes where no rent transfer is required."""
         if owner_id == player.id:
             self.broadcast_l(
                 "monopoly-landed-owned",
@@ -3592,6 +3592,65 @@ class MonopolyGame(ActionGuardMixin, Game):
                 property=landed_space.name,
             )
             return "resolved"
+        return None
+
+    def _pay_rent_to_owner_or_bank(
+        self,
+        player: MonopolyPlayer,
+        owner: Player | None,
+        rent_due: int,
+        rent_reason: str,
+    ) -> int:
+        """Collect rent from player and route funds to owner or bank."""
+        if owner and isinstance(owner, MonopolyPlayer):
+            return self._transfer_between_players(
+                player,
+                owner,
+                rent_due,
+                rent_reason,
+                allow_partial=True,
+            )
+        return self._debit_player_to_bank(
+            player,
+            rent_due,
+            rent_reason,
+            allow_partial=True,
+        )
+
+    def _finalize_rent_payment(
+        self,
+        player: MonopolyPlayer,
+        owner: Player | None,
+        paid: int,
+        rent_due: int,
+        manual_core: bool,
+    ) -> str:
+        """Finalize player state after rent transfer and settle bankruptcy path."""
+        if player.bankrupt:
+            return "bankrupt"
+        if paid < rent_due:
+            if manual_core:
+                return "resolved"
+            creditor_name = owner.name if owner else "Bank"
+            creditor_id = owner.id if owner and isinstance(owner, MonopolyPlayer) else None
+            self._declare_bankrupt(
+                player,
+                creditor_name=creditor_name,
+                creditor_id=creditor_id,
+            )
+            return "bankrupt"
+        return "resolved"
+
+    def _resolve_owned_purchasable_space(
+        self,
+        player: MonopolyPlayer,
+        landed_space: MonopolySpace,
+        owner_id: str,
+        dice_total: int | None,
+    ) -> str:
+        no_rent_result = self._resolve_owned_space_no_rent_case(player, landed_space, owner_id)
+        if no_rent_result is not None:
+            return no_rent_result
 
         owner = self.get_player_by_id(owner_id)
         rent_due = self._calculate_rent_due(landed_space, owner_id, dice_total)
@@ -3611,22 +3670,7 @@ class MonopolyGame(ActionGuardMixin, Game):
             return "bankrupt" if player.bankrupt else "resolved"
         if not manual_core and self._current_liquid_balance(player) < rent_due:
             self._liquidate_assets_for_debt(player, rent_due)
-        paid = 0
-        if owner and isinstance(owner, MonopolyPlayer):
-            paid = self._transfer_between_players(
-                player,
-                owner,
-                rent_due,
-                rent_reason,
-                allow_partial=True,
-            )
-        else:
-            paid = self._debit_player_to_bank(
-                player,
-                rent_due,
-                rent_reason,
-                allow_partial=True,
-            )
+        paid = self._pay_rent_to_owner_or_bank(player, owner, rent_due, rent_reason)
 
         self.broadcast_l(
             "monopoly-rent-paid",
@@ -3643,20 +3687,7 @@ class MonopolyGame(ActionGuardMixin, Game):
             payment_context,
         ):
             return "bankrupt" if player.bankrupt else "resolved"
-        if player.bankrupt:
-            return "bankrupt"
-        if paid < rent_due:
-            if manual_core:
-                return "resolved"
-            creditor_name = owner.name if owner else "Bank"
-            creditor_id = owner.id if owner and isinstance(owner, MonopolyPlayer) else None
-            self._declare_bankrupt(
-                player,
-                creditor_name=creditor_name,
-                creditor_id=creditor_id,
-            )
-            return "bankrupt"
-        return "resolved"
+        return self._finalize_rent_payment(player, owner, paid, rent_due, manual_core)
 
     def _resolve_purchasable_space(
         self,

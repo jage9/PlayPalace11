@@ -897,14 +897,14 @@ class MonopolyGame(ActionGuardMixin, Game):
         self._add_turn_end_actions(action_set, locale)
         return action_set
 
-    def setup_keybinds(self) -> None:
-        """Define keybinds for lobby + scaffold status checks."""
-        super().setup_keybinds()
+    def _define_roll_auction_property_keybinds(self) -> None:
         self.define_keybind("r", "Roll dice", ["roll_dice"], state=KeybindState.ACTIVE)
         self.define_keybind("b", "Buy property", ["buy_property"], state=KeybindState.ACTIVE)
         self.define_keybind("a", "Auction property", ["auction_property"], state=KeybindState.ACTIVE)
         self.define_keybind("shift+a", "Auction bid", ["auction_bid"], state=KeybindState.ACTIVE)
         self.define_keybind("ctrl+a", "Auction pass", ["auction_pass"], state=KeybindState.ACTIVE)
+
+    def _define_property_trade_jail_keybinds(self) -> None:
         self.define_keybind("m", "Mortgage property", ["mortgage_property"], state=KeybindState.ACTIVE)
         self.define_keybind(
             "shift+m",
@@ -918,6 +918,8 @@ class MonopolyGame(ActionGuardMixin, Game):
         self.define_keybind("shift+t", "Accept trade", ["accept_trade"], state=KeybindState.ACTIVE)
         self.define_keybind("ctrl+t", "Decline trade", ["decline_trade"], state=KeybindState.ACTIVE)
         self.define_keybind("j", "Pay bail", ["pay_bail"], state=KeybindState.ACTIVE)
+
+    def _define_banking_and_voice_keybinds(self) -> None:
         self.define_keybind("ctrl+b", "Bank balance", ["banking_balance"], state=KeybindState.ACTIVE)
         self.define_keybind(
             "shift+b", "Bank transfer", ["banking_transfer"], state=KeybindState.ACTIVE
@@ -925,6 +927,8 @@ class MonopolyGame(ActionGuardMixin, Game):
         self.define_keybind("alt+b", "Bank ledger", ["banking_ledger"], state=KeybindState.ACTIVE)
         self.define_keybind("v", "Voice command", ["voice_command"], state=KeybindState.ACTIVE)
         self.define_keybind("e", "End turn", ["end_turn"], state=KeybindState.ACTIVE)
+
+    def _define_preset_announcement_keybind(self) -> None:
         self.define_keybind(
             "p",
             "Announce current preset",
@@ -932,6 +936,14 @@ class MonopolyGame(ActionGuardMixin, Game):
             state=KeybindState.ACTIVE,
             include_spectators=True,
         )
+
+    def setup_keybinds(self) -> None:
+        """Define keybinds for lobby + scaffold status checks."""
+        super().setup_keybinds()
+        self._define_roll_auction_property_keybinds()
+        self._define_property_trade_jail_keybinds()
+        self._define_banking_and_voice_keybinds()
+        self._define_preset_announcement_keybind()
 
     def _add_standard_monopoly_actions(self, action_set: ActionSet, locale: str) -> None:
         action_set.add(

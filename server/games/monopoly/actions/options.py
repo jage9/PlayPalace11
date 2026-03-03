@@ -116,3 +116,144 @@ def bot_select_auction_bid(game: MonopolyGame, player: Player, options: list[str
     if affordable:
         return str(max(affordable))
     return options[0]
+
+
+def options_for_mortgage_property(game: MonopolyGame, player: Player) -> list[str]:
+    """Menu options for unmortgaged owned properties."""
+    mono_player = player  # type: ignore[assignment]
+    options: list[str] = []
+    for space_id in mono_player.owned_space_ids:
+        if game.property_owners.get(space_id) != mono_player.id:
+            continue
+        if space_id in game.mortgaged_space_ids:
+            continue
+        space = game.active_space_by_id.get(space_id)
+        if not space:
+            continue
+        if game._is_street_property(space) and game._group_has_any_buildings(space.color_group):
+            continue
+        options.append(space_id)
+    return sorted(options)
+
+
+def options_for_unmortgage_property(game: MonopolyGame, player: Player) -> list[str]:
+    """Menu options for mortgaged owned properties."""
+    mono_player = player  # type: ignore[assignment]
+    return sorted(
+        [
+            space_id
+            for space_id in mono_player.owned_space_ids
+            if game.property_owners.get(space_id) == mono_player.id
+            and space_id in game.mortgaged_space_ids
+        ]
+    )
+
+
+def options_for_build_house(game: MonopolyGame, player: Player) -> list[str]:
+    """Menu options for buildable street properties."""
+    mono_player = player  # type: ignore[assignment]
+    options: list[str] = []
+    for space_id in mono_player.owned_space_ids:
+        if game.property_owners.get(space_id) != mono_player.id:
+            continue
+        space = game.active_space_by_id.get(space_id)
+        if not space or not game._is_street_property(space):
+            continue
+        if space_id in game.mortgaged_space_ids:
+            continue
+        if game.rule_profile.require_full_set_for_build:
+            if not game._owner_has_full_color_set(mono_player.id, space.color_group):
+                continue
+            if game._group_has_mortgage(space.color_group):
+                continue
+            levels = game._group_levels(space.color_group)
+        else:
+            if game._group_has_mortgage(space.color_group, owner_id=mono_player.id):
+                continue
+            levels = game._group_levels(space.color_group, owner_id=mono_player.id)
+        level = game._building_level(space_id)
+        if level >= 5:
+            continue
+        if not game._can_raise_building_level(space_id):
+            continue
+        if not levels or level != min(levels):
+            continue
+        if game.rule_profile.builder_block_required_for_build and mono_player.builder_blocks <= 0:
+            continue
+        if game._current_liquid_balance(mono_player) < space.house_cost:
+            continue
+        options.append(space_id)
+    return sorted(options)
+
+
+def options_for_sell_house(game: MonopolyGame, player: Player) -> list[str]:
+    """Menu options for sellable street properties."""
+    mono_player = player  # type: ignore[assignment]
+    options: list[str] = []
+    for space_id in mono_player.owned_space_ids:
+        if game.property_owners.get(space_id) != mono_player.id:
+            continue
+        space = game.active_space_by_id.get(space_id)
+        if not space or not game._is_street_property(space):
+            continue
+        level = game._building_level(space_id)
+        if level <= 0:
+            continue
+        if not game._can_lower_building_level(space_id):
+            continue
+        levels = game._group_levels(space.color_group)
+        if not levels or level != max(levels):
+            continue
+        options.append(space_id)
+    return sorted(options)
+
+
+def bot_select_mortgage_property(game: MonopolyGame, player: Player, options: list[str]) -> str | None:
+    """Pick the mortgage option that raises the most cash."""
+    _ = player
+    if not options:
+        return None
+    return max(
+        options,
+        key=lambda space_id: game._mortgage_value(game.active_space_by_id[space_id]),
+    )
+
+
+def bot_select_unmortgage_property(
+    game: MonopolyGame, player: Player, options: list[str]
+) -> str | None:
+    """Pick the cheapest affordable unmortgage option."""
+    affordable = [
+        space_id
+        for space_id in options
+        if game._current_liquid_balance(player)
+        >= game._unmortgage_cost(game.active_space_by_id[space_id])
+    ]
+    if not affordable:
+        return options[0] if options else None
+    return min(
+        affordable,
+        key=lambda space_id: game._unmortgage_cost(game.active_space_by_id[space_id]),
+    )
+
+
+def bot_select_build_house(game: MonopolyGame, player: Player, options: list[str]) -> str | None:
+    """Pick the build option with strongest rent gain for cost."""
+    if not options:
+        return None
+
+    def _score(space_id: str) -> tuple[int, int, str]:
+        space = game.active_space_by_id[space_id]
+        level = game._building_level(space_id)
+        if space.rents:
+            current_rent = space.rents[min(level, len(space.rents) - 1)]
+            if level == 0 and game._owner_has_full_color_set(player.id, space.color_group):
+                current_rent = space.rents[0] * 2
+            next_rent = space.rents[min(level + 1, len(space.rents) - 1)]
+        else:
+            current_rent = space.rent
+            next_rent = space.rent
+        gain = max(0, next_rent - current_rent)
+        return (gain, -space.house_cost, game._space_label(space_id))
+
+    return max(options, key=_score)

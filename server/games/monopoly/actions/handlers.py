@@ -281,3 +281,147 @@ def action_auction_pass(game: MonopolyGame, player: Player, action_id: str) -> N
     game._advance_pending_auction_turn(current_index - 1)
     if game._is_auction_active():
         game.rebuild_all_menus()
+
+
+def action_mortgage_property(
+    game: MonopolyGame, player: Player, space_id: str, action_id: str
+) -> None:
+    """Mortgage one owned property to raise cash."""
+    _ = action_id
+    if game._is_junior_preset():
+        return
+    mono_player = player  # type: ignore[assignment]
+    if space_id not in game._options_for_mortgage_property(player):
+        return
+    space = game.active_space_by_id.get(space_id)
+    if not space:
+        return
+
+    value = game._mortgage_value(space)
+    credited = game._credit_player(mono_player, value, f"mortgage:{space.space_id}")
+    if credited <= 0:
+        return
+    game.mortgaged_space_ids.append(space_id)
+    game.broadcast_l(
+        "monopoly-property-mortgaged",
+        player=mono_player.name,
+        property=space.name,
+        amount=credited,
+        cash=mono_player.cash,
+    )
+
+    game._sync_cash_scores()
+    game.rebuild_all_menus()
+
+
+def action_unmortgage_property(
+    game: MonopolyGame, player: Player, space_id: str, action_id: str
+) -> None:
+    """Unmortgage one owned property."""
+    _ = action_id
+    if game._is_junior_preset():
+        return
+    mono_player = player  # type: ignore[assignment]
+    if space_id not in game._options_for_unmortgage_property(player):
+        return
+    space = game.active_space_by_id.get(space_id)
+    if not space:
+        return
+
+    cost = game._unmortgage_cost(space)
+    if game._current_liquid_balance(mono_player) < cost:
+        return
+    paid = game._debit_player_to_bank(mono_player, cost, f"unmortgage:{space.space_id}")
+    if paid < cost:
+        return
+    game.mortgaged_space_ids.remove(space_id)
+    game.broadcast_l(
+        "monopoly-property-unmortgaged",
+        player=mono_player.name,
+        property=space.name,
+        amount=paid,
+        cash=mono_player.cash,
+    )
+
+    game._sync_cash_scores()
+    game.rebuild_all_menus()
+
+
+def action_build_house(game: MonopolyGame, player: Player, space_id: str, action_id: str) -> None:
+    """Build one house/hotel on an owned eligible street property."""
+    _ = action_id
+    if game._is_junior_preset():
+        return
+    mono_player = player  # type: ignore[assignment]
+    if space_id not in game._options_for_build_house(player):
+        return
+    space = game.active_space_by_id.get(space_id)
+    if not space or not game._is_street_property(space):
+        return
+
+    cost = max(0, space.house_cost)
+    if game._current_liquid_balance(mono_player) < cost:
+        return
+    if game.rule_profile.builder_block_required_for_build and mono_player.builder_blocks <= 0:
+        return
+
+    if not game._can_raise_building_level(space_id):
+        return
+    paid = game._debit_player_to_bank(mono_player, cost, f"build:{space.space_id}")
+    if paid < cost:
+        return
+    new_level = game._building_level(space_id) + 1
+    game._set_building_level(space_id, new_level)
+    if game.rule_profile.builder_block_required_for_build:
+        mono_player.builder_blocks -= 1
+        game.broadcast_l(
+            "monopoly-builder-block-spent",
+            player=mono_player.name,
+            blocks=mono_player.builder_blocks,
+        )
+    game.broadcast_l(
+        "monopoly-house-built",
+        player=mono_player.name,
+        property=space.name,
+        amount=paid,
+        level=new_level,
+        cash=mono_player.cash,
+    )
+
+    game._sync_cash_scores()
+    game.rebuild_all_menus()
+
+
+def action_sell_house(game: MonopolyGame, player: Player, space_id: str, action_id: str) -> None:
+    """Sell one house/hotel from an owned eligible street property."""
+    _ = action_id
+    if game._is_junior_preset():
+        return
+    mono_player = player  # type: ignore[assignment]
+    if space_id not in game._options_for_sell_house(player):
+        return
+    space = game.active_space_by_id.get(space_id)
+    if not space or not game._is_street_property(space):
+        return
+
+    current_level = game._building_level(space_id)
+    if current_level <= 0:
+        return
+    if not game._can_lower_building_level(space_id):
+        return
+
+    value = max(0, space.house_cost // 2)
+    game._set_building_level(space_id, current_level - 1)
+    new_level = game._building_level(space_id)
+    credited = game._credit_player(mono_player, value, f"sell_building:{space.space_id}")
+    game.broadcast_l(
+        "monopoly-house-sold",
+        player=mono_player.name,
+        property=space.name,
+        amount=credited,
+        level=new_level,
+        cash=mono_player.cash,
+    )
+
+    game._sync_cash_scores()
+    game.rebuild_all_menus()

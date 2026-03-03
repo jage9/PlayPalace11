@@ -165,3 +165,103 @@ def is_auction_pass_hidden(game: MonopolyGame, player: Player) -> Visibility:
         and current_bidder is not None
         and current_bidder.id == player.id,
     )
+
+
+def is_mortgage_property_enabled(game: MonopolyGame, player: Player) -> str | None:
+    """Enable mortgage action when player owns eligible properties."""
+    error = game.guard_turn_action_enabled(player)
+    if error:
+        return error
+    if game._is_junior_preset():
+        return "monopoly-action-disabled-for-preset"
+    mono_player = player  # type: ignore[assignment]
+    if mono_player.bankrupt:
+        return "monopoly-bankrupt-player"
+    if not game._options_for_mortgage_property(player):
+        return "monopoly-no-mortgage-options"
+    return None
+
+
+def is_mortgage_property_hidden(game: MonopolyGame, player: Player) -> Visibility:
+    """Show mortgage action when options exist."""
+    if game._is_junior_preset():
+        return Visibility.HIDDEN
+    return game.turn_action_visibility(
+        player, extra_condition=bool(game._options_for_mortgage_property(player))
+    )
+
+
+def is_unmortgage_property_enabled(game: MonopolyGame, player: Player) -> str | None:
+    """Enable unmortgage action when player has mortgaged properties."""
+    error = game.guard_turn_action_enabled(player)
+    if error:
+        return error
+    if game._is_junior_preset():
+        return "monopoly-action-disabled-for-preset"
+    mono_player = player  # type: ignore[assignment]
+    if mono_player.bankrupt:
+        return "monopoly-bankrupt-player"
+    if not game._options_for_unmortgage_property(player):
+        return "monopoly-no-unmortgage-options"
+    return None
+
+
+def is_unmortgage_property_hidden(game: MonopolyGame, player: Player) -> Visibility:
+    """Show unmortgage action only when options exist."""
+    if game._is_junior_preset():
+        return Visibility.HIDDEN
+    return game.turn_action_visibility(
+        player, extra_condition=bool(game._options_for_unmortgage_property(player))
+    )
+
+
+def is_build_house_enabled(game: MonopolyGame, player: Player) -> str | None:
+    """Enable house-building when at least one valid build exists."""
+    error = game.guard_turn_action_enabled(player)
+    if error:
+        return error
+    if game._is_junior_preset():
+        return "monopoly-action-disabled-for-preset"
+    if game.turn_pending_purchase_space_id:
+        return "monopoly-resolve-property-first"
+    mono_player = player  # type: ignore[assignment]
+    if mono_player.bankrupt:
+        return "monopoly-bankrupt-player"
+    if not game._options_for_build_house(player):
+        return "monopoly-no-build-options"
+    return None
+
+
+def is_build_house_hidden(game: MonopolyGame, player: Player) -> Visibility:
+    """Show build action when options exist."""
+    if game._is_junior_preset():
+        return Visibility.HIDDEN
+    return game.turn_action_visibility(
+        player, extra_condition=bool(game._options_for_build_house(player))
+    )
+
+
+def is_sell_house_enabled(game: MonopolyGame, player: Player) -> str | None:
+    """Enable house selling when at least one valid sell exists."""
+    error = game.guard_turn_action_enabled(player)
+    if error:
+        return error
+    if game._is_junior_preset():
+        return "monopoly-action-disabled-for-preset"
+    if game.turn_pending_purchase_space_id:
+        return "monopoly-resolve-property-first"
+    mono_player = player  # type: ignore[assignment]
+    if mono_player.bankrupt:
+        return "monopoly-bankrupt-player"
+    if not game._options_for_sell_house(player):
+        return "monopoly-no-sell-options"
+    return None
+
+
+def is_sell_house_hidden(game: MonopolyGame, player: Player) -> Visibility:
+    """Show sell action when options exist."""
+    if game._is_junior_preset():
+        return Visibility.HIDDEN
+    return game.turn_action_visibility(
+        player, extra_condition=bool(game._options_for_sell_house(player))
+    )

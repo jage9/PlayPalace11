@@ -3,6 +3,7 @@
 import asyncio
 import contextlib
 from contextlib import asynccontextmanager
+import http
 import logging
 import os
 import shutil
@@ -44,6 +45,8 @@ from ..messages.localization import Localization
 from .ui.common_flows import show_yes_no_menu
 from .documents.manager import DocumentManager
 from ..network.packet_models import CLIENT_TO_SERVER_PACKET_ADAPTER
+from websockets.http11 import Response as HttpResponse
+from websockets.datastructures import Headers as HttpHeaders
 
 
 VERSION = "11.0.0"
@@ -60,9 +63,11 @@ DEFAULT_LOGIN_ATTEMPTS_PER_MINUTE = 5
 DEFAULT_LOGIN_FAILURES_PER_MINUTE = 3
 DEFAULT_REGISTRATION_ATTEMPTS_PER_MINUTE = 2
 DEFAULT_REFRESH_ATTEMPTS_PER_MINUTE = 10
+DEFAULT_USER_COUNT_REQUESTS_PER_MINUTE = 30
 LOGIN_RATE_WINDOW_SECONDS = 60
 REGISTRATION_RATE_WINDOW_SECONDS = 60
 REFRESH_RATE_WINDOW_SECONDS = 60
+USER_COUNT_RATE_WINDOW_SECONDS = 60
 DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 60 * 60
 DEFAULT_REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60
 
@@ -179,16 +184,19 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         self._login_user_limit = DEFAULT_LOGIN_FAILURES_PER_MINUTE
         self._registration_ip_limit = DEFAULT_REGISTRATION_ATTEMPTS_PER_MINUTE
         self._refresh_ip_limit = DEFAULT_REFRESH_ATTEMPTS_PER_MINUTE
+        self._user_count_ip_limit = DEFAULT_USER_COUNT_REQUESTS_PER_MINUTE
         self._access_token_ttl_seconds = DEFAULT_ACCESS_TOKEN_TTL_SECONDS
         self._refresh_token_ttl_seconds = DEFAULT_REFRESH_TOKEN_TTL_SECONDS
         self._login_ip_window = LOGIN_RATE_WINDOW_SECONDS
         self._login_user_window = LOGIN_RATE_WINDOW_SECONDS
         self._registration_ip_window = REGISTRATION_RATE_WINDOW_SECONDS
         self._refresh_ip_window = REFRESH_RATE_WINDOW_SECONDS
+        self._user_count_ip_window = USER_COUNT_RATE_WINDOW_SECONDS
         self._login_attempts_ip: dict[str, deque[float]] = {}
         self._login_attempts_user: dict[str, deque[float]] = {}
         self._registration_attempts_ip: dict[str, deque[float]] = {}
         self._refresh_attempts_ip: dict[str, deque[float]] = {}
+        self._user_count_attempts_ip: dict[str, deque[float]] = {}
         self._lifecycle = ServerLifecycleState()
         self._lifecycle.add_gate(STARTUP_GATE_ID, message="Server is starting up.")
         self._localization_gate_registered = False
@@ -269,6 +277,7 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
             ssl_cert=self._ssl_cert,
             ssl_key=self._ssl_key,
             max_message_size=self._ws_max_message_size,
+            process_request=self._handle_user_count_request,
         )
         await self._ws_server.start()
         if not self._ssl_cert:
@@ -399,6 +408,9 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
             )
             self._refresh_ip_limit = _read_limit(
                 rate_cfg, "refresh_per_minute", self._refresh_ip_limit, minimum=0
+            )
+            self._user_count_ip_limit = _read_limit(
+                rate_cfg, "user_count_per_minute", self._user_count_ip_limit, minimum=0
             )
             self._login_ip_window = _read_limit(
                 rate_cfg, "login_window_seconds", self._login_ip_window, minimum=1
@@ -563,6 +575,45 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         ):
             return "Too many refresh attempts from this address. Please wait and try again."
         return None
+
+    def _check_user_count_rate_limit(self, client_ip: str) -> bool:
+        """Return True if the request is within the allowed rate, False if throttled."""
+        now = time.monotonic()
+        return self._allow_attempt(
+            self._user_count_attempts_ip,
+            client_ip,
+            self._user_count_ip_limit,
+            self._user_count_ip_window,
+            now,
+        )
+
+    async def _handle_user_count_request(self, connection, request):
+        """Handle HTTP requests on the WebSocket port.
+
+        Serves GET /api/user_count with the number of logged-in users.
+        All other paths return None so the websockets library can proceed
+        with the normal WebSocket upgrade handshake.
+        Rate-limited to prevent abuse.
+        """
+        if request.path != "/api/user_count":
+            # Returning None tells the websockets library to continue with the
+            # normal WebSocket handshake for this connection.
+            return None
+
+        remote = connection.remote_address
+        client_ip = remote[0] if remote else "unknown"
+        if not self._check_user_count_rate_limit(client_ip):
+            return connection.respond(http.HTTPStatus.TOO_MANY_REQUESTS, "Too Many Requests\n")
+
+        count = len(self._users)
+        body = json.dumps({"user_count": count}).encode()
+        headers = HttpHeaders([
+            ("Content-Type", "application/json"),
+            ("Content-Length", str(len(body))),
+            ("Cache-Control", "no-store"),
+            ("Access-Control-Allow-Origin", "*"),
+        ])
+        return HttpResponse(http.HTTPStatus.OK, "OK", headers, body)
 
     def _warn_if_no_users(self) -> None:
         """Print a warning if no user accounts exist yet."""

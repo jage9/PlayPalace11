@@ -19,6 +19,7 @@ const AUDIO_MUTED_KEY = "playpalace.web.audio_muted";
 const DEFAULT_MUSIC_VOLUME = 20;
 const DEFAULT_AMBIENCE_VOLUME = 100;
 const SESSION_REFRESH_LEEWAY_SECONDS = 60;
+const USER_COUNT_POLL_INTERVAL_MS = 30_000;
 const DEFAULT_APP_VERSION = "2026.02.17.1";
 const DEFAULT_WEB_CLIENT_CONFIG = {
   serverUrl: "",
@@ -96,6 +97,72 @@ function getDefaultServerUrl() {
   const isDefaultPort = (!isHttps && port === "80") || (isHttps && port === "443");
   const portSuffix = port && !isDefaultPort ? `:${port}` : "";
   return `${wsScheme}://${host}${portSuffix}`;
+}
+
+function getServerUserCountUrl(serverUrl) {
+  if (!serverUrl) {
+    return null;
+  }
+  try {
+    const parsed = new URL(serverUrl);
+    const scheme = parsed.protocol === "wss:" ? "https" : "http";
+    return `${scheme}://${parsed.host}/api/user_count`;
+  } catch {
+    return null;
+  }
+}
+
+let _userCountTimerId = null;
+
+async function fetchAndShowUserCount(serverUrl) {
+  const countUrl = getServerUserCountUrl(serverUrl);
+  const el = document.getElementById("server-user-count");
+  if (!el) {
+    return;
+  }
+  if (!countUrl) {
+    el.hidden = true;
+    return;
+  }
+  try {
+    const response = await fetch(countUrl, { signal: AbortSignal.timeout(4000) });
+    if (!response.ok) {
+      el.hidden = true;
+      return;
+    }
+    const data = await response.json();
+    const count = typeof data.user_count === "number" ? data.user_count : null;
+    if (count === null) {
+      el.hidden = true;
+      return;
+    }
+    if (count === 1) {
+      el.textContent = "1 user connected";
+    } else {
+      el.textContent = `${count} users connected`;
+    }
+    el.hidden = false;
+  } catch {
+    el.hidden = true;
+  }
+}
+
+function startUserCountPolling(serverUrl) {
+  stopUserCountPolling();
+  // Show an initial count immediately, then refresh every 30 seconds.
+  fetchAndShowUserCount(serverUrl);
+  _userCountTimerId = window.setInterval(() => fetchAndShowUserCount(serverUrl), USER_COUNT_POLL_INTERVAL_MS);
+}
+
+function stopUserCountPolling() {
+  if (_userCountTimerId !== null) {
+    window.clearInterval(_userCountTimerId);
+    _userCountTimerId = null;
+  }
+  const el = document.getElementById("server-user-count");
+  if (el) {
+    el.hidden = true;
+  }
 }
 
 function normalizeUsername(username) {
@@ -694,6 +761,7 @@ function openLoginDialog() {
     elements.togglePassword.textContent = "Show password";
   }
   elements.username.focus();
+  startUserCountPolling(getDefaultServerUrl());
 }
 
 function installLoginKeyboardFlow() {
@@ -937,6 +1005,7 @@ function handleAuthorizeSuccess(packet, { refreshed = false } = {}) {
   const versionLabel = packet.version ? ` (${packet.version})` : "";
   setStatus(`Connected as ${packet.username}${versionLabel}`);
   closeLoginDialog();
+  stopUserCountPolling();
   setConnectedUi(true);
   historyView.addEntry(`Connected as ${packet.username}${packet.version ? ` (server ${packet.version})` : ""}`, {
     buffer: "activity",

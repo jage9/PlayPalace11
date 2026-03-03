@@ -131,7 +131,7 @@ def _category_potential(
         if len(shape) >= 2 and shape[0] >= 3 and shape[1] >= 2:
             return 45.0
         if len(shape) >= 2 and shape[0] >= 3:
-            return 28.0 + rolls_left * 4.0
+            return 20.0 + rolls_left * 3.0
         if len(shape) >= 2 and shape[0] >= 2 and shape[1] >= 2:
             return 24.0 + rolls_left * 3.0
         return 10.0 + rolls_left * 2.0

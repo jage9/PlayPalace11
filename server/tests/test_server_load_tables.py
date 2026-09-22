@@ -18,13 +18,13 @@ class StubTableManager:
 class StubDB:
     def __init__(self, tables):
         self.tables = tables
-        self.deleted = False
+        self.deleted = []
 
     def load_all_tables(self):
         return self.tables
 
-    def delete_all_tables(self):
-        self.deleted = True
+    def delete_table(self, table_id):
+        self.deleted.append(table_id)
 
 
 class StubGameClass:
@@ -78,9 +78,11 @@ class StubGame:
 def test_load_tables_handles_missing_game_class_and_restores(monkeypatch, tmp_path):
     # Unknown game type table triggers warning path; known stub restores bots
     t_unknown = SimpleNamespace(
-        game_json="{}", game_type="missing", game=None, host="host", members=[]
+        table_id="unknown", game_json="{}", game_type="missing", game=None, host="host", members=[]
     )
-    t_known = SimpleNamespace(game_json="{}", game_type="stub", game=None, host="host", members=[])
+    t_known = SimpleNamespace(
+        table_id="known", game_json="{}", game_type="stub", game=None, host="host", members=[]
+    )
     tables = [t_unknown, t_known]
 
     srv = Server(host="127.0.0.1", port=0, db_path=tmp_path / "db.sqlite", preload_locales=True)
@@ -95,9 +97,9 @@ def test_load_tables_handles_missing_game_class_and_restores(monkeypatch, tmp_pa
 
     srv._load_tables()
 
-    # unknown game should still be added but skipped restore
-    assert t_unknown in stub_tables.added
+    # Failed restores stay out of the active table registry for retry on restart.
+    assert t_unknown not in stub_tables.added
     # known game restored and bots attached
     assert t_known.game is not None
     assert any(u.username == "botty" for u in t_known.game._users.values())
-    assert srv._db.deleted is True
+    assert srv._db.deleted == ["known"]

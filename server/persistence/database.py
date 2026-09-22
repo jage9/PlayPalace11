@@ -3,11 +3,15 @@
 import sqlite3
 import sys
 import json
+import logging
 from pathlib import Path
 from dataclasses import dataclass, field
 
 from server.core.tables.table import Table
 from server.core.users.base import TrustLevel
+
+
+LOG = logging.getLogger("playpalace.database")
 
 
 @dataclass
@@ -860,12 +864,17 @@ class Database:
         )
 
     def load_all_tables(self) -> list[Table]:
-        """Load all tables from the database."""
+        """Load readable table snapshots, leaving malformed rows for recovery."""
         cursor = self._get_conn().cursor()
         cursor.execute("SELECT table_id FROM tables")
         tables = []
         for row in cursor.fetchall():
-            table = self.load_table(row["table_id"])
+            try:
+                table = self.load_table(row["table_id"])
+            except (ValueError, TypeError, KeyError):
+                LOG.exception("Retaining table snapshot %s: could not read table data",
+                              row["table_id"])
+                continue
             if table:
                 tables.append(table)
         return tables

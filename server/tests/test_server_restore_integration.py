@@ -45,7 +45,7 @@ def test_load_tables_restores_real_pig_runtime_and_spectator(tmp_path, monkeypat
     deleted = []
     server = Server(db_path=tmp_path / "db.sqlite", preload_locales=True)
     server._db = SimpleNamespace(
-        load_all_tables=lambda: [table], delete_all_tables=lambda: deleted.append(True)
+        load_all_tables=lambda: [table], delete_table=lambda table_id: deleted.append(table_id)
     )
     monkeypatch.setattr("server.core.server.get_game_class", lambda game_type: PigGame)
 
@@ -63,7 +63,7 @@ def test_load_tables_restores_real_pig_runtime_and_spectator(tmp_path, monkeypat
     assert restored._transcripts == {"bot-id": []}
     assert restored.get_user(restored.players[1]).uuid == "bot-id"
     assert table.members[0].is_spectator is True
-    assert deleted == [True]
+    assert deleted == ["startup"]
 
 
 def test_restore_saved_table_restores_real_pig_and_existing_spectator_host(

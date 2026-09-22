@@ -843,25 +843,31 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         return game
 
     def _load_tables(self) -> None:
-        """Load tables from database and restore their games."""
+        """Restore usable snapshots, retaining failed snapshots for recovery."""
         tables = self._db.load_all_tables()
+        loaded = 0
         for table in tables:
-            self._tables.add_table(table)
-
             # Restore game from JSON if present
-            if table.game_json:
+            if table.game_json is not None:
                 game_class = get_game_class(table.game_type)
                 if not game_class:
-                    print(f"WARNING: Could not find game class for {table.game_type}")
+                    LOG.error("Retaining table snapshot %s: game type %s is unavailable",
+                              table.table_id, table.game_type)
                     continue
 
-                self._restore_table_game(table, game_class, table.game_json)
+                try:
+                    self._restore_table_game(table, game_class, table.game_json)
+                except Exception:
+                    LOG.exception("Retaining table snapshot %s: could not restore game %s",
+                                  table.table_id, table.game_type)
+                    continue
 
-        print(f"Loaded {len(tables)} tables from database.")
+            self._tables.add_table(table)
+            # Consume only restored snapshots; active tables are saved on shutdown.
+            self._db.delete_table(table.table_id)
+            loaded += 1
 
-        # Delete all tables from database after loading to prevent stale data
-        # on subsequent restarts. Tables will be re-saved on shutdown.
-        self._db.delete_all_tables()
+        print(f"Loaded {loaded} tables from database.")
 
     def _save_tables(self) -> None:
         """Save all tables to database."""

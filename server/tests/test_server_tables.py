@@ -87,7 +87,7 @@ def test_save_tables_calls_db_and_manager(monkeypatch, server):
     assert saved_to_db == tables_manager.saved
 
 
-def test_load_tables_restores_games_and_clears_db(monkeypatch, server):
+def test_load_tables_restores_games_and_deletes_loaded_rows(monkeypatch, server):
     dummy_game_json = json.dumps({"state": "dummy"})
     table_with_game = DummyTable("table-game", "test_game", game_json=dummy_game_json)
     plain_table = DummyTable("table-plain", "test_game")
@@ -95,7 +95,7 @@ def test_load_tables_restores_games_and_clears_db(monkeypatch, server):
     called_delete = []
     server._db = SimpleNamespace(
         load_all_tables=lambda: [table_with_game, plain_table],
-        delete_all_tables=lambda: called_delete.append(True),
+        delete_table=lambda table_id: called_delete.append(table_id),
     )
     dummy_tables = DummyTablesManager()
     server._tables = dummy_tables
@@ -115,4 +115,4 @@ def test_load_tables_restores_games_and_clears_db(monkeypatch, server):
     assert table_with_game.game.keybinds_setup
     assert table_with_game.game.rebuilt_players == ["BotOne"]
     assert table_with_game.game._table is table_with_game
-    assert called_delete == [True]
+    assert called_delete == ["table-game", "table-plain"]

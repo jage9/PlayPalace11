@@ -180,6 +180,9 @@ methods. This separates table lifetime from individual games.
 Startup and user-saved tables share `Server._restore_table_game()` to rebuild
 runtime state, keybindings, transcripts, bot identities, and spectator roles.
 Human users attach immediately on manual restore or when they reconnect after startup.
+Startup consumes only successfully loaded snapshots. Unreadable or incompatible
+snapshots remain in the database, stay out of active tables, and produce log errors
+without notifying players. Other tables continue loading.
 
 Game Roulette uses that same replacement path. Its lobby selects the included
 games (all by default) and either a round limit (default 7) or a score target

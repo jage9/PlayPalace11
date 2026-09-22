@@ -165,6 +165,87 @@ def test_on_server_menu_diff_updates_existing_items():
     assert window.menu_list.selection == 1
 
 
+def test_menu_id_diff_rebuilds_reorder_with_inserted_item():
+    window = make_window()
+
+    operations = window.compute_menu_diff_by_id(
+        ["A", "B"],
+        ["Control", "B", "A"],
+        ["a", "b"],
+        ["control", "b", "a"],
+    )
+
+    assert operations[0] == ("insert", 0, "Control")
+    assert not any(operation[0] == "delete" for operation in operations)
+
+
+def test_on_server_menu_reorder_preserves_selected_item_id():
+    window = make_window()
+    window.on_server_menu({
+        "menu_id": "game_menu",
+        "items": [
+            {"text": "A", "id": "a"},
+            {"text": "B", "id": "b"},
+        ],
+        "position": 1,
+    })
+
+    window.on_server_menu({
+        "menu_id": "game_menu",
+        "items": [
+            {"text": "Control", "id": "control"},
+            {"text": "B", "id": "b"},
+            {"text": "A", "id": "a"},
+        ],
+    })
+
+    assert window.menu_list.items == ["Control", "B", "A"]
+    assert window.current_menu_item_ids == ["control", "b", "a"]
+    assert window.menu_list.selection == 1
+
+
+def test_on_server_menu_pure_reorder_preserves_selected_item_id():
+    window = make_window()
+    window.on_server_menu({
+        "menu_id": "game_menu",
+        "items": [
+            {"text": "A", "id": "a"},
+            {"text": "B", "id": "b"},
+        ],
+        "position": 0,
+    })
+
+    window.on_server_menu({
+        "menu_id": "game_menu",
+        "items": [
+            {"text": "B", "id": "b"},
+            {"text": "A", "id": "a"},
+        ],
+    })
+
+    assert window.menu_list.items == ["B", "A"]
+    assert window.menu_list.selection == 1
+
+
+def test_on_server_menu_redraws_when_item_ids_change_without_label_change():
+    window = make_window()
+    first_packet = {
+        "menu_id": "game_menu",
+        "items": [{"text": "Card", "id": "card_one"}],
+        "position": 0,
+    }
+    window.on_server_menu(first_packet)
+
+    window.on_server_menu({
+        "menu_id": "game_menu",
+        "items": [{"text": "Card", "id": "card_two"}],
+        "selection_id": "card_two",
+    })
+
+    assert window.current_menu_item_ids == ["card_two"]
+    assert window.menu_list.selection == 0
+
+
 def test_on_server_menu_update_keeps_previous_menu_settings_when_omitted():
     window = make_window()
     window.current_menu_id = "options_menu"

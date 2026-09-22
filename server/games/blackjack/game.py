@@ -1008,7 +1008,7 @@ class BlackjackGame(TurnTimerMixin, Game):
             return
 
         for _ in range(len(self.turn_player_ids)):
-            self.advance_turn(announce=False)
+            self.advance_turn(announce=False, rebuild_menus=False)
             nxt = self.current_player
             if not isinstance(nxt, BlackjackPlayer):
                 continue
@@ -1047,7 +1047,7 @@ class BlackjackGame(TurnTimerMixin, Game):
             return
 
         for _ in range(len(self.turn_player_ids)):
-            self.advance_turn(announce=False)
+            self.advance_turn(announce=False, rebuild_menus=False)
             nxt = self.current_player
             if not isinstance(nxt, BlackjackPlayer):
                 continue

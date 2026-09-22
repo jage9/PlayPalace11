@@ -29,8 +29,25 @@ export function createMenuView({
     ].join("::");
   }
 
-  function currentOptionId(index) {
-    return `menu-option-${renderVersion}-${index}`;
+  function currentOptionId(key) {
+    return `menu-option-${renderVersion}-${encodeURIComponent(key)}`;
+  }
+
+  function getItemKeys(items) {
+    const idCounts = new Map();
+    for (const item of items) {
+      if (item?.id !== null && item?.id !== undefined) {
+        const id = String(item.id);
+        idCounts.set(id, (idCounts.get(id) || 0) + 1);
+      }
+    }
+    return items.map((item, index) => {
+      const id = item?.id;
+      if (id !== null && id !== undefined && idCounts.get(String(id)) === 1) {
+        return `id:${id}`;
+      }
+      return `index:${index}`;
+    });
   }
 
   function setSelection(next) {
@@ -131,20 +148,79 @@ export function createMenuView({
       }
       li.classList.toggle("active", active);
     }
-    if (useActiveDescendant && menu.items.length > 0) {
-      listEl.setAttribute("aria-activedescendant", currentOptionId(boundedSelection));
+    if (useActiveDescendant && menu.items.length > 0 && children[boundedSelection]) {
+      listEl.setAttribute("aria-activedescendant", children[boundedSelection].id);
     } else {
       listEl.removeAttribute("aria-activedescendant");
     }
     lastSelection = boundedSelection;
   }
 
-  function renderFull() {
+  function createItemNode(item, key) {
+    const li = document.createElement("li");
+    li.id = currentOptionId(key);
+    li.className = "menu-item";
+    if (isCoarsePointer) {
+      li.setAttribute("role", "presentation");
+    } else {
+      li.setAttribute("role", "option");
+    }
+    li.dataset.menuItemKey = key;
+    if (isCoarsePointer) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "menu-item-touch";
+      button.textContent = item.text;
+      button.addEventListener("click", () => {
+        const currentIndex = Number(li.dataset.index);
+        setSelection(currentIndex);
+        activateSelection();
+      });
+      li.appendChild(button);
+    } else {
+      li.textContent = item.text;
+      li.addEventListener("click", () => {
+        const currentIndex = Number(li.dataset.index);
+        const wasSelected = currentIndex === store.state.currentMenu.selection;
+        setSelection(currentIndex);
+        if (wasSelected) {
+          activateSelection();
+        }
+      });
+      li.addEventListener("dblclick", () => {
+        const currentIndex = Number(li.dataset.index);
+        setSelection(currentIndex);
+        activateSelection();
+      });
+    }
+    return li;
+  }
+
+  function updateItemNode(li, item, index, key) {
+    li.dataset.index = String(index);
+    li.dataset.menuItemKey = key;
+    if (isCoarsePointer) {
+      const button = li.querySelector("button");
+      if (button && button.textContent !== item.text) {
+        button.textContent = item.text;
+      }
+    } else if (li.firstChild) {
+      if (li.firstChild.nodeValue !== item.text) {
+        li.firstChild.nodeValue = item.text;
+      }
+    } else if (li.textContent !== item.text) {
+      li.textContent = item.text;
+    }
+  }
+
+  function reconcileItems() {
     const menu = store.state.currentMenu;
-    renderVersion += 1;
-    searchBuffer = "";
-    lastTypeTime = 0;
-    listEl.innerHTML = "";
+    const keys = getItemKeys(menu.items);
+    const oldChildren = [...listEl.children];
+    const oldByKey = new Map(oldChildren.map((child) => [child.dataset.menuItemKey, child]));
+    const used = new Set();
+    const activeElement = document.activeElement;
+    const focusedRow = oldChildren.find((child) => child.contains?.(activeElement));
     if (isCoarsePointer) {
       listEl.removeAttribute("role");
       listEl.removeAttribute("aria-label");
@@ -152,42 +228,35 @@ export function createMenuView({
       listEl.setAttribute("role", "listbox");
     }
     menu.items.forEach((item, index) => {
-      const li = document.createElement("li");
-      li.id = currentOptionId(index);
-      li.className = "menu-item";
-      if (isCoarsePointer) {
-        li.setAttribute("role", "presentation");
-      } else {
-        li.setAttribute("role", "option");
-      }
-      li.dataset.index = String(index);
-      if (isCoarsePointer) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "menu-item-touch";
-        button.textContent = item.text;
-        button.addEventListener("click", () => {
-          setSelection(index);
-          activateSelection();
-        });
-        li.appendChild(button);
-      } else {
-        li.textContent = item.text;
-        li.addEventListener("click", () => {
-          const wasSelected = index === store.state.currentMenu.selection;
-          setSelection(index);
-          if (wasSelected) {
-            activateSelection();
-          }
-        });
-        li.addEventListener("dblclick", () => {
-          setSelection(index);
-          activateSelection();
-        });
-      }
-      listEl.appendChild(li);
+      const key = keys[index];
+      const li = oldByKey.get(key) || createItemNode(item, key);
+      updateItemNode(li, item, index, key);
+      used.add(li);
     });
+    for (const child of oldChildren) {
+      if (!used.has(child)) {
+        child.remove();
+      }
+    }
+    const desiredChildren = [...used];
+    for (let index = 0; index < desiredChildren.length; index += 1) {
+      const li = desiredChildren[index];
+      if (listEl.children[index] !== li) {
+        listEl.insertBefore(li, listEl.children[index] || null);
+      }
+    }
+    if (focusedRow && used.has(focusedRow) && document.activeElement !== activeElement) {
+      activeElement.focus?.({ preventScroll: true });
+    }
     applySelection(menu.selection);
+  }
+
+  function renderFull() {
+    renderVersion += 1;
+    searchBuffer = "";
+    lastTypeTime = 0;
+    listEl.innerHTML = "";
+    reconcileItems();
   }
 
   listEl.addEventListener("focus", () => {
@@ -199,13 +268,19 @@ export function createMenuView({
     const nextStructureSnapshot = menuStructureSnapshot(menu);
     if (nextStructureSnapshot !== lastStructureSnapshot) {
       lastStructureSnapshot = nextStructureSnapshot;
-      renderFull();
+      if (menu.menuId !== lastRenderedMenuId) {
+        lastRenderedMenuId = menu.menuId;
+        renderFull();
+      } else {
+        reconcileItems();
+      }
       return;
     }
     if (menu.selection !== lastSelection) {
       applySelection(menu.selection);
     }
   });
+  let lastRenderedMenuId = store.state.currentMenu.menuId;
   lastStructureSnapshot = menuStructureSnapshot(store.state.currentMenu);
   renderFull();
 

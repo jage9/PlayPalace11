@@ -646,7 +646,7 @@ class PusoyDosGame(Game, TurnTimerMixin):
                 self._start_turn()
                 return
 
-            self.advance_turn(announce=False)
+            self.advance_turn(announce=False, rebuild_menus=False)
             self._start_turn()
             return
 
@@ -1010,7 +1010,7 @@ class PusoyDosGame(Game, TurnTimerMixin):
             self._player_finishes(p)
             return
 
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         self._start_turn()
 
     def _action_pass(self, player: Player, action_id: str) -> None:
@@ -1039,7 +1039,7 @@ class PusoyDosGame(Game, TurnTimerMixin):
         self._broadcast_pass(p)
         p.selected_cards.clear()
 
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         self._start_turn()
 
     def _action_confirm_give(self, player: Player, action_id: str) -> None:

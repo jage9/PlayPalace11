@@ -862,7 +862,7 @@ class DominosGame(Game):
         self._advance_to_next_turn()
 
     def _advance_to_next_turn(self) -> None:
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         self._update_all_turn_actions()
         self.announce_turn()
         self.rebuild_all_menus()

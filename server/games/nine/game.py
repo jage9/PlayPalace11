@@ -369,7 +369,7 @@ class NineGame(Game):
 
         # Advance to next player
         BotHelper.jolt_bots(self, ticks=random.randint(15, 25))
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         self._start_turn()
 
     def _check_game_winner(self) -> Optional[str]:

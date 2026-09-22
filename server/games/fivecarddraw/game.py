@@ -688,7 +688,7 @@ class FiveCardDrawGame(TurnTimerMixin, Game):
     def _advance_after_draw(self, player: FiveCardDrawPlayer) -> None:
         if self.current_player != player:
             return
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         if self.current_player is None or (
             self.current_player and self.current_player.id == self.turn_player_ids[0]
         ):

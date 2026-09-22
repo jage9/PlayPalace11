@@ -1077,7 +1077,7 @@ class LastCardGame(Game, TurnTimerMixin):
         self.rebuild_all_menus()
 
     def _advance_turn(self) -> None:
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         self._start_turn()
 
     def _on_turn_timeout(self) -> None:

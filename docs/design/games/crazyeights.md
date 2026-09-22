@@ -91,7 +91,7 @@ Game ends when any player reaches **winning score** (default 500, range 1–1000
 - **Timer**: if expires, call bot decision for current player.
 
 ## UI / Menu Behavior
-- Game menu shows playable cards + draw/pass when allowed.
+- Game menu keeps all cards visible throughout other players' turns, with draw/pass when allowed.
 - Actions menu excludes per-card items.
 - Wild suit selection is a submenu phase: only C/H/S/D accepted. Pirates and other games use submenus like this.
 

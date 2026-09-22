@@ -758,7 +758,7 @@ class YahtzeeGame(ActionGuardMixin, Game, DiceGameMixin):
             self.turn_index = 0
             self.set_turn_players(self.get_active_players())
         else:
-            self.advance_turn(announce=False)
+            self.advance_turn(announce=False, rebuild_menus=False)
 
         self._start_turn()
 

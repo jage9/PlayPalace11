@@ -237,7 +237,9 @@ class NetworkUser(User):
         previous_menu = self._current_menus.get(menu_id)
         escape_str = escape_behavior.value
 
-        if position is None and previous_menu:
+        # Game menus preserve the client's current item by ID. Replaying a
+        # cached row would override navigation since the last server reset.
+        if position is None and previous_menu and menu_id != "game_menu":
             previous_position = previous_menu.get("position")
             if isinstance(previous_position, int) and previous_position > 0:
                 position = previous_position

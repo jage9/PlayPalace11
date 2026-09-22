@@ -48,11 +48,15 @@ class TurnManagementMixin:
         if reset_index:
             self.turn_index = 0
 
-    def advance_turn(self, announce: bool = True) -> "Player | None":
+    def advance_turn(
+        self, announce: bool = True, *, rebuild_menus: bool = True
+    ) -> "Player | None":
         """Advance to the next player's turn (respects turn_direction and skips).
 
         Args:
             announce: If True, announce the turn and play sound.
+            rebuild_menus: Set False when the caller finishes setting up the
+                new turn and rebuilds menus itself.
 
         Returns:
             The new current player.
@@ -77,7 +81,8 @@ class TurnManagementMixin:
         self.turn_index = (self.turn_index + self.turn_direction) % len(self.turn_player_ids)
         if announce:
             self.announce_turn()
-        self.rebuild_all_menus()
+        if rebuild_menus:
+            self.rebuild_all_menus()
         return self.current_player
 
     def skip_next_players(self, count: int = 1) -> None:

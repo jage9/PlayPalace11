@@ -6,6 +6,7 @@ from server.games.crazyeights.game import CrazyEightsGame, CrazyEightsOptions
 from server.messages.localization import Localization
 from server.core.users.bot import Bot
 from server.core.users.test_user import MockUser
+from server.core.users.network_user import NetworkUser
 
 
 def create_game_with_host(host_name: str = "Host"):
@@ -18,6 +19,39 @@ def create_game_with_host(host_name: str = "Host"):
 
 def make_card(card_id: int, rank: int, suit: int) -> Card:
     return Card(id=card_id, rank=rank, suit=suit)
+
+
+def test_hands_stay_visible_in_every_menu_packet_across_a_full_turn_cycle():
+    game = CrazyEightsGame()
+    users = [NetworkUser(name, "en", None) for name in ("Alice", "Bob", "Carol")]
+    players = [game.add_player(user.username, user) for user in users]
+    game.status = "playing"
+    game.game_active = True
+    game.set_turn_players(players)
+    game.discard_pile = [make_card(20, 2, 1)]
+    game.current_suit = 1
+    for i, player in enumerate(players):
+        player.hand = [make_card(2 * i, 3 + i, 1), make_card(2 * i + 1, 9, 2)]
+    game.rebuild_all_menus()
+    for user in users:
+        user.get_queued_messages()
+
+    for i, player in enumerate(players):
+        assert game.current_player == player
+        game.handle_event(player, {
+            "type": "menu", "menu_id": "game_menu", "selection_id": f"play_card_{2 * i}",
+        })
+        for observer, user in zip(players, users):
+            packets = user.get_queued_messages()
+            assert not any(packet["type"] == "clear_ui" for packet in packets)
+            menus = [packet for packet in packets if packet["type"] == "menu"]
+            assert menus
+            expected_cards = {f"play_card_{card.id}" for card in observer.hand}
+            for menu in menus:
+                assert menu["menu_id"] == "game_menu"
+                assert expected_cards <= {item["id"] for item in menu["items"]}
+                assert "position" not in menu
+    assert game.current_player == players[0]
 
 
 def test_crazyeights_game_creation():

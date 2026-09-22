@@ -391,7 +391,7 @@ class LightTurretGame(Game):
         if round_is_complete:
             self._start_round()
         else:
-            self.advance_turn(announce=False)
+            self.advance_turn(announce=False, rebuild_menus=False)
             self._start_turn()
 
     def _check_for_winner(self) -> LightTurretPlayer | None:

@@ -588,7 +588,7 @@ class ChessGame(TurnTimerMixin, Game):
             BotHelper.jolt_bot(player, ticks=random.randint(30, 60))  # nosec B311
 
     def _advance_turn(self) -> None:
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         self._start_turn()
 
     @property

@@ -3089,7 +3089,7 @@ class AgeOfHeroesGame(Game):
         # Skip eliminated players
         if player.is_spectator or (player.tribe_state and player.tribe_state.is_eliminated()):
             # Skip this player's turn and advance to next
-            self.advance_turn(announce=False)
+            self.advance_turn(announce=False, rebuild_menus=False)
             self._start_turn()
             return
 
@@ -3303,7 +3303,7 @@ class AgeOfHeroesGame(Game):
             self._start_new_day()
         else:
             # Continue to next player
-            self.advance_turn(announce=False)
+            self.advance_turn(announce=False, rebuild_menus=False)
             self._start_turn()
 
     def _start_new_day(self) -> None:

@@ -1851,15 +1851,32 @@ class MainWindow(wx.Frame):
         inserted_ids = new_id_set - old_id_set
         common_ids = old_id_set & new_id_set
 
-        # If all IDs are common (no inserts/deletes) but reordered,
-        # fall back to position-based text comparison so the ListBox
-        # actually reflects the new order.
-        if not deleted_ids and not inserted_ids and old_ids != new_ids:
-            operations = []
-            for i, (old_text, new_text) in enumerate(zip(old_items, new_items)):
-                if old_text != new_text:
-                    operations.append(("update", i, new_text))
-            return operations
+        # The ListBox diff has no move operation.  Apply structural changes
+        # first, then update the resulting positions so reordered rows keep
+        # their existing controls where possible.
+        old_common_order = [item_id for item_id in old_ids if item_id in new_id_set]
+        new_common_order = [item_id for item_id in new_ids if item_id in old_id_set]
+        if old_common_order != new_common_order:
+            structural_operations = [
+                ("delete", index)
+                for index in range(len(old_items) - 1, -1, -1)
+                if old_ids[index] in deleted_ids
+            ] + [
+                ("insert", index, text)
+                for index, (item_id, text) in enumerate(zip(new_ids, new_items))
+                if item_id in inserted_ids
+            ]
+            intermediate_items = list(old_items)
+            for index in sorted(
+                (old_map[item_id][0] for item_id in deleted_ids), reverse=True
+            ):
+                del intermediate_items[index]
+            for index, (item_id, text) in enumerate(zip(new_ids, new_items)):
+                if item_id in inserted_ids:
+                    intermediate_items.insert(index, text)
+            return structural_operations + self._diff_same_length(
+                intermediate_items, new_items
+            )
 
         # Generate delete operations (using old indices)
         for item_id in deleted_ids:
@@ -2090,6 +2107,7 @@ class MainWindow(wx.Frame):
         new_menu_state = {
             "menu_id": menu_data["menu_id"],
             "items": menu_data["items"],
+            "item_ids": menu_data["item_ids"],
             "item_sounds": menu_data["item_sounds"],
             "multiletter_enabled": menu_data["multiletter_enabled"],
             "escape_behavior": menu_data["escape_behavior"],
@@ -2150,6 +2168,11 @@ class MainWindow(wx.Frame):
     ) -> None:
         old_items = [self.menu_list.GetString(i) for i in range(self.menu_list.GetCount())]
         old_selection = self.menu_list.GetSelection()
+        old_selected_id = (
+            old_item_ids[old_selection]
+            if 0 <= old_selection < len(old_item_ids)
+            else None
+        )
         operations = self.compute_menu_diff(old_items, items, old_item_ids, item_ids)
         new_selection = self.apply_menu_diff(operations, old_selection)
 
@@ -2157,6 +2180,8 @@ class MainWindow(wx.Frame):
             new_selection = position
             self.menu_list.SetSelection(new_selection)
         elif len(items) > 0:
+            if old_selected_id is not None and old_selected_id in item_ids:
+                new_selection = item_ids.index(old_selected_id)
             current_selection = self.menu_list.GetSelection()
             if new_selection != wx.NOT_FOUND:
                 if current_selection != new_selection:

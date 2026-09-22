@@ -349,11 +349,6 @@ class CrazyEightsGame(TurnTimerMixin, Game):
         self._sync_turn_actions(player)
         super().update_player_menu(player, selection_id=selection_id)
 
-    def rebuild_all_menus(self) -> None:
-        for player in self.players:
-            self._sync_turn_actions(player)
-        super().rebuild_all_menus()
-
     def _sync_turn_actions(self, player: Player) -> None:
         if not isinstance(player, CrazyEightsPlayer):
             return
@@ -539,7 +534,7 @@ class CrazyEightsGame(TurnTimerMixin, Game):
 
     def _advance_turn(self) -> None:
         self._stop_turn_loop()
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         self._start_turn()
 
     @property

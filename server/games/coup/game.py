@@ -205,7 +205,7 @@ class CoupGame(Game):
 
     def _end_turn(self) -> None:
         """End current player's turn."""
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         self._start_turn()
 
     def setup_keybinds(self) -> None:

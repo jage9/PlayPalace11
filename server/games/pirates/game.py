@@ -590,7 +590,7 @@ class PiratesGame(Game):
             return
 
         # Advance to next player
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
 
         # Check if we've completed a round
         if self.turn_index == 0:

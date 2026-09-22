@@ -82,6 +82,21 @@ def test_network_user_show_menu_reuses_previous_position_when_not_specified():
     assert packet["position"] == 0  # 1-based stored -> 0-based packet
 
 
+def test_game_menu_refresh_does_not_replay_an_old_cursor_position():
+    user = NetworkUser("alice", "en", DummyConnection())
+    cards = [MenuItem(text="One", id="card_1"), MenuItem(text="Two", id="card_2")]
+    user.show_menu("game_menu", cards, position=1)
+    assert drain_messages(user)[0]["position"] == 0
+    user.update_menu("game_menu", cards, selection_id="card_2")
+    assert drain_messages(user)[0]["selection_id"] == "card_2"
+
+    user.show_menu("game_menu", cards)
+    assert "position" not in drain_messages(user)[0]
+
+    user.show_menu("game_menu", cards, position=1)
+    assert drain_messages(user)[0]["position"] == 0
+
+
 def test_network_user_audio_and_clear_ui_packets():
     user = NetworkUser("bob", "en", DummyConnection())
     user.show_menu("main", ["Play"])

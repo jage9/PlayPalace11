@@ -754,7 +754,7 @@ class ScopaGame(Game):
                 self._deal_cards()
         else:
             # Next player (don't announce yet, _start_turn will do it)
-            self.advance_turn(announce=False)
+            self.advance_turn(announce=False, rebuild_menus=False)
             self._start_turn()
 
     def _end_round(self) -> None:

@@ -208,7 +208,7 @@ class LeftRightCenterGame(ActionGuardMixin, Game):
     def _end_turn(self) -> None:
         if self._check_for_winner():
             return
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         self._start_turn()
 
     def _get_turn_order(self) -> list[LeftRightCenterPlayer]:

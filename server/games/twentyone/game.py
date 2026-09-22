@@ -992,7 +992,7 @@ class TwentyOneGame(ActionGuardMixin, Game):
     def _advance_turn_after_action(self) -> None:
         if self.phase != "turns":
             return
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         current = self.current_player
         if current:
             # Mind-tax break thresholds are per turn, so reset when a new turn begins.

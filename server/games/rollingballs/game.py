@@ -765,7 +765,7 @@ class RollingBallsGame(ActionGuardMixin, Game):
         if self.turn_index >= len(self.turn_players) - 1:
             self._on_round_end()
         else:
-            self.advance_turn(announce=False)
+            self.advance_turn(announce=False, rebuild_menus=False)
             self._start_turn()
 
     def _on_round_end(self) -> None:

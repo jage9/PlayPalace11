@@ -245,7 +245,7 @@ class LudoGame(Game):
             self._start_turn(new_turn=False)
             return
         self.turn_start_state = None
-        self.advance_turn(announce=False)
+        self.advance_turn(announce=False, rebuild_menus=False)
         self._start_turn(new_turn=True)
 
     def _save_turn_state(self) -> dict[str, dict]:

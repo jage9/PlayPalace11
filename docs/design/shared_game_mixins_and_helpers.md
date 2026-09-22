@@ -57,6 +57,13 @@ for that behavior; it does not open the actions menu from the normal game menu.
 Normal-menu refreshes preserve open actions menus, pending input, and temporary
 displays. Completing a game or changing games clears those interactions.
 
+Keep card and board item IDs stable across turns so clients can preserve the
+selected item and update existing rows. A hand that can be inspected out of turn
+stays visible; turn permissions belong in action handling. Omit `position` on
+ordinary refreshes unless deliberately moving the selection. When turn setup
+rebuilds menus itself, use `advance_turn(rebuild_menus=False)` to avoid sending
+an intermediate menu before the new turn is ready.
+
 Actions may request a menu or editbox input, which creates a modal step before
 the handler runs. Games may also generate actions from live cards or board
 locations, and may override menu rebuilding for a grid or placement layout.

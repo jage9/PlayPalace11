@@ -6,7 +6,6 @@ five cities, complete their monument of culture, or be the last tribe standing.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from mashumaro.mixins.json import DataClassJSONMixin
@@ -15,7 +14,7 @@ from ..base import Game, Player, GameOptions
 from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, MenuInput, Visibility
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, BoolOption, option_field
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
@@ -1957,7 +1956,11 @@ class AgeOfHeroesGame(Game):
                 user = self.get_user(player)
                 if user:
                     cards_str = read_cards(player.hand, user.locale)
-                    user.speak(f"Your cards: {cards_str}")
+                    user.speak_l(
+                        "ageofheroes-hand-contents",
+                        count=len(player.hand),
+                        cards=cards_str,
+                    )
 
     def _draw_cards(self, count: int) -> list[Card]:
         """Draw cards from deck, reshuffling discard pile if needed."""
@@ -3373,7 +3376,7 @@ class AgeOfHeroesGame(Game):
             return
 
         if player.tribe_state.is_eliminated() and len(player.hand) == 0:
-            player.is_spectator = True
+            self.eliminate_player(player)
             self.broadcast_personal_l(
                 player, "ageofheroes-eliminated-you", "ageofheroes-eliminated"
             )
@@ -3504,19 +3507,7 @@ class AgeOfHeroesGame(Game):
         if not winner and len(non_eliminated) == 1:
             winner = non_eliminated[0]
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in active_players
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "days_played": self.current_day,
@@ -3529,9 +3520,11 @@ class AgeOfHeroesGame(Game):
 
         winner_name = result.custom_data.get("winner_name")
         if winner_name:
-            lines.append(f"Winner: {winner_name}")
+            lines.append(
+                Localization.get(locale, "ageofheroes-battle-winner", winner=winner_name)
+            )
 
         days = result.custom_data.get("days_played", 0)
-        lines.append(f"Days: {days}")
+        lines.append(Localization.get(locale, "ageofheroes-day", day=days))
 
         return lines

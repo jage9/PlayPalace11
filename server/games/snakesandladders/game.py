@@ -5,14 +5,13 @@ Classic board game where players race to 100.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player
 from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
@@ -426,24 +425,10 @@ class SnakesAndLaddersGame(Game):
         """Build standard game result."""
         winner = getattr(self, "winner", None)
 
-        # Sort players by position (descending)
-        sorted_players = sorted(
-            self.get_active_players(),
-            key=lambda p: (p.finished, p.position),  # Finished first, then highest position
-            reverse=True,
-        )
-
         # Store final positions for end screen
         final_positions = {p.name: p.position for p in self.players}
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(player_id=p.id, player_name=p.name, is_bot=p.is_bot)
-                for p in sorted_players  # Return sorted list
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "final_positions": final_positions,
@@ -453,9 +438,11 @@ class SnakesAndLaddersGame(Game):
     def format_end_screen(self, result: GameResult, locale: str) -> list[str]:
         lines = [Localization.get(locale, "game-final-scores")]
 
-        # Players are already sorted in result.player_results
-        for i, p_result in enumerate(result.player_results, 1):
-            pos = result.custom_data["final_positions"].get(p_result.player_name, 0)
+        positions = result.custom_data["final_positions"]
+        players = sorted(result.player_results,
+                         key=lambda p: positions.get(p.player_name, 0), reverse=True)
+        for i, p_result in enumerate(players, 1):
+            pos = positions.get(p_result.player_name, 0)
             lines.append(
                 Localization.get(
                     locale, "snakes-end-score", rank=i, player=p_result.player_name, position=pos

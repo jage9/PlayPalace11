@@ -6,7 +6,6 @@ Threes = 0 points. Lowest score wins!
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player
@@ -17,7 +16,8 @@ from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.dice import DiceSet
 from ...game_utils.dice_game_mixin import DiceGameMixin
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
+from ...game_utils.teams import TeamResultBuilder
 from ...game_utils.options import IntOption, option_field, GameOptions
 from ...messages.localization import Localization
 from server.core.ui.keybinds import KeybindState
@@ -439,21 +439,11 @@ class ThreesGame(ActionGuardMixin, RoundBasedGameMixin, Game, DiceGameMixin):
 
         winner = sorted_players[0] if sorted_players else None
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in sorted_players
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
+                "winner_names": [name for name, score in final_scores.items()
+                                 if winner and score == final_scores[winner.name]],
                 "winner_score": winner.total_score if winner else 0,
                 "final_scores": final_scores,
                 "rounds_played": self.round,
@@ -464,14 +454,8 @@ class ThreesGame(ActionGuardMixin, RoundBasedGameMixin, Game, DiceGameMixin):
 
     def format_end_screen(self, result: GameResult, locale: str) -> list[str]:
         """Format the end screen for Threes game."""
-        lines = [Localization.get(locale, "game-final-scores")]
-
         final_scores = result.custom_data.get("final_scores", {})
-        for i, (name, score) in enumerate(final_scores.items(), 1):
-            points_str = Localization.get(locale, "game-points", count=score)
-            lines.append(f"{i}. {name}: {points_str}")
-
-        return lines
+        return TeamResultBuilder.format_final_scores(locale, final_scores)
 
     def on_tick(self) -> None:
         """Called every tick. Handle bot AI."""

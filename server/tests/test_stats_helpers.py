@@ -129,3 +129,20 @@ def test_rating_helper_update_and_prediction_flow():
 
     probability = helper.predict_win_probability("alice", "bob")
     assert 0 <= probability <= 1
+
+
+def test_ratings_distinguish_tied_individuals_from_actual_teams():
+    helper = RatingHelper(DummyDB(), "test")
+    tied = helper.update_ratings([["alice", "bob"]])
+    assert tied["alice"].mu == tied["bob"].mu
+    result = make_result(
+        [(name, name, False, False) for name in ("a", "b", "c", "d")], {}
+    )
+    result.winner_ids = ["a", "c"]
+    for player in result.player_results:
+        player.team_id = "winners" if player.player_id in result.winner_ids else "others"
+    ratings = helper.update_from_result(result)
+    assert ratings["a"].mu == ratings["c"].mu > helper.DEFAULT_MU
+    assert ratings["b"].mu == ratings["d"].mu < helper.DEFAULT_MU
+    wins = {entry.player_id: entry.value for entry in LeaderboardHelper.build_wins_leaderboard([result])}
+    assert wins == {"a": 1, "c": 1, "b": 0, "d": 0}

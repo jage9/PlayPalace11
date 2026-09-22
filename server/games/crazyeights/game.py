@@ -7,16 +7,16 @@ from ..base import Game, Player, GameOptions
 from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.cards import Card, Deck, DeckFactory, card_name
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, MenuOption, option_field
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.poker_timer import PokerTurnTimer
+from ...game_utils.turn_timer_mixin import TurnTimerMixin
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 from server.core.users.bot import Bot
 from server.core.users.base import User
-from datetime import datetime
 from .bot import bot_think
 
 SUIT_SORT_ORDER = {1: 0, 2: 1, 3: 2, 4: 3}
@@ -70,7 +70,7 @@ class CrazyEightsPlayer(Player):
 
 @register_game
 @dataclass
-class CrazyEightsGame(Game):
+class CrazyEightsGame(TurnTimerMixin, Game):
     """Crazy Eights game implementation."""
 
     players: list[CrazyEightsPlayer] = field(default_factory=list)
@@ -457,9 +457,7 @@ class CrazyEightsGame(Game):
             if self.intro_wait_ticks == 0:
                 self._start_new_hand()
             return
-        if self.timer.tick():
-            self._handle_turn_timeout()
-        self._maybe_play_timer_warning()
+        self.on_tick_turn_timer()
         BotHelper.on_tick(self)
 
     def _start_new_hand(self) -> None:
@@ -529,8 +527,6 @@ class CrazyEightsGame(Game):
             return
         self.turn_has_drawn = False
         self.turn_drawn_card = None
-        self.timer_warning_played = False
-
         self._stop_turn_loop()
         self._start_turn_loop(player)
 
@@ -548,29 +544,9 @@ class CrazyEightsGame(Game):
         self.advance_turn(announce=False)
         self._start_turn()
 
-    def _start_turn_timer(self) -> None:
-        try:
-            seconds = int(self.options.turn_timer)
-        except ValueError:
-            seconds = 0
-        if seconds <= 0:
-            self.timer.clear()
-            return
-        self.timer.start(seconds)
-        self.timer_warning_played = False
-
-    def _maybe_play_timer_warning(self) -> None:
-        try:
-            seconds = int(self.options.turn_timer)
-        except ValueError:
-            seconds = 0
-        if seconds < 20:
-            return
-        if self.timer_warning_played:
-            return
-        if self.timer.seconds_remaining() == 5:
-            self.timer_warning_played = True
-            self.play_sound("game_crazyeights/fivesec.ogg")
+    @property
+    def timer_warning_sound(self) -> str:
+        return "game_crazyeights/fivesec.ogg"
 
     def _handle_turn_timeout(self) -> None:
         player = self.current_player
@@ -708,7 +684,7 @@ class CrazyEightsGame(Game):
         if p.is_bot:
             BotHelper.jolt_bot(p, ticks=random.randint(20, 30))  # nosec B311
 
-        self.timer.clear()
+        self.stop_turn_timer()
         self.wild_wait_ticks = 15
         self.wild_wait_player_id = p.id
         if self.pending_round_winner_id == p.id:
@@ -744,16 +720,6 @@ class CrazyEightsGame(Game):
             text = Localization.get(locale, "crazyeights-no-players")
 
         user.speak(text)
-
-    def _action_check_turn_timer(self, player: Player, action_id: str) -> None:
-        user = self.get_user(player)
-        if not user:
-            return
-        remaining = self.timer.seconds_remaining()
-        if remaining <= 0:
-            user.speak_l("poker-timer-disabled")
-        else:
-            user.speak_l("poker-timer-remaining", seconds=remaining)
 
     # ==========================================================================
     # Action state helpers
@@ -1343,19 +1309,7 @@ class CrazyEightsGame(Game):
         active = [p for p in self.players if not p.is_spectator]
         winner = max(active, key=lambda p: p.score, default=None)
         final_scores = {p.name: p.score for p in active}
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in active
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "winner_score": winner.score if winner else 0,

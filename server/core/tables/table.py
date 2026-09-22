@@ -1,6 +1,7 @@
 """Table management for games."""
 
 from dataclasses import dataclass, field
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 from mashumaro.mixins.json import DataClassJSONMixin
@@ -148,6 +149,63 @@ class Table(DataClassJSONMixin):
     def can_start(self, min_players: int) -> bool:
         """Check if the game can start."""
         return self.player_count >= min_players
+
+    def prepare_next_game(self, username: str, game_type: str | None = None) -> bool:
+        """Keep the table and seats, but replace a finished game with a fresh lobby.
+
+        Replays retain options. Switching games uses the new game's defaults.
+        A fresh instance prevents hands, timers, and queued actions leaking between games.
+        """
+        from server.games.registry import get_game_class
+
+        previous = self.game
+        if not previous or previous.status != GameStatus.FINISHED or username != previous.host:
+            return False
+        game_class = get_game_class(game_type or self.game_type)
+        if game_class is None:
+            return False
+        member_names = {member.username for member in self.members}
+        players = [p for p in previous.players
+                   if not p.replaced_human or p.name in member_names]
+        if sum(not p.is_spectator or p.eliminated for p in players) > game_class.get_max_players():
+            user = self.get_user(username)
+            if user:
+                user.speak_l("action-table-full")
+            return False
+
+        game = game_class()
+        if game.get_type() == previous.get_type() and hasattr(previous, "options"):
+            game.options = deepcopy(previous.options)
+        game.host = previous.host
+        game._table = self
+        game.setup_keybinds()
+        for old_player in players:
+            player = game.create_player(old_player.id, old_player.name, is_bot=old_player.is_bot)
+            player.is_virtual_bot = old_player.is_virtual_bot
+            player.is_spectator = old_player.is_spectator and not old_player.eliminated
+            game.players.append(player)
+            user = previous.get_user(old_player)
+            if user:
+                user.stop_music()
+                user.stop_ambience()
+                for menu_id in ("game_over", "change_game", "leave_game_confirm", "actions_menu"):
+                    user.remove_menu(menu_id)
+                game.attach_user(player.id, user)
+            game.setup_player_actions(player)
+            for member in self.members:
+                if member.username == player.name:
+                    member.is_spectator = player.is_spectator
+
+        previous._destroyed = True
+        previous._table = None
+        previous._pending_actions.clear()
+        self.game_type = game.get_type()
+        self.host = game.host
+        self.status = GameStatus.WAITING
+        self.game = game
+        game._reset_transcripts()
+        game.rebuild_all_menus()
+        return True
 
     def destroy(self) -> None:
         """Destroy this table. Called by Game.destroy()."""

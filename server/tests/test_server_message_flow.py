@@ -284,6 +284,7 @@ async def test_handle_refresh_session_failure_sends_disconnect(make_server):
 @pytest.mark.asyncio
 async def test_handle_refresh_session_username_mismatch(make_server):
     srv = make_server()
+    srv._default_locale = "en"
     client = DummyClient()
     srv._auth.refresh_payloads["tok"] = ("alice", "access2", 1, "refresh2", 2)
     packet = {"type": "refresh_session", "refresh_token": "tok", "username": "bob"}

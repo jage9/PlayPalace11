@@ -6,7 +6,6 @@ The player with the most points when the pipe empties wins.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import json
 import random
 from pathlib import Path
@@ -16,7 +15,7 @@ from ..registry import register_game
 from ...game_utils.action_guard_mixin import ActionGuardMixin
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, MultiSelectOption, multi_select_field, option_field
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
@@ -832,19 +831,7 @@ class RollingBallsGame(ActionGuardMixin, Game):
         winner = sorted_players[0] if sorted_players else None
         rb_winner: RollingBallsPlayer = winner  # type: ignore
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in self.get_active_players()
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "winner_score": rb_winner.score if rb_winner else 0,

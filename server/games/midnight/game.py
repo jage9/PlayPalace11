@@ -6,7 +6,6 @@ The other 4 dice are summed for points (max 24). Highest score wins the round.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player, GameOptions
@@ -17,7 +16,7 @@ from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.dice import DiceSet
 from ...game_utils.dice_game_mixin import DiceGameMixin
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, option_field
 from ...messages.localization import Localization
 from server.core.ui.keybinds import KeybindState
@@ -520,19 +519,7 @@ class MidnightGame(ActionGuardMixin, RoundBasedGameMixin, Game, DiceGameMixin):
         for player in sorted_players:
             final_standings[player.name] = player.round_wins
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in active_players
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "winner_rounds": winner.round_wins if winner else 0,

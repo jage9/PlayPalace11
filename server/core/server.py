@@ -3145,7 +3145,7 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         # Build player stats: {player_id: {wins, losses, name}}
         player_stats: dict[str, dict] = {}
         for result in game_results:
-            winner_name = result.custom_data.get("winner_name")
+            winner_ids = set(result.get_winner_ids())
             for p in result.player_results:
                 if p.is_bot and not p.is_virtual_bot:
                     continue
@@ -3155,9 +3155,9 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
                         "losses": 0,
                         "name": p.player_name,
                     }
-                if winner_name == p.player_name:
+                if p.player_id in winner_ids:
                     player_stats[p.player_id]["wins"] += 1
-                else:
+                elif winner_ids:
                     player_stats[p.player_id]["losses"] += 1
 
         # Sort by wins descending
@@ -3282,14 +3282,12 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         # Build total scores per player
         player_scores: dict[str, dict] = {}
         for result in game_results:
-            final_scores = result.custom_data.get("final_scores", {})
             for p in result.player_results:
                 if p.is_bot and not p.is_virtual_bot:
                     continue
                 if p.player_id not in player_scores:
                     player_scores[p.player_id] = {"total": 0, "name": p.player_name}
-                # Try to get score by player name
-                score = final_scores.get(p.player_name, 0)
+                score = result.get_player_score(p)
                 if score:
                     player_scores[p.player_id]["total"] += score
 
@@ -3341,11 +3339,10 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         # Build high scores per player
         player_high: dict[str, dict] = {}
         for result in game_results:
-            final_scores = result.custom_data.get("final_scores", {})
             for p in result.player_results:
                 if p.is_bot and not p.is_virtual_bot:
                     continue
-                score = final_scores.get(p.player_name, 0)
+                score = result.get_player_score(p)
                 if p.player_id not in player_high:
                     player_high[p.player_id] = {"high": score, "name": p.player_name}
                 elif score > player_high[p.player_id]["high"]:
@@ -3720,22 +3717,17 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         games_played = 0
 
         for result in game_results:
-            winner_name = result.custom_data.get("winner_name")
-            final_scores = result.custom_data.get("final_scores", {})
-            final_light = result.custom_data.get("final_light", {})
+            winner_ids = set(result.get_winner_ids())
 
             for p in result.player_results:
                 if p.player_id == user.uuid:
                     games_played += 1
-                    if winner_name == p.player_name:
+                    if p.player_id in winner_ids:
                         wins += 1
-                    else:
+                    elif winner_ids:
                         losses += 1
 
-                    # Get score from final_scores or final_light (for Light Turret)
-                    score = final_scores.get(p.player_name, 0)
-                    if not score:
-                        score = final_light.get(p.player_name, 0)
+                    score = result.get_player_score(p)
                     total_score += score
                     if score > high_score:
                         high_score = score

@@ -31,4 +31,6 @@ ludo-set-max-sixes = Maksymalna liczba następujących po sobie szóstek: { $max
 ludo-enter-max-sixes = Podaj maksymalną liczbę następujących po sobie szóstek
 ludo-option-changed-max-sixes = Maksymalna liczba szóstek została ustawiona na { $value }.
 ludo-set-safe-start-squares = Bezpieczne pola startowe: { $safe_start_squares }
+# English fallback until this locale has a translation.
+ludo-desc-safe-start-squares = Make each player's starting square safe from capture
 ludo-option-changed-safe-start-squares = Bezpieczne pola startowe ustawione na { $value }.

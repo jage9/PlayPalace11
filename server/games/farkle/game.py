@@ -6,7 +6,6 @@ Push your luck by rolling again or bank your points.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player, GameOptions
@@ -21,7 +20,8 @@ from ...game_utils.dice import (
     has_consecutive_run,
     has_n_of_a_kind,
 )
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
+from ...game_utils.teams import TeamResultBuilder
 from ...game_utils.options import BoolOption, IntOption, option_field
 from ...messages.localization import Localization
 from server.core.ui.keybinds import KeybindState
@@ -437,31 +437,24 @@ class FarkleGame(ActionGuardMixin, RoundBasedGameMixin, Game):
             return Localization.get(locale, "farkle-take-full-house", points=points)
         return f"{combo_type} for {points} points"
 
-    def _get_combo_name(self, combo_type: str, number: int) -> str:
-        """Get the English name for a combo (for announcements). Matches v10 exactly."""
-        if combo_type == COMBO_SINGLE_1:
-            return "Single 1"
-        elif combo_type == COMBO_SINGLE_5:
-            return "Single 5"
-        elif combo_type == COMBO_THREE_OF_KIND:
-            return f"Three {number}s"
-        elif combo_type == COMBO_FOUR_OF_KIND:
-            return f"Four {number}s"
-        elif combo_type == COMBO_FIVE_OF_KIND:
-            return f"Five {number}s"
-        elif combo_type == COMBO_SIX_OF_KIND:
-            return f"Six {number}s"
-        elif combo_type == COMBO_SMALL_STRAIGHT:
-            return "Small Straight"
-        elif combo_type == COMBO_LARGE_STRAIGHT:
-            return "Large Straight"
-        elif combo_type == COMBO_THREE_PAIRS:
-            return "Three pairs"
-        elif combo_type == COMBO_DOUBLE_TRIPLETS:
-            return "Double triplets"
-        elif combo_type == COMBO_FULL_HOUSE:
-            return "Full house"
-        return combo_type
+    def _announce_combo_taken(
+        self, player: FarklePlayer, combo_type: str, number: int, points: int
+    ) -> None:
+        """Announce a taken combo using each recipient's locale."""
+        for recipient in self.players:
+            user = self.get_user(recipient)
+            locale = user.locale if user else "en"
+            combo = self._get_combo_label(locale, combo_type, number, points)
+            if recipient is player:
+                text = Localization.get(locale, "farkle-you-take-combo", combo=combo)
+            else:
+                text = Localization.get(
+                    locale,
+                    "farkle-takes-combo",
+                    player=player.name,
+                    combo=combo,
+                )
+            self.send_table_message(recipient, text)
 
     def update_scoring_actions(self, player: FarklePlayer) -> None:
         """Update scoring actions based on current roll.
@@ -708,7 +701,6 @@ class FarkleGame(ActionGuardMixin, RoundBasedGameMixin, Game):
 
         base_points = get_combination_points(combo_type, number)
         points = base_points * max(1, farkle_player.hot_dice_multiplier)
-        combo_name = self._get_combo_name(combo_type, number)
 
         # Remove dice from current_roll and add to banked_dice
         self._remove_combo_dice(farkle_player, combo_type, number)
@@ -722,9 +714,7 @@ class FarkleGame(ActionGuardMixin, RoundBasedGameMixin, Game):
             self.schedule_sound(COMBO_SOUNDS[combo_type], delay_ticks=2)
 
         # Announce what was taken
-        self.broadcast_personal_l(
-            player, "farkle-you-take-combo", "farkle-takes-combo", combo=combo_name, points=points
-        )
+        self._announce_combo_taken(farkle_player, combo_type, number, points)
 
         # Check for hot dice
         if len(farkle_player.banked_dice) == 6 and len(farkle_player.current_roll) == 0:
@@ -734,9 +724,9 @@ class FarkleGame(ActionGuardMixin, RoundBasedGameMixin, Game):
                 pitch = self._get_hot_dice_pitch(farkle_player.hot_dice_chain)
                 self.play_sound("game_farkle/hotdice.ogg", pitch=pitch)
                 farkle_player.hot_dice_multiplier += 1
-                self.broadcast(
-                    f"Hot Dice Multiplier {farkle_player.hot_dice_multiplier}",
-                    buffer="table",
+                self.broadcast_l(
+                    "farkle-option-changed-hot-dice-multiplier",
+                    enabled=farkle_player.hot_dice_multiplier,
                 )
             else:
                 self.play_sound("game_farkle/hotdice.ogg")
@@ -961,7 +951,7 @@ class FarkleGame(ActionGuardMixin, RoundBasedGameMixin, Game):
             winner_names = [w.name for w in winners]
             for p in active_players:
                 if p.name not in winner_names:
-                    p.is_spectator = True
+                    self.eliminate_player(p)
             self._start_round()
         else:
             # No winner yet
@@ -970,7 +960,7 @@ class FarkleGame(ActionGuardMixin, RoundBasedGameMixin, Game):
     def build_game_result(self) -> GameResult:
         """Build the game result with Farkle-specific data."""
         sorted_players = sorted(
-            self.get_active_players(),
+            self.get_result_players(),
             key=lambda p: p.score,  # type: ignore
             reverse=True,
         )
@@ -990,19 +980,7 @@ class FarkleGame(ActionGuardMixin, RoundBasedGameMixin, Game):
         winner = sorted_players[0] if sorted_players else None
         winner_farkle: FarklePlayer = winner  # type: ignore
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in self.get_active_players()
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "winner_score": winner_farkle.score if winner_farkle else 0,
@@ -1015,14 +993,8 @@ class FarkleGame(ActionGuardMixin, RoundBasedGameMixin, Game):
 
     def format_end_screen(self, result: GameResult, locale: str) -> list[str]:
         """Format the end screen for Farkle game."""
-        lines = [Localization.get(locale, "game-final-scores")]
-
         final_scores = result.custom_data.get("final_scores", {})
-        for i, (name, score) in enumerate(final_scores.items(), 1):
-            points_str = Localization.get(locale, "game-points", count=score)
-            lines.append(f"{i}. {name}: {points_str}")
-
-        return lines
+        return TeamResultBuilder.format_final_scores(locale, final_scores)
 
     def end_turn(self, jolt_min: int = 20, jolt_max: int = 30) -> None:
         """End the current player's turn."""

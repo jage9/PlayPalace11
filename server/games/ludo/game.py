@@ -7,7 +7,7 @@ from ..base import Game, Player
 from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import GameOptions, IntOption, option_field, BoolOption
 from ...game_utils.teams import TeamResultBuilder
 from ...messages.localization import Localization
@@ -299,7 +299,7 @@ class LudoGame(Game):
     def _is_safe_square(self, position: int, player: LudoPlayer) -> bool:
         if position in self.safe_squares:
             return True
-        if self.options.safe_start_squares and position == self._get_start_position(player):
+        if self.options.safe_start_squares and position in {1, 14, 27, 40}:
             return True
         return False
 
@@ -555,23 +555,10 @@ class LudoGame(Game):
 
     def build_game_result(self) -> GameResult:
         """Build game result with winner information."""
-        from datetime import datetime
 
         sorted_teams, winner, final_scores = TeamResultBuilder.summarize(self._team_manager)
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in self.get_active_players()
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": self._team_manager.get_team_name(winner) if winner else None,
                 "final_scores": final_scores,

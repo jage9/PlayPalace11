@@ -162,6 +162,10 @@ class MenuManagementMixin:
         if self._destroyed:
             return
         if self.status == "finished":
+            if self._last_game_result is None:
+                # Older saved tables did not retain the completed result on the game.
+                self._last_game_result = self.build_game_result()
+            self._show_end_screen(self._last_game_result, player)
             return
         if self._is_transient_display_open(player):
             return

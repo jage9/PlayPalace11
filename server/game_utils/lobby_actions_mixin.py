@@ -138,6 +138,10 @@ class LobbyActionsMixin:
             return  # Can only toggle before game starts
 
         player.is_spectator = not player.is_spectator
+        if self._table:
+            for member in self._table.members:
+                if member.username == player.name:
+                    member.is_spectator = player.is_spectator
         if player.is_spectator:
             self.broadcast_l("now-spectating", player=player.name)
             self.broadcast_sound("join_spectator.ogg")
@@ -165,68 +169,42 @@ class LobbyActionsMixin:
             escape_behavior=EscapeBehavior.SELECT_LAST,
         )
 
+    def _replace_with_bot(self, player: "Player") -> None:
+        """Replace a human player with a bot (shared logic)."""
+        if self.status != "playing":
+            return
+
+        player.replaced_human = True
+        player.is_bot = True
+        self._users.pop(player.id, None)
+
+        bot_user = Bot(player.name, uuid=player.id)
+        self.attach_user(player.id, bot_user)
+
     def _perform_leave_game(self, player: "Player") -> None:
-        """Leave the game."""
-        # Spectators can always leave cleanly (no bot replacement)
-        if player.is_spectator:
+        """Leave the table, retaining a departed participant's slot during play."""
+        spectator = player.is_spectator and not player.eliminated
+        if self.status == GameStatus.PLAYING and not spectator and not player.is_bot:
+            self._replace_with_bot(player)
+            self.broadcast_l("player-replaced-by-bot", player=player.name)
+            self.broadcast_sound("leave.ogg")
+        else:
             self.players = [p for p in self.players if p.id != player.id]
             self.player_action_sets.pop(player.id, None)
             self._users.pop(player.id, None)
-            self.broadcast_l("spectator-left", player=player.name)
-            self.broadcast_sound("leave_spectator.ogg")
-            self.rebuild_all_menus()
-            return
+            self.broadcast_l("spectator-left" if spectator else "table-left", player=player.name)
+            self.broadcast_sound("leave_spectator.ogg" if spectator else "leave.ogg")
 
-        if self.status == "playing" and not player.is_bot:
-            # Mid-game: replace human with bot instead of removing
-            # Keep the same player ID so they can rejoin and take over
-            player.is_bot = True
-            self._users.pop(player.id, None)
-
-            # Create a bot user with the same UUID to control this player
-            bot_user = Bot(player.name, uuid=player.id)
-            self.attach_user(player.id, bot_user)
-
-            self.broadcast_l("player-replaced-by-bot", player=player.name)
-            self.broadcast_sound("leave.ogg")
-
-            # Check if any humans remain
-            has_humans = any(not p.is_bot for p in self.players)
-            if not has_humans:
-                # Destroy the game - no humans left
-                self.destroy()
-                return
-
-                # Rebuild menus for remaining players
-                self.rebuild_all_menus()
-            return
-
-        # Lobby or bot leaving: fully remove the player
-        self.players = [p for p in self.players if p.id != player.id]
-        self.player_action_sets.pop(player.id, None)
-        self._users.pop(player.id, None)
-
-        self.broadcast_l("table-left", player=player.name)
-        self.broadcast_sound("leave.ogg")
-
-        # Check if any humans remain
-        has_humans = any(not p.is_bot for p in self.players)
-        if not has_humans:
-            # Destroy the game - no humans left
+        humans = [p for p in self.players if not p.is_bot or p.is_virtual_bot]
+        if not humans:
             self.destroy()
             return
-
-        if self.status == "waiting":
-            # If host left, assign new host
-            if player.name == self.host and self.players:
-                # Find first human to be new host
-                for p in self.players:
-                    if not p.is_bot:
-                        self.host = p.name
-                        self.broadcast_l("new-host", player=p.name)
-                        break
-
-            self.rebuild_all_menus()
+        if player.name == self.host:
+            self.host = humans[0].name
+            if self._table:
+                self._table.host = self.host
+            self.broadcast_l("new-host", player=self.host)
+        self.rebuild_all_menus()
 
     def _action_show_actions_menu(self, player: "Player", action_id: str) -> None:
         """Show the actions menu."""

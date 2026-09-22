@@ -160,6 +160,20 @@ What it gives you:
 - ratings update
 - end-screen presentation pipeline
 
+Games call `make_game_result(custom_data=...)` from `build_game_result()` to reuse
+participant, score, team, and winner handling. Consumers use `get_winner_ids()`
+and `get_player_score()` rather than interpreting each game's display strings.
+Use `eliminate_player()` when a participant sits out the rest of a game; their
+result remains recorded even though they no longer take turns.
+
+`finish_game()` saves once and retains the result for reconnects. After completion,
+the host can play again or select another game at the same table. The table's
+`prepare_next_game()` creates a fresh game and player state, retains seats and
+spectator roles, and copies options only for a replay of the same game. New games
+must keep authoritative state in dataclass fields; do not add per-game replay reset
+methods. This separates table lifetime from individual games without introducing
+a tournament or mixed-game round controller.
+
 Typical expectations on `Game`:
 - `build_game_result()`
 - `format_end_screen()`

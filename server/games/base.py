@@ -82,6 +82,7 @@ class Player(DataClassJSONMixin):
     is_bot: bool = False
     is_virtual_bot: bool = False  # True for server-level virtual bots (should appear in stats)
     is_spectator: bool = False
+    eliminated: bool = False  # Sat out after participating, rather than joining as a spectator.
     # Bot AI state (serialized for persistence)
     bot_think_ticks: int = 0  # Ticks until bot can act
     bot_pending_action: str | None = None  # Action to execute when ready
@@ -167,6 +168,7 @@ class Game(
     player_action_sets: dict[str, list[ActionSet]] = field(default_factory=dict)
     # Team manager (serialized for persistence)
     _team_manager: TeamManager = field(default_factory=TeamManager)
+    _last_game_result: GameResult | None = None
 
     def __post_init__(self):
         """Initialize non-serialized state."""
@@ -331,18 +333,6 @@ class Game(
         if self._table:
             self._table.status = self.status
 
-    def _replace_with_bot(self, player: "Player") -> None:
-        """Replace a human player with a bot (shared logic)."""
-        if self.status != "playing":
-            return
-
-        player.replaced_human = True
-        player.is_bot = True
-        self._users.pop(player.id, None)
-
-        bot_user = Bot(player.name, uuid=player.id)
-        self.attach_user(player.id, bot_user)
-
     @abstractmethod
     def on_start(self) -> None:
         """Start game logic after lobby transitions to playing."""
@@ -398,7 +388,7 @@ class Game(
         self, player: Player | None, text: str, buffer: str = "table"
     ) -> None:
         """Store a transcript entry for a player."""
-        if not player or player.is_spectator:
+        if not player or (player.is_spectator and not player.eliminated):
             return
         self._transcripts.setdefault(player.id, []).append({"text": text, "buffer": buffer})
 

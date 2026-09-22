@@ -8,12 +8,11 @@ who fall too far back. Last player standing (or furthest distance) wins!
 
 import random
 from dataclasses import dataclass, field
-from datetime import datetime
 
 from ..base import Game, Player
 from ..registry import register_game
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
@@ -668,19 +667,7 @@ class ChaosBearGame(Game):
         winner_position = getattr(self, "_winner_position", 0)
         is_tie = getattr(self, "_is_tie", False)
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in sorted_players
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner_name,
                 "winner_position": winner_position,

@@ -7,7 +7,6 @@ Classic naval combat on a 2D grid.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 from typing import TYPE_CHECKING
 
@@ -17,7 +16,7 @@ from ..base import Game, Player, GameOptions
 from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.grid_mixin import GridGameMixin, GridCursor
 from ...game_utils.options import MenuOption, BoolOption, option_field
 from ...game_utils.poker_timer import PokerTurnTimer
@@ -1348,7 +1347,6 @@ class BattleshipGame(GridGameMixin, TurnTimerMixin, Game):
 
     def on_tick(self) -> None:
         super().on_tick()
-        self.process_scheduled_sounds()
 
         if not self.game_active:
             return
@@ -1417,18 +1415,7 @@ class BattleshipGame(GridGameMixin, TurnTimerMixin, Game):
                 custom[f"{bp.name}_hits"] = bp.total_hits
                 custom[f"{bp.name}_ships_lost"] = sum(1 for s in bp.ships if s.sunk)
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot and not p.replaced_human,
-                )
-                for p in active
-            ],
+        return self.make_game_result(
             custom_data=custom,
         )
 

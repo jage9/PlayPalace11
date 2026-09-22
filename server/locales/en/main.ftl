@@ -204,8 +204,9 @@ table-players-one = { $count } player: { $players }.
 table-players-many = { $count } players: { $players }.
 table-spectators = Spectators: { $spectators }.
 game-leave = Leave
+game-play-again = Play again
+game-change-game = Change game
 game-over = Game Over
-game-over-leave = Congratulations you did great!
 game-final-scores = Final Scores
 game-points = { $count } { $count ->
     [one] point

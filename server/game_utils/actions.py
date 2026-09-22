@@ -141,19 +141,21 @@ class ActionSet(DataClassJSONMixin):
         disabled_reason: str | tuple[str, dict] | None = None
         if action.is_enabled:
             method = getattr(game, action.is_enabled, None)
-            if method:
+            if callable(method):
                 # Check if method accepts action_id kwarg
                 sig = inspect.signature(method)
                 if "action_id" in sig.parameters:
                     disabled_reason = method(player, action_id=action.id)
                 else:
                     disabled_reason = method(player)
+            else:
+                disabled_reason = "action-locked"
 
         # Resolve visibility
         visible = True
         if action.is_hidden:
             method = getattr(game, action.is_hidden, None)
-            if method:
+            if callable(method):
                 # Check if method accepts action_id kwarg
                 sig = inspect.signature(method)
                 if "action_id" in sig.parameters:
@@ -161,6 +163,9 @@ class ActionSet(DataClassJSONMixin):
                 else:
                     visibility = method(player)
                 visible = visibility == Visibility.VISIBLE
+            else:
+                visible = False
+                disabled_reason = "action-locked"
 
         # Resolve label
         label = action.label

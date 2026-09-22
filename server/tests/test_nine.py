@@ -125,9 +125,7 @@ class TestNineGameUnit:
         game_5.add_player("C", user_c)
         game_5.add_player("D", user_d)
         game_5.add_player("E", user_e)
-        assert game_5.prestart_validate() == [
-            Localization.get("en", "nine-error-invalid-player-count")
-        ]
+        assert game_5.prestart_validate() == ["nine-error-invalid-player-count"]
 
         # Valid: 6 players
         game_6 = NineGame()
@@ -201,6 +199,54 @@ class TestNineGameSerialization:
         # For simplicity, just check that current_player is correctly loaded and can make a move
         assert loaded_game.current_player is not None
         assert loaded_game._has_valid_move(loaded_game.current_player)
+
+
+def test_card_actions_use_declarative_callbacks_and_localized_reasons():
+    game = NineGame()
+    alice = MockUser("Alice")
+    game.add_player("Alice", alice)
+    game.add_player("Bob", MockUser("Bob"))
+    game.on_start()
+
+    player = game.current_player
+    assert isinstance(player, NinePlayer)
+    unplayable_slot = next(
+        index
+        for index, card in enumerate(player.hand)
+        if not (card.rank == RANK_NINE and card.suit == SUIT_CLUBS)
+    )
+    action_id = f"play_card_slot_{unplayable_slot + 1}"
+    action_set = game.get_action_set(player, "turn")
+    assert action_set is not None
+    action = action_set.get_action(action_id)
+    assert action is not None
+    assert action.is_enabled == "_is_play_card_enabled"
+    assert action.is_hidden == "_is_play_card_hidden"
+    resolved = action_set.resolve_action(game, player, action)
+    assert resolved.enabled is False
+
+    game._action_play_card(player, action_id)
+    assert "nine of clubs" in game.get_user(player).get_spoken_messages()[-1].lower()
+
+    action.is_enabled = "nine-reason-generic"  # Older saves stored a key instead of a callback.
+    restored = NineGame.from_json(game.to_json())
+    restored.rebuild_runtime_state()
+    restored_action = restored.get_action_set(restored.get_player_by_id(player.id), "turn").get_action(action_id)
+    assert restored_action.is_enabled == "_is_play_card_enabled"
+
+
+def test_nine_messages_are_recorded_in_transcript():
+    game = NineGame()
+    game.add_player("Alice", MockUser("Alice"))
+    game.add_player("Bob", MockUser("Bob"))
+    game.on_start()
+
+    game._broadcast_nine_message("game-ended")
+
+    for player in game.players:
+        transcript = game.get_transcript(player.id)
+        assert transcript
+        assert transcript[-1]["buffer"] == "table"
 
 
 # Placeholder for Play Tests (integration tests with bots)

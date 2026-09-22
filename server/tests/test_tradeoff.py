@@ -449,3 +449,21 @@ class TestTradeoffPhases:
             tp: TradeoffPlayer = p  # type: ignore
             assert len(tp.rolled_dice) == 5
             assert all(1 <= d <= 6 for d in tp.rolled_dice)
+
+    def test_scoring_messages_are_recorded_for_each_recipient(self):
+        game = TradeoffGame()
+        alice_user = MockUser("Alice")
+        bob_user = MockUser("Bob")
+        game.add_player("Alice", alice_user)
+        game.add_player("Bob", bob_user)
+        game.on_start()
+
+        alice: TradeoffPlayer = game.players[0]  # type: ignore
+        bob: TradeoffPlayer = game.players[1]  # type: ignore
+        alice.hand = [1, 1, 1]
+        bob.hand = []
+
+        game._do_scoring()
+
+        bob_transcript = game.get_transcript(bob.id)
+        assert any("Alice" in entry["text"] for entry in bob_transcript)

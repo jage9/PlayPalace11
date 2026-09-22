@@ -6,7 +6,6 @@ while playing hazards on opponents and defending with safeties.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player
@@ -14,9 +13,9 @@ from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, MenuInput, Visibility
 from ...core.users.base import MenuItem, EscapeBehavior
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.round_timer import RoundTransitionTimer
-from ...game_utils.teams import Team, TeamManager
+from ...game_utils.teams import Team, TeamManager, TeamResultBuilder
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
@@ -1784,19 +1783,7 @@ class MileByMileGame(Game):
         winner_idx, winner_score = sorted_teams[0] if sorted_teams else (0, 0)
         winner_name = self.get_team_name(winner_idx)
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in self.get_active_players()
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner_name,
                 "winner_score": winner_score,
@@ -1809,14 +1796,8 @@ class MileByMileGame(Game):
 
     def format_end_screen(self, result: GameResult, locale: str) -> list[str]:
         """Format the end screen for MileByMile game."""
-        lines = [Localization.get(locale, "game-final-scores")]
-
         final_scores = result.custom_data.get("final_scores", {})
-        for i, (name, score) in enumerate(final_scores.items(), 1):
-            points_str = Localization.get(locale, "game-points", count=score)
-            lines.append(f"{i}. {name}: {points_str}")
-
-        return lines
+        return TeamResultBuilder.format_final_scores(locale, final_scores)
 
     def _get_player_by_name(self, name: str) -> MileByMilePlayer | None:
         """Get a player by name."""

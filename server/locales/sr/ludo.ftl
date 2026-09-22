@@ -31,4 +31,6 @@ ludo-set-max-sixes = Najviše uzastopnih šestica: { $max_consecutive_sixes }
 ludo-enter-max-sixes = Upišite najviše uzastopnih šestica
 ludo-option-changed-max-sixes = Najviše uzastopnih šestica podešeno na { $value }.
 ludo-set-safe-start-squares = Bezbedna početna polja: { $safe_start_squares }
+# English fallback until this locale has a translation.
+ludo-desc-safe-start-squares = Make each player's starting square safe from capture
 ludo-option-changed-safe-start-squares = Bezbedna početna polja { $value }.

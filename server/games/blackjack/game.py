@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 from collections.abc import Callable
 
@@ -10,9 +9,10 @@ from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, EditboxInput, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.cards import Card, Deck, DeckFactory, card_name, read_cards
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import BoolOption, IntOption, MenuOption, option_field
 from ...game_utils.poker_timer import PokerTurnTimer
+from ...game_utils.turn_timer_mixin import TurnTimerMixin
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
@@ -355,7 +355,7 @@ class BlackjackOptions(GameOptions):
 
 @dataclass
 @register_game
-class BlackjackGame(Game):
+class BlackjackGame(TurnTimerMixin, Game):
     players: list[BlackjackPlayer] = field(default_factory=list)
     options: BlackjackOptions = field(default_factory=BlackjackOptions)
     deck: Deck | None = None
@@ -879,8 +879,8 @@ class BlackjackGame(Game):
             self.next_hand_wait_ticks = self.timer.ticks_remaining
             return
 
-        if self.phase in {"players", "insurance"} and self.timer.tick():
-            self._handle_turn_timeout()
+        if self.phase in {"players", "insurance"}:
+            self.on_tick_turn_timer()
 
         BotHelper.on_tick(self)
 
@@ -890,7 +890,7 @@ class BlackjackGame(Game):
     def _start_new_hand(self) -> None:
         self.phase = "players"
         self.hand_number += 1
-        self.timer.clear()
+        self.stop_turn_timer()
         self.next_hand_wait_ticks = 0
         self.awaiting_next_bets = False
 
@@ -994,7 +994,7 @@ class BlackjackGame(Game):
 
     def _start_insurance_phase(self, players: list[BlackjackPlayer]) -> None:
         self.phase = "insurance"
-        self.timer.clear()
+        self.stop_turn_timer()
         self.broadcast_l("blackjack-insurance-offer")
         for player in players:
             player.insurance_decision_done = not self._player_needs_insurance_decision(player)
@@ -1060,7 +1060,7 @@ class BlackjackGame(Game):
         )
 
     def _finish_insurance_phase(self, players: list[BlackjackPlayer]) -> None:
-        self.timer.clear()
+        self.stop_turn_timer()
         for player in players:
             if self._player_needs_insurance_decision(player):
                 player.insurance_decision_done = True
@@ -1100,7 +1100,7 @@ class BlackjackGame(Game):
 
     def _play_dealer_turn(self) -> None:
         self.phase = "dealer"
-        self.timer.clear()
+        self.stop_turn_timer()
         self._reveal_dealer_hand()
 
         while True:
@@ -1620,15 +1620,8 @@ class BlackjackGame(Game):
         super()._action_whose_turn(player, action_id)
 
     def _action_check_turn_timer(self, player: Player, action_id: str) -> None:
-        user = self.get_user(player)
-        if not user:
-            return
         self._suppress_keybind_rebuild(player)
-        remaining = self.timer.seconds_remaining()
-        if remaining <= 0:
-            user.speak_l("poker-timer-disabled")
-        else:
-            user.speak_l("poker-timer-remaining", seconds=remaining)
+        super()._action_check_turn_timer(player, action_id)
 
     def _action_whos_at_table(self, player: Player, action_id: str) -> None:
         self._suppress_keybind_rebuild(player)
@@ -2100,7 +2093,7 @@ class BlackjackGame(Game):
                 player.next_bet_entered = True
 
         if self._all_between_hand_bets_entered():
-            self.timer.clear()
+            self.stop_turn_timer()
             return
 
         self._start_turn_timer()
@@ -2207,18 +2200,6 @@ class BlackjackGame(Game):
                     total=self._total_text(user.locale, total, is_soft),
                 )
 
-    def _start_turn_timer(self) -> None:
-        try:
-            seconds = int(self.options.turn_timer)
-        except ValueError:
-            seconds = 0
-
-        if seconds <= 0:
-            self.timer.clear()
-            return
-
-        self.timer.start(seconds)
-
     def _handle_turn_timeout(self) -> None:
         current = self.current_player
         if not isinstance(current, BlackjackPlayer):
@@ -2261,7 +2242,7 @@ class BlackjackGame(Game):
 
     def _settle_hand(self) -> None:
         self.phase = "settle"
-        self.timer.clear()
+        self.stop_turn_timer()
 
         dealer_total, _dealer_soft = self.hand_value(self.dealer_hand)
         dealer_blackjack = self.is_blackjack(self.dealer_hand)
@@ -2458,7 +2439,7 @@ class BlackjackGame(Game):
 
     def _end_game(self, winner: BlackjackPlayer | None) -> None:
         self.phase = "finished"
-        self.timer.clear()
+        self.stop_turn_timer()
         if winner:
             self.play_sound(SOUND_WIN_GAME)
             self.broadcast_personal_l(
@@ -2480,19 +2461,7 @@ class BlackjackGame(Game):
         winner = max(active, key=lambda p: p.chips, default=None)
         final_chips = {p.name: p.chips for p in active}
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in active
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "winner_chips": winner.chips if winner else 0,

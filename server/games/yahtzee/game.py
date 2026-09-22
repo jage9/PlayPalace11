@@ -6,7 +6,6 @@ Fill all categories to complete the game. Highest total score wins.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player, GameOptions
@@ -23,7 +22,8 @@ from ...game_utils.dice import (
     has_n_of_a_kind,
 )
 from ...game_utils.dice_game_mixin import DiceGameMixin
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
+from ...game_utils.teams import TeamResultBuilder
 from ...game_utils.options import IntOption, option_field
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
@@ -822,21 +822,11 @@ class YahtzeeGame(ActionGuardMixin, Game, DiceGameMixin):
 
         winner = sorted_players[0] if sorted_players else None
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in active_players
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
+                "winner_names": [name for name, score in final_scores.items()
+                                 if winner and score == final_scores[winner.name]],
                 "winner_score": winner.get_total_score() if winner else 0,
                 "final_scores": final_scores,
                 "games_played": self.games_played,
@@ -846,14 +836,8 @@ class YahtzeeGame(ActionGuardMixin, Game, DiceGameMixin):
 
     def format_end_screen(self, result: GameResult, locale: str) -> list[str]:
         """Format the end screen for Yahtzee game."""
-        lines = [Localization.get(locale, "game-final-scores")]
-
         final_scores = result.custom_data.get("final_scores", {})
-        for i, (name, score) in enumerate(final_scores.items(), 1):
-            points_str = Localization.get(locale, "game-points", count=score)
-            lines.append(f"{i}. {name}: {points_str}")
-
-        return lines
+        return TeamResultBuilder.format_final_scores(locale, final_scores)
 
     def on_tick(self) -> None:
         """Called every tick."""

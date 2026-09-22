@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from mashumaro.mixins.json import DataClassJSONMixin
@@ -12,7 +11,7 @@ from ..base import Game, Player, GameOptions
 from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility, MenuInput
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, MenuOption, BoolOption, TeamModeOption, option_field
 from ...game_utils.teams import TeamManager
 from ...messages.localization import Localization
@@ -1258,7 +1257,6 @@ class DominosGame(Game):
 
     def on_tick(self) -> None:
         super().on_tick()
-        self.process_scheduled_sounds()
         if self.round_wait_ticks > 0:
             self.round_wait_ticks -= 1
             if self.round_wait_ticks == 0:
@@ -1302,18 +1300,7 @@ class DominosGame(Game):
             name_to_id = {player.name: player.id for player in active_players}
             winner_ids = [name_to_id[name] for name in winner.members if name in name_to_id]
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=player.id,
-                    player_name=player.name,
-                    is_bot=player.is_bot and not player.replaced_human,
-                )
-                for player in self.get_active_players()
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": self.team_manager.get_team_name(winner) if winner else None,
                 "winner_ids": winner_ids,

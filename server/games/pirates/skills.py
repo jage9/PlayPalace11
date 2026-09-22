@@ -15,6 +15,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 import random
 
+from ...messages.localization import Localization
+
 if TYPE_CHECKING:
     from .game import PiratesGame
     from .player import PiratesPlayer
@@ -34,6 +36,7 @@ class Skill(ABC):
     """
 
     name: str = ""
+    name_key: str = ""
     description: str = ""
     required_level: int = 0
     skill_id: str = ""  # Unique identifier for state lookups
@@ -52,9 +55,18 @@ class Skill(ABC):
         """Called at the start of the player's turn."""
         pass
 
-    def get_menu_label(self, player: "PiratesPlayer") -> str:
+    def get_menu_label(self, player: "PiratesPlayer", locale: str = "en") -> str:
         """Get the label for the skill menu."""
-        return self.name
+        return self.get_name(locale)
+
+    def get_name(self, locale: str = "en") -> str:
+        """Return the localized skill name for a menu or message."""
+        return Localization.get(locale, self.name_key) if self.name_key else self.name
+
+    @staticmethod
+    def get_locale(game: "PiratesGame", player: "PiratesPlayer") -> str:
+        user = game.get_user(player)
+        return user.locale if user else "en"
 
     def is_unlocked(self, player: "PiratesPlayer") -> bool:
         """Check if the player's level is high enough."""
@@ -121,7 +133,18 @@ class BuffSkill(CooldownSkill):
         if active > 0:
             self.set_active(player, active - 1)
             if active - 1 == 0:
-                game.broadcast_l("pirates-buff-expired", player=player.name, skill=self.name)
+                for recipient in game.players:
+                    user = game.get_user(recipient)
+                    locale = user.locale if user else "en"
+                    game.send_table_message(
+                        recipient,
+                        Localization.get(
+                            locale,
+                            "pirates-buff-expired",
+                            player=player.name,
+                            skill=self.get_name(locale),
+                        ),
+                    )
                 return True
         return False
 
@@ -132,24 +155,44 @@ class BuffSkill(CooldownSkill):
 
     def can_perform(self, game: "PiratesGame", player: "PiratesPlayer") -> tuple[bool, str | None]:
         """Check if the buff skill can be activated."""
+        locale = self.get_locale(game, player)
+        name = self.get_name(locale)
         if not self.is_unlocked(player):
-            return False, f"Requires level {self.required_level}"
+            return False, Localization.get(locale, "pirates-skill-requires-level", level=self.required_level)
         if self.is_active(player):
             return (
                 False,
-                f"{self.name} is already active ({self.get_active(player)} turns remaining)",
+                Localization.get(
+                    locale,
+                    "pirates-skill-already-active",
+                    skill=name,
+                    turns=self.get_active(player),
+                ),
             )
         if self.is_on_cooldown(player):
-            return False, f"{self.name} is on cooldown ({self.get_cooldown(player)} turns)"
+            return (
+                False,
+                Localization.get(
+                    locale,
+                    "pirates-skill-on-cooldown",
+                    skill=name,
+                    turns=self.get_cooldown(player),
+                ),
+            )
         return True, None
 
-    def get_menu_label(self, player: "PiratesPlayer") -> str:
+    def get_menu_label(self, player: "PiratesPlayer", locale: str = "en") -> str:
         """Get dynamic menu label showing status."""
+        name = self.get_name(locale)
         if self.is_active(player):
-            return f"{self.name} (active: {self.get_active(player)} turns)"
+            return Localization.get(
+                locale, "pirates-skill-active", skill=name, turns=self.get_active(player)
+            )
         if self.is_on_cooldown(player):
-            return f"{self.name} (cooldown: {self.get_cooldown(player)} turns)"
-        return f"{self.name} (activate)"
+            return Localization.get(
+                locale, "pirates-skill-cooldown", skill=name, turns=self.get_cooldown(player)
+            )
+        return Localization.get(locale, "pirates-skill-activate", skill=name)
 
 
 # =============================================================================
@@ -161,13 +204,15 @@ class CannonballSkill(Skill):
     """Cannonball Shot - Attack a player within range."""
 
     name = "Cannonball Shot"
+    name_key = "pirates-skill-name-cannonball"
     description = "Fire a cannonball at a player within 5 tiles (10 with Double Devastation)."
     required_level = 0
     skill_id = "cannonball"
 
     def can_perform(self, game: "PiratesGame", player: "PiratesPlayer") -> tuple[bool, str | None]:
         if game.current_player != player:
-            return False, "Not your turn"
+            locale = self.get_locale(game, player)
+            return False, Localization.get(locale, "pirates-not-your-turn")
         return True, None
 
     def do_action(self, game: "PiratesGame", player: "PiratesPlayer") -> str:
@@ -178,13 +223,15 @@ class SailorsInstinctSkill(Skill):
     """Sailor's Instinct - Show map sector information."""
 
     name = "Sailor's Instinct"
+    name_key = "pirates-skill-name-instinct"
     description = "Shows map sector information and charted status."
     required_level = 10
     skill_id = "instinct"
 
     def can_perform(self, game: "PiratesGame", player: "PiratesPlayer") -> tuple[bool, str | None]:
         if not self.is_unlocked(player):
-            return False, f"Requires level {self.required_level}"
+            locale = self.get_locale(game, player)
+            return False, Localization.get(locale, "pirates-skill-requires-level", level=self.required_level)
         return True, None
 
     def do_action(self, game: "PiratesGame", player: "PiratesPlayer") -> str:
@@ -195,10 +242,15 @@ class SailorsInstinctSkill(Skill):
         ocean_name = (
             game.selected_oceans[ocean_index]
             if ocean_index < len(game.selected_oceans)
-            else "Unknown"
+            else Localization.get(self.get_locale(game, player), "pirates-unknown")
         )
 
-        lines = [f"Your position: {player.position} in {ocean_name}", "", "Map Sectors:"]
+        locale = self.get_locale(game, player)
+        lines = [
+            Localization.get(locale, "pirates-your-position", position=player.position, ocean=ocean_name),
+            "",
+            Localization.get(locale, "pirates-map-sectors"),
+        ]
 
         for sector in range(1, 9):
             sector_start = (sector - 1) * 5 + 1
@@ -208,13 +260,22 @@ class SailorsInstinctSkill(Skill):
             )
 
             if charted_count == 5:
-                status = "Fully charted"
+                status = Localization.get(locale, "pirates-charted-full")
             elif charted_count > 0:
-                status = f"Partially charted ({charted_count}/5)"
+                status = Localization.get(locale, "pirates-charted-partial", count=charted_count)
             else:
-                status = "Uncharted"
+                status = Localization.get(locale, "pirates-charted-none")
 
-            lines.append(f"Sector {sector} ({sector_start}-{sector_end}): {status}")
+            lines.append(
+                Localization.get(
+                    locale,
+                    "pirates-sector",
+                    sector=sector,
+                    start=sector_start,
+                    end=sector_end,
+                    status=status,
+                )
+            )
 
         game.status_box(player, lines)
         return "continue"
@@ -224,6 +285,7 @@ class PortalSkill(CooldownSkill):
     """Portal - Teleport to an ocean occupied by another player."""
 
     name = "Portal"
+    name_key = "pirates-skill-name-portal"
     description = "Teleport to a random position in an ocean occupied by another player."
     required_level = 25
     skill_id = "portal"
@@ -231,15 +293,27 @@ class PortalSkill(CooldownSkill):
 
     def can_perform(self, game: "PiratesGame", player: "PiratesPlayer") -> tuple[bool, str | None]:
         if not self.is_unlocked(player):
-            return False, f"Requires level {self.required_level}"
+            locale = self.get_locale(game, player)
+            return False, Localization.get(locale, "pirates-skill-requires-level", level=self.required_level)
         if self.is_on_cooldown(player):
-            return False, f"Portal is on cooldown ({self.get_cooldown(player)} turns)"
+            locale = self.get_locale(game, player)
+            return False, Localization.get(
+                locale,
+                "pirates-skill-on-cooldown",
+                skill=self.get_name(locale),
+                turns=self.get_cooldown(player),
+            )
         return True, None
 
-    def get_menu_label(self, player: "PiratesPlayer") -> str:
+    def get_menu_label(self, player: "PiratesPlayer", locale: str = "en") -> str:
         if self.is_on_cooldown(player):
-            return f"Portal (cooldown: {self.get_cooldown(player)} turns)"
-        return "Portal (teleport to occupied ocean)"
+            return Localization.get(
+                locale,
+                "pirates-skill-cooldown",
+                skill=self.get_name(locale),
+                turns=self.get_cooldown(player),
+            )
+        return Localization.get(locale, "pirates-portal-menu", skill=self.get_name(locale))
 
     def do_action(self, game: "PiratesGame", player: "PiratesPlayer") -> str:
         return game.handle_portal(player, self)
@@ -249,6 +323,7 @@ class GemSeekerSkill(Skill):
     """Gem Seeker - Reveal the location of one uncollected gem."""
 
     name = "Gem Seeker"
+    name_key = "pirates-skill-name-gem-seeker"
     description = "Reveals the location of one uncollected gem. Limited to 3 uses per game."
     required_level = 40
     skill_id = "gem_seeker"
@@ -264,16 +339,19 @@ class GemSeekerSkill(Skill):
 
     def can_perform(self, game: "PiratesGame", player: "PiratesPlayer") -> tuple[bool, str | None]:
         if not self.is_unlocked(player):
-            return False, f"Requires level {self.required_level}"
+            locale = self.get_locale(game, player)
+            return False, Localization.get(locale, "pirates-skill-requires-level", level=self.required_level)
         if self.get_uses(player) <= 0:
-            return False, "No uses remaining"
+            locale = self.get_locale(game, player)
+            return False, Localization.get(locale, "pirates-no-uses-remaining")
         return True, None
 
-    def get_menu_label(self, player: "PiratesPlayer") -> str:
+    def get_menu_label(self, player: "PiratesPlayer", locale: str = "en") -> str:
+        name = self.get_name(locale)
         uses = self.get_uses(player)
         if uses <= 0:
-            return "Gem Seeker (no uses remaining)"
-        return f"Gem Seeker ({uses} uses left)"
+            return Localization.get(locale, "pirates-skill-no-uses", skill=name)
+        return Localization.get(locale, "pirates-skill-uses-left", skill=name, uses=uses)
 
     def do_action(self, game: "PiratesGame", player: "PiratesPlayer") -> str:
         self.set_uses(player, self.get_uses(player) - 1)
@@ -304,6 +382,7 @@ class SwordFighterSkill(BuffSkill):
     """Sword Fighter - +4 attack bonus for 3 turns."""
 
     name = "Sword Fighter"
+    name_key = "pirates-skill-name-sword-fighter"
     description = "Grants +4 attack bonus for 3 turns."
     required_level = 60
     skill_id = "sword_fighter"
@@ -333,6 +412,7 @@ class PushSkill(BuffSkill):
     """Push - +3 defense bonus for 4 turns."""
 
     name = "Push"
+    name_key = "pirates-skill-name-push"
     description = "Grants +3 defense bonus for 4 turns."
     required_level = 75
     skill_id = "push"
@@ -359,6 +439,7 @@ class SkilledCaptainSkill(BuffSkill):
     """Skilled Captain - +2 attack and +2 defense for 4 turns."""
 
     name = "Skilled Captain"
+    name_key = "pirates-skill-name-skilled-captain"
     description = "Grants +2 attack and +2 defense for 4 turns."
     required_level = 90
     skill_id = "skilled_captain"
@@ -389,6 +470,7 @@ class BattleshipSkill(CooldownSkill):
     """Battleship - Fire two cannonballs in one turn."""
 
     name = "Battleship"
+    name_key = "pirates-skill-name-battleship"
     description = "Fire two cannonballs in one turn."
     required_level = 125
     skill_id = "battleship"
@@ -396,25 +478,39 @@ class BattleshipSkill(CooldownSkill):
 
     def can_perform(self, game: "PiratesGame", player: "PiratesPlayer") -> tuple[bool, str | None]:
         if not self.is_unlocked(player):
-            return False, f"Requires level {self.required_level}"
+            locale = self.get_locale(game, player)
+            return False, Localization.get(locale, "pirates-skill-requires-level", level=self.required_level)
         if self.is_on_cooldown(player):
-            return False, f"Battleship is on cooldown ({self.get_cooldown(player)} turns)"
+            locale = self.get_locale(game, player)
+            return False, Localization.get(
+                locale,
+                "pirates-skill-on-cooldown",
+                skill=self.get_name(locale),
+                turns=self.get_cooldown(player),
+            )
 
         # Check if double devastation is active (incompatible)
         if DOUBLE_DEVASTATION.is_active(player):
-            return False, "Cannot use Battleship while Double Devastation is active"
+            locale = self.get_locale(game, player)
+            return False, Localization.get(locale, "pirates-cannot-battleship-double")
 
         # Check if there are targets in range
         targets = game.get_targets_in_range(player)
         if not targets:
-            return False, "No targets in range"
+            locale = self.get_locale(game, player)
+            return False, Localization.get(locale, "pirates-no-targets-in-range")
 
         return True, None
 
-    def get_menu_label(self, player: "PiratesPlayer") -> str:
+    def get_menu_label(self, player: "PiratesPlayer", locale: str = "en") -> str:
         if self.is_on_cooldown(player):
-            return f"Battleship (cooldown: {self.get_cooldown(player)} turns)"
-        return "Battleship (fire extra shot)"
+            return Localization.get(
+                locale,
+                "pirates-skill-cooldown",
+                skill=self.get_name(locale),
+                turns=self.get_cooldown(player),
+            )
+        return Localization.get(locale, "pirates-battleship-menu", skill=self.get_name(locale))
 
     def do_action(self, game: "PiratesGame", player: "PiratesPlayer") -> str:
         self.start_cooldown(player)
@@ -425,6 +521,7 @@ class DoubleDevastationSkill(BuffSkill):
     """Double Devastation - Increases cannon range to 10 tiles for 3 turns."""
 
     name = "Double Devastation"
+    name_key = "pirates-skill-name-double-devastation"
     description = "Increases cannon range to 10 tiles for 3 turns."
     required_level = 200
     skill_id = "double_devastation"

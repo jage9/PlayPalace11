@@ -52,3 +52,20 @@ def test_ludo_bot_game_completes():
         game.on_tick()
 
     assert game.status == "finished"
+
+
+def test_safe_start_squares_protect_every_player_start() -> None:
+    game = LudoGame()
+    for name in ("Alice", "Bob"):
+        game.add_player(name, MockUser(name))
+    game.on_start()
+
+    alice, bob = game.players
+    bob.tokens[0].state = "track"
+    bob.tokens[0].position = game._get_start_position(bob)
+    alice.tokens[0].state = "track"
+    alice.tokens[0].position = bob.tokens[0].position
+
+    game._check_capture(alice, alice.tokens[0])
+
+    assert bob.tokens[0].state == "track"

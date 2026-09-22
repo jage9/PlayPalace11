@@ -176,6 +176,8 @@ table-players-many = { $count } { $count ->
 }: { $players }.
 table-spectators = Зрители: { $spectators }.
 game-leave = Покинуть
+game-play-again = Играть снова
+game-change-game = Сменить игру
 game-over = Игра окончена
 game-final-scores = Итоговый счёт
 game-points = { $count } { $count ->

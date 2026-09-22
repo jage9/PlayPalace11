@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player, GameOptions
@@ -9,7 +8,7 @@ from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility, EditboxInput
 from ...game_utils.poker_keybinds import setup_poker_keybinds
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, MenuOption, option_field
 from ...game_utils.cards import Card, Deck, DeckFactory, read_cards, sort_cards, card_name
 from ...game_utils.poker_betting import PokerBettingRound
@@ -17,8 +16,15 @@ from ...game_utils.poker_pot import PokerPotManager
 from ...game_utils.poker_table import PokerTableState
 from ...game_utils.poker_timer import PokerTurnTimer
 from ...game_utils.poker_evaluator import best_hand, describe_hand, describe_partial_hand
-from ...game_utils.poker_actions import compute_pot_limit_caps, clamp_total_to_cap
+from ...game_utils.poker_actions import (
+    apply_poker_all_in,
+    apply_poker_call,
+    apply_poker_fold,
+    clamp_total_to_cap,
+    compute_pot_limit_caps,
+)
 from ...game_utils import poker_log
+from ...game_utils.turn_timer_mixin import TurnTimerMixin
 from ...game_utils.poker_state import order_after_button
 from ...game_utils.poker_showdown import order_winners_by_button, format_showdown_lines
 from ...game_utils.poker_payout import resolve_pots_with_payouts
@@ -118,7 +124,7 @@ class FiveCardDrawOptions(GameOptions):
 
 @dataclass
 @register_game
-class FiveCardDrawGame(Game):
+class FiveCardDrawGame(TurnTimerMixin, Game):
     players: list[FiveCardDrawPlayer] = field(default_factory=list)
     options: FiveCardDrawOptions = field(default_factory=FiveCardDrawOptions)
     deck: Deck | None = None
@@ -509,16 +515,6 @@ class FiveCardDrawGame(Game):
         self.turn_index = self.turn_player_ids.index(next_id)
         self._start_turn()
 
-    def _start_turn_timer(self) -> None:
-        try:
-            seconds = int(self.options.turn_timer)
-        except ValueError:
-            seconds = 0
-        if seconds <= 0:
-            self.timer.clear()
-            return
-        self.timer.start(seconds)
-
     def on_tick(self) -> None:
         super().on_tick()
         if not self.game_active:
@@ -528,8 +524,7 @@ class FiveCardDrawGame(Game):
             if self._next_hand_wait_ticks == 0:
                 self._start_new_hand()
             return
-        if self.timer.tick():
-            self._handle_turn_timeout()
+        self.on_tick_turn_timer()
         BotHelper.on_tick(self)
 
     def bot_think(self, player: FiveCardDrawPlayer) -> str | None:
@@ -542,34 +537,13 @@ class FiveCardDrawGame(Game):
         p = self._require_active_player(player)
         if not p:
             return
-        p.folded = True
-        self.pot_manager.mark_folded(p.id)
-        poker_log.log_fold(self.action_log, p.name)
-        self.broadcast_l("poker-player-folds", player=p.name)
-        self._after_action()
+        apply_poker_fold(self, p)
 
     def _action_call(self, player: Player, action_id: str) -> None:
         p = self._require_active_player(player)
         if not p or not self.betting:
             return
-        to_call = self.betting.amount_to_call(p.id)
-        pay = min(p.chips, to_call)
-        p.chips -= pay
-        if p.chips == 0:
-            p.all_in = True
-        self.pot_manager.add_contribution(p.id, pay)
-        self.betting.record_bet(p.id, pay, is_raise=False)
-        if to_call == 0:
-            poker_log.log_check(self.action_log, p.name)
-            self.broadcast_l("poker-player-checks", player=p.name)
-        else:
-            self.play_sound("game_3cardpoker/bet.ogg")
-            poker_log.log_call(self.action_log, p.name, pay)
-            self.broadcast_l("poker-player-calls", player=p.name, amount=pay)
-        if p.all_in and pay > 0:
-            self.broadcast_l("poker-player-all-in", player=p.name, amount=pay)
-        self._sync_team_scores()
-        self._after_action()
+        apply_poker_call(self, p)
 
     def _action_raise(self, player: Player, amount_str: str, action_id: str) -> None:
         p = self._require_active_player(player)
@@ -638,35 +612,7 @@ class FiveCardDrawGame(Game):
         p = self._require_active_player(player)
         if not p or not self.betting:
             return
-        amount = p.chips
-        if amount <= 0:
-            return
-        to_call = self.betting.amount_to_call(p.id)
-        min_raise = max(self.betting.last_raise_size, 1)
-        pay = clamp_total_to_cap(
-            amount,
-            compute_pot_limit_caps(self.pot_manager.total_pot(), to_call, self.options.raise_mode),
-        )
-        p.chips -= pay
-        p.all_in = p.chips == 0
-        self.play_sound("game_3cardpoker/bet.ogg")
-        self.pot_manager.add_contribution(p.id, pay)
-        raise_amount = pay - to_call
-        is_raise = raise_amount >= min_raise and pay > to_call
-        self.betting.record_bet(p.id, pay, is_raise=is_raise)
-        if pay > to_call:
-            poker_log.log_raise(self.action_log, p.name, pay)
-            self.broadcast_l("poker-player-raises", player=p.name, amount=pay)
-        elif to_call == 0:
-            poker_log.log_check(self.action_log, p.name)
-            self.broadcast_l("poker-player-checks", player=p.name)
-        else:
-            poker_log.log_call(self.action_log, p.name, pay)
-            self.broadcast_l("poker-player-calls", player=p.name, amount=pay)
-        if p.all_in:
-            self.broadcast_l("poker-player-all-in", player=p.name, amount=pay)
-        self._sync_team_scores()
-        self._after_action()
+        apply_poker_all_in(self, p)
 
     def _action_draw_cards(self, player: Player, action_id: str) -> None:
         p = self._require_active_player(player)
@@ -992,16 +938,6 @@ class FiveCardDrawGame(Game):
         if user:
             user.speak(card_name(p.hand[idx], user.locale))
 
-    def _action_check_turn_timer(self, player: Player, action_id: str) -> None:
-        user = self.get_user(player)
-        if not user:
-            return
-        remaining = self.timer.seconds_remaining()
-        if remaining <= 0:
-            user.speak_l("poker-timer-disabled")
-        else:
-            user.speak_l("poker-timer-remaining", seconds=remaining)
-
     def _action_check_raise_mode(self, player: Player, action_id: str) -> None:
         user = self.get_user(player)
         if not user:
@@ -1230,19 +1166,7 @@ class FiveCardDrawGame(Game):
         active = self.get_active_players()
         winner = max(active, key=lambda p: p.chips, default=None)
         final_chips = {p.name: p.chips for p in active}
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in active
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "winner_chips": winner.chips if winner else 0,

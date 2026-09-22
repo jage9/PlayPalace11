@@ -11,6 +11,7 @@ from ...game_utils.bot_helper import BotHelper
 from ...game_utils.options import BoolOption, GameOptions, MenuOption, option_field
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
+from ...game_utils.game_result import GameResult
 from server.core.ui.keybinds import KeybindState
 from .bot import choose_move
 from .moves import (
@@ -90,6 +91,7 @@ class SorryGame(Game):
     rules_profile_id: str = "classic_00390"
     game_state: SorryGameState = field(default_factory=SorryGameState)
     max_move_slots: int = 64
+    winner_id: str | None = None
 
     @classmethod
     def get_name(cls) -> str:
@@ -453,11 +455,22 @@ class SorryGame(Game):
         self.play_sound(f"game_chess/capture{variant}.ogg")
 
     def _finish_game(self, winner: Player) -> None:
-        self.game_active = False
-        self.status = GameStatus.FINISHED
+        self.winner_id = winner.id
         self.play_sound("game_pig/wingame.ogg")
         self.broadcast_l("game-winner", player=winner.name)
-        self.rebuild_all_menus()
+        self.finish_game()
+
+    def build_game_result(self) -> GameResult:
+        winner = self.get_player_by_id(self.winner_id) if self.winner_id else None
+        return self.make_game_result(custom_data={
+            "winner_ids": [winner.id] if winner else [],
+            "winner_name": winner.name if winner else None,
+            "rules_profile": self.rules_profile_id,
+        })
+
+    def format_end_screen(self, result: GameResult, locale: str) -> list[str]:
+        winner = result.custom_data.get("winner_name")
+        return [Localization.get(locale, "game-winner", player=winner)] if winner else []
 
     def _start_turn(self, *, announce: bool = True) -> None:
         self._resolve_rules_profile_id()

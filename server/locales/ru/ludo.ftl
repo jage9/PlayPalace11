@@ -35,4 +35,6 @@ ludo-set-max-sixes = Макс. шестёрок подряд: { $max_consecutive
 ludo-enter-max-sixes = Введите макс. количество шестёрок подряд
 ludo-option-changed-max-sixes = Максимальное количество шестёрок подряд установлено на { $value }.
 ludo-set-safe-start-squares = Безопасные стартовые клетки: { $safe_start_squares }
+# English fallback until this locale has a translation.
+ludo-desc-safe-start-squares = Make each player's starting square safe from capture
 ludo-option-changed-safe-start-squares = Безопасные стартовые клетки: { $value }.

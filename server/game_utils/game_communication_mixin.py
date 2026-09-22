@@ -22,11 +22,15 @@ class GameCommunicationMixin:
         for player in self.players:
             if player is exclude:
                 continue
-            if hasattr(self, "record_transcript_event"):
-                self.record_transcript_event(player, text, buffer)
-            user = self.get_user(player)
-            if user:
-                user.speak(text, buffer)
+            self.send_table_message(player, text, buffer)
+
+    def send_table_message(self, player: "Player", text: str, buffer: str = "table") -> None:
+        """Record and deliver a table message already formatted for this recipient."""
+        if hasattr(self, "record_transcript_event"):
+            self.record_transcript_event(player, text, buffer)
+        user = self.get_user(player)
+        if user:
+            user.speak(text, buffer)
 
     def broadcast_l(
         self,

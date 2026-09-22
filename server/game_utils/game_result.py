@@ -29,6 +29,8 @@ class PlayerResult(DataClassJSONMixin):
     player_name: str
     is_bot: bool
     is_virtual_bot: bool = False  # True for server-level virtual bots (include in stats)
+    score: int | float | None = None
+    team_id: str | None = None
 
 
 @dataclass
@@ -43,6 +45,39 @@ class GameResult(DataClassJSONMixin):
     duration_ticks: int
     player_results: list[PlayerResult] = field(default_factory=list)
     custom_data: dict[str, Any] = field(default_factory=dict)
+    # None identifies historical results that only stored game-specific winner data.
+    winner_ids: list[str] | None = None
+
+    def get_winner_ids(self) -> list[str]:
+        """Return winners by stable player ID, including legacy result formats."""
+        if self.winner_ids is not None:
+            return list(self.winner_ids)
+        data = self.custom_data
+        ids = data.get("winner_ids")
+        if ids is not None:
+            return list(ids)
+        if data.get("winner_id"):
+            return [data["winner_id"]]
+        names = data.get("winner_names")
+        if names is None:
+            names = [data.get("winner_name")]
+        return [p.player_id for p in self.player_results if p.player_name in names]
+
+    def get_rankings(self) -> list[list[str]]:
+        """Group eligible players by placement: winners, then remaining players."""
+        winners = set(self.get_winner_ids())
+        players = self.get_human_player_ids()
+        return [group for group in (
+            [pid for pid in players if pid in winners],
+            [pid for pid in players if pid not in winners],
+        ) if group]
+
+    def get_player_score(self, player: PlayerResult) -> int | float:
+        """Read a score without making consumers depend on game-specific keys."""
+        if player.score is not None:
+            return player.score
+        scores = self.custom_data.get("final_scores", self.custom_data.get("final_light", {}))
+        return scores.get(player.player_name, 0)
 
     @classmethod
     def create(

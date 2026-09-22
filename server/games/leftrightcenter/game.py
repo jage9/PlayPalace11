@@ -7,7 +7,6 @@ from play. Last player holding chips wins.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player, GameOptions
@@ -15,7 +14,7 @@ from ..registry import register_game
 from ...game_utils.action_guard_mixin import ActionGuardMixin
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, option_field
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
@@ -145,11 +144,10 @@ class LeftRightCenterGame(ActionGuardMixin, Game):
 
     def create_standard_action_set(self, player: Player) -> ActionSet:
         action_set = super().create_standard_action_set(player)
-        user = self.get_user(player)
-        locale = user.locale if user else "en"
         action = Action(
             id="check_center",
-            label=Localization.get(locale, "lrc-center-pot"),
+            label="",
+            get_label="_get_center_pot_label",
             handler="_action_check_center",
             is_enabled="_is_check_center_enabled",
             is_hidden="_is_check_center_hidden",
@@ -159,6 +157,10 @@ class LeftRightCenterGame(ActionGuardMixin, Game):
             action_set._order.remove(action.id)
         action_set._order.insert(0, action.id)
         return action_set
+
+    def _get_center_pot_label(self, player: Player, action_id: str) -> str:
+        user = self.get_user(player)
+        return Localization.get(user.locale if user else "en", "lrc-center-pot", count=self.center_pot)
 
     # ==========================================================================
     # Game flow
@@ -397,19 +399,7 @@ class LeftRightCenterGame(ActionGuardMixin, Game):
         active_players = self.get_active_players()
         players_with_chips = [p for p in active_players if p.chips > 0]
         winner = players_with_chips[0] if len(players_with_chips) == 1 else None
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in active_players
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "center_pot": self.center_pot,
@@ -421,7 +411,7 @@ class LeftRightCenterGame(ActionGuardMixin, Game):
         lines = [Localization.get(locale, "game-final-scores-header")]
         final_chips = result.custom_data.get("final_chips", {})
         for name, chips in final_chips.items():
-            lines.append(f"{name}: {chips}")
+            lines.append(Localization.get(locale, "lrc-player-chips", player=name, count=chips))
         lines.append(
             Localization.get(
                 locale, "lrc-center-pot", count=result.custom_data.get("center_pot", 0)

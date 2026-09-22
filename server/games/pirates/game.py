@@ -7,7 +7,6 @@ Players sail across four oceans, collecting gems and battling other pirates.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import TYPE_CHECKING
 import random
 
@@ -15,7 +14,7 @@ from ..base import Game, Player
 from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility, MenuInput
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import GameOptions, FloatOption, MenuOption, option_field
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
@@ -441,9 +440,11 @@ class PiratesGame(Game):
         if not isinstance(player, PiratesPlayer):
             return []
 
+        user = self.get_user(player)
+        locale = user.locale if user else "en"
         options = []
         for skill in skills.get_available_skills(player):
-            options.append(skill.get_menu_label(player))
+            options.append(skill.get_menu_label(player, locale))
         return options
 
     def _is_status_enabled(self, player: Player) -> str | None:
@@ -693,19 +694,7 @@ class PiratesGame(Game):
         winner_name = getattr(self, "_winner_name", None)
         winner_score = getattr(self, "_winner_score", 0)
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in sorted_players
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner_name,
                 "winner_score": winner_score,
@@ -855,9 +844,12 @@ class PiratesGame(Game):
         if not isinstance(player, PiratesPlayer):
             return
 
-        # Find the skill by matching the label
+        user = self.get_user(player)
+        locale = user.locale if user else "en"
+
+        # Find the skill by matching the localized label
         for skill in skills.get_available_skills(player):
-            if skill.get_menu_label(player) == skill_choice:
+            if skill.get_menu_label(player, locale) == skill_choice:
                 can_use, reason = skill.can_perform(self, player)
                 if can_use:
                     result = skill.do_action(self, player)
@@ -884,7 +876,17 @@ class PiratesGame(Game):
         lines = []
         for p in self.get_active_players():
             gem_str = gems.format_gem_list(p.gems)
-            lines.append(f"{p.name}: Level {p.level}, {p.xp} XP, {p.score} points, {gem_str}")
+            lines.append(
+                Localization.get(
+                    user.locale,
+                    "pirates-status-player",
+                    player=p.name,
+                    level=p.level,
+                    xp=p.xp,
+                    score=p.score,
+                    gems=gem_str,
+                )
+            )
 
         for line in lines:
             user.speak(line)
@@ -894,9 +896,21 @@ class PiratesGame(Game):
         if not isinstance(player, PiratesPlayer):
             return
         lines = []
+        user = self.get_user(player)
+        locale = user.locale if user else "en"
         for p in self.get_active_players():
             gem_str = gems.format_gem_list(p.gems)
-            lines.append(f"{p.name}: Level {p.level}, {p.xp} XP, {p.score} points, {gem_str}")
+            lines.append(
+                Localization.get(
+                    locale,
+                    "pirates-status-player",
+                    player=p.name,
+                    level=p.level,
+                    xp=p.xp,
+                    score=p.score,
+                    gems=gem_str,
+                )
+            )
         self.status_box(player, lines)
 
     def _action_check_position(self, player: Player, action_id: str) -> None:

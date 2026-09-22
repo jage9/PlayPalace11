@@ -63,13 +63,10 @@ class EventHandlingMixin:
                 handler(player, selection_id)
 
         elif menu_id == "game_over":
-            # Handle game over menu - leave_game is the only selectable action
-            # It's always the last item
-            if selection_id == "leave_game":
-                self.execute_action(player, "leave_game")
-            else:
-                # Index-based - any selection triggers leave
-                self.execute_action(player, "leave_game")
+            self._handle_game_over_selection(player, event)
+
+        elif menu_id == "change_game":
+            self._handle_change_game_selection(player, selection_id)
 
         elif menu_id == "action_input_menu":
             self._handle_action_input_menu(player, event, selection_id)

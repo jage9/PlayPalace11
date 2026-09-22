@@ -5,14 +5,13 @@ A resource management game where you shoot a turret to gain light and coins.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player
 from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, option_field, GameOptions
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
@@ -73,9 +72,6 @@ class LightTurretGame(Game):
 
     players: list[LightTurretPlayer] = field(default_factory=list)
     options: LightTurretOptions = field(default_factory=LightTurretOptions)
-
-    # Flag to delay finish_game until sounds complete
-    _pending_finish: bool = field(default=False, repr=False)
 
     @classmethod
     def get_name(cls) -> str:
@@ -364,13 +360,6 @@ class LightTurretGame(Game):
         """Called every tick. Handle bot AI and scheduled sounds."""
         super().on_tick()
 
-        # Check if we're waiting to finish after sounds complete
-        if self._pending_finish and not self.scheduled_sounds:
-            self._pending_finish = False
-            self.game_active = False
-            self.finish_game(show_end_screen=False)
-            return
-
         # Don't process bots if game is finished or inactive
         if not self.game_active or self.status == "finished":
             return
@@ -432,10 +421,6 @@ class LightTurretGame(Game):
 
     def _end_game(self) -> None:
         """End the game and announce results."""
-        # Mark status as finished to disable turn actions, but keep game_active
-        # True until sounds finish playing (so ticks continue)
-        self.status = GameStatus.FINISHED
-
         self.broadcast_l("lightturret-game-over")
 
         # Find max light and count winners
@@ -463,20 +448,7 @@ class LightTurretGame(Game):
             self.play_sound("game_pig/win.ogg")
             self.broadcast_l("lightturret-winner", player=winners[0].name, light=max_light)
 
-        # Update actions to reflect game ended state
-        self.rebuild_all_menus()
-
-        # Show final menu first (before potential destruction)
-        result = self.build_game_result()
-        self._show_end_screen(result)
-
-        # Delay final cleanup if sounds are pending
-        if self.scheduled_sounds:
-            self._pending_finish = True
-            # Keep game_active = True so ticks continue and sounds play
-        else:
-            self.game_active = False
-            self.finish_game(show_end_screen=False)
+        self.finish_game()
 
     def build_game_result(self) -> GameResult:
         """Build the game result with LightTurret-specific data."""
@@ -495,21 +467,11 @@ class LightTurretGame(Game):
 
         winner = sorted_players[0] if sorted_players else None
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in sorted_players
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
+                "winner_names": [name for name, light in final_light.items()
+                                 if winner and light == winner.light],
                 "winner_light": winner.light if winner else 0,
                 "final_light": final_light,
                 "alive_status": alive_status,

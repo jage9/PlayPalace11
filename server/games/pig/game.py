@@ -6,7 +6,6 @@ Supports individual and team modes via TeamManager.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player, GameOptions
@@ -16,7 +15,7 @@ from ...game_utils.round_based_game_mixin import RoundBasedGameMixin
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.push_your_luck_mixin import PushYourLuckBotMixin
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, TeamModeOption, option_field
 from ...game_utils.teams import TeamManager, TeamResultBuilder
 from ...messages.localization import Localization
@@ -374,7 +373,7 @@ class PigGame(PushYourLuckBotMixin, ActionGuardMixin, RoundBasedGameMixin, Game)
             for p in active_players:
                 team = self._team_manager.get_team(p.name)
                 if not team or team.index not in winning_team_indices:
-                    p.is_spectator = True
+                    self.eliminate_player(p)
             self._start_round()
         else:
             # No winner yet, continue to next round
@@ -384,19 +383,7 @@ class PigGame(PushYourLuckBotMixin, ActionGuardMixin, RoundBasedGameMixin, Game)
         """Build the game result with Pig-specific data."""
         sorted_teams, winner, final_scores = TeamResultBuilder.summarize(self._team_manager)
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in self.get_active_players()
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": self._team_manager.get_team_name(winner) if winner else None,
                 "winner_score": winner.total_score if winner else 0,

@@ -33,4 +33,6 @@ ludo-set-max-sixes = Số lần gieo 6 liên tiếp tối đa: { $max_consecutiv
 ludo-enter-max-sixes = Nhập số lần gieo 6 liên tiếp tối đa
 ludo-option-changed-max-sixes = Số lần gieo 6 liên tiếp tối đa đã đặt là { $value }.
 ludo-set-safe-start-squares = Ô khởi hành an toàn: { $safe_start_squares }
+# English fallback until this locale has a translation.
+ludo-desc-safe-start-squares = Make each player's starting square safe from capture
 ludo-option-changed-safe-start-squares = Chế độ ô khởi hành an toàn { $value }.

@@ -31,4 +31,6 @@ ludo-set-max-sixes = Max consecutive sixes: { $max_consecutive_sixes }
 ludo-enter-max-sixes = Enter max consecutive sixes
 ludo-option-changed-max-sixes = Max consecutive sixes set to { $value }.
 ludo-set-safe-start-squares = Safe start squares: { $safe_start_squares }
+# English fallback until this locale has a translation.
+ludo-desc-safe-start-squares = Make each player's starting square safe from capture
 ludo-option-changed-safe-start-squares = Safe start squares set to { $value }.

@@ -5,7 +5,6 @@ Classic Italian card game: capture cards from the table by matching ranks or sum
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, Player, GameOptions
@@ -20,7 +19,7 @@ from ...game_utils.cards import (
     read_cards,
     sort_cards,
 )
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.options import (
     IntOption,
     MenuOption,
@@ -28,7 +27,7 @@ from ...game_utils.options import (
     TeamModeOption,
     option_field,
 )
-from ...game_utils.teams import TeamManager
+from ...game_utils.teams import TeamManager, TeamResultBuilder
 from ...game_utils.round_timer import RoundTransitionTimer
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
@@ -795,7 +794,9 @@ class ScopaGame(Game):
 
     def build_game_result(self) -> GameResult:
         """Build the game result with Scopa-specific data."""
-        sorted_teams = self.team_manager.get_sorted_teams(by_score=True, descending=True)
+        sorted_teams = self.team_manager.get_sorted_teams(
+            by_score=True, descending=not self.options.inverse_scopa
+        )
 
         # Build final scores
         final_scores = {}
@@ -805,19 +806,7 @@ class ScopaGame(Game):
 
         winner = sorted_teams[0] if sorted_teams else None
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in self.get_active_players()
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": self.team_manager.get_team_name(winner) if winner else None,
                 "winner_score": winner.total_score if winner else 0,
@@ -830,14 +819,8 @@ class ScopaGame(Game):
 
     def format_end_screen(self, result: GameResult, locale: str) -> list[str]:
         """Format the end screen for Scopa game."""
-        lines = [Localization.get(locale, "game-final-scores")]
-
         final_scores = result.custom_data.get("final_scores", {})
-        for i, (name, score) in enumerate(final_scores.items(), 1):
-            points_str = Localization.get(locale, "game-points", count=score)
-            lines.append(f"{i}. {name}: {points_str}")
-
-        return lines
+        return TeamResultBuilder.format_final_scores(locale, final_scores)
 
     # ==========================================================================
     # Bot AI

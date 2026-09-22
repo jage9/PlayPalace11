@@ -152,6 +152,8 @@ table-players-one = { $count } igrač: { $players }.
 table-players-many = { $count } igrača: { $players }.
 table-spectators = Posmatrači: { $spectators }.
 game-leave = Napusti
+game-play-again = Igraj ponovo
+game-change-game = Promeni igru
 game-over = Igra je gotova
 game-final-scores = Konačni rezultat
 game-points = { $count } { $count ->
@@ -257,7 +259,6 @@ account-declined = Nalog igrača { $player } je odbijen i obrisan.
 waiting-for-approval = Vaš nalog čeka na odobravanje od administratora. Molimo sačekajte...
 account-approved-welcome = Vaš nalog je odobren! Dobro došli u PlayPalace!
 account-declined-goodbye = Vaš zahtev za nalog je odbijen.
-Razlog:
 account-banned = Vašem nalogu je zabranjen pristup.
 
 # Login errors

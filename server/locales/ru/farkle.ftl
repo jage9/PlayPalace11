@@ -94,16 +94,8 @@ farkle-you-farkle = ФАРКЛ! Вы теряете { $points } { $points ->
     [few] очка
    *[other] очков
 }
-farkle-takes-combo = { $player } берёт комбинацию «{ $combo }» за { $points } { $points ->
-    [one] очко
-    [few] очка
-   *[other] очков
-}
-farkle-you-take-combo = Вы берёте комбинацию «{ $combo }» за { $points } { $points ->
-    [one] очко
-    [few] очка
-   *[other] очков
-}
+farkle-takes-combo = { $player } берёт комбинацию «{ $combo }»
+farkle-you-take-combo = Вы берёте комбинацию «{ $combo }»
 farkle-hot-dice = Горячие кубики!
 farkle-banks = { $player } банкует { $points } { $points ->
     [one] очко

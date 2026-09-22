@@ -194,6 +194,8 @@ table-players-many = { $count } { $count ->
 }: { $players }.
 table-spectators = المتفرجون: { $spectators }.
 game-leave = غادر
+game-play-again = العب مرة أخرى
+game-change-game = تغيير اللعبة
 game-over = انتهت اللعبة
 game-final-scores = النتائج النهائية
 game-points = { $count } { $count ->

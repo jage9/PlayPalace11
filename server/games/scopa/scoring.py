@@ -43,10 +43,13 @@ def score_round(game: "ScopaGame") -> None:
     for team in teams:
         if game.options.team_card_scoring:
             cards = get_team_captured_cards(game.players, team)
+            team_data.append((team, cards))
         else:
-            # Individual scoring - just use first member's cards
-            cards = get_team_captured_cards(game.players, team)
-        team_data.append((team, cards))
+            # Compare individual captures, then credit each award to the actual team.
+            for player in game.players:
+                if player.name in team.members:
+                    scorer = Team(index=team.index, members=[player.name])
+                    team_data.append((scorer, player.captured))
 
     _award_most_cards(game, team_data)
     _award_most_diamonds(game, team_data)

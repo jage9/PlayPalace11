@@ -3,6 +3,7 @@ import random
 from server.core.users.bot import Bot
 from server.core.users.test_user import MockUser
 from server.game_utils.cards import Card, Deck
+from server.game_utils.game_status import GameStatus
 from server.games.blackjack.game import BlackjackGame, BlackjackOptions
 
 BUST_SOUND_SET = {
@@ -175,7 +176,7 @@ def test_blackjack_on_start_single_player_does_not_end_immediately() -> None:
 
 def test_blackjack_settle_single_player_continues_when_player_has_chips() -> None:
     game, host_player, _host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     host_player.chips = 90
@@ -198,7 +199,7 @@ def test_blackjack_hit_bust_advances_turn() -> None:
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
 
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     game.set_turn_players([host_player, guest_player], reset_index=True)
@@ -224,7 +225,7 @@ def test_blackjack_split_creates_two_hands() -> None:
     game, host_player, _host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     game.set_turn_players([host_player, guest_player], reset_index=True)
@@ -248,7 +249,7 @@ def test_blackjack_double_down_increases_bet_and_ends_hand() -> None:
     game, host_player, host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     game.set_turn_players([host_player, guest_player], reset_index=True)
@@ -275,7 +276,7 @@ def test_blackjack_late_surrender_refunds_half_and_advances() -> None:
     game, host_player, host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     game.set_turn_players([host_player, guest_player], reset_index=True)
@@ -312,7 +313,7 @@ def test_blackjack_initial_blackjack_plays_blackjack_sound() -> None:
 
 def test_blackjack_dealer_bust_plays_bust_sound() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.dealer_hand = [make_card(1, 10, 1), make_card(2, 6, 2)]
     game.deck = Deck(cards=[make_card(3, 10, 3)])
@@ -327,7 +328,7 @@ def test_blackjack_dealer_bust_plays_bust_sound() -> None:
 
 def test_blackjack_settle_win_plays_win_sound() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
 
@@ -344,7 +345,7 @@ def test_blackjack_settle_win_plays_win_sound() -> None:
 
 def test_blackjack_settle_blackjack_win_plays_premium_win_sound() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
 
@@ -362,7 +363,7 @@ def test_blackjack_settle_blackjack_win_plays_premium_win_sound() -> None:
 
 def test_blackjack_end_game_winner_plays_wingame_sound() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game._end_game(host_player)
     assert "game_3cardpoker/wingame.ogg" in host_user.get_sounds_played()
@@ -370,7 +371,7 @@ def test_blackjack_end_game_winner_plays_wingame_sound() -> None:
 
 def test_blackjack_end_game_no_winner_plays_no_winner_sound() -> None:
     game, _host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game._end_game(None)
     assert NO_WINNER_SOUND in host_user.get_sounds_played()
@@ -380,7 +381,7 @@ def test_blackjack_set_next_bet_between_rounds_updates_future_posted_bet() -> No
     game, host_player, host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "settle"
     game.awaiting_next_bets = True
@@ -401,7 +402,7 @@ def test_blackjack_set_next_bet_between_rounds_updates_future_posted_bet() -> No
 
 def test_blackjack_set_next_bet_ignored_during_player_phase() -> None:
     game, host_player, _host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     game.set_turn_players([host_player], reset_index=True)
@@ -417,7 +418,7 @@ def test_blackjack_b_keybind_reads_current_bets_during_round() -> None:
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
     game.setup_keybinds()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
 
@@ -437,7 +438,7 @@ def test_blackjack_b_keybind_reads_current_bets_during_round() -> None:
 def test_blackjack_b_keybind_between_hands_opens_change_bet_input() -> None:
     game, host_player, host_user = create_game_with_host()
     game.setup_keybinds()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "settle"
     game.awaiting_next_bets = True
@@ -451,7 +452,7 @@ def test_blackjack_b_keybind_between_hands_opens_change_bet_input() -> None:
 
 def test_blackjack_actions_menu_hides_bet_previous_action() -> None:
     game, host_player, _host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "settle"
     game.awaiting_next_bets = True
@@ -468,7 +469,7 @@ def test_blackjack_starts_next_hand_when_all_players_enter_bets() -> None:
     game, host_player, _host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "settle"
     game.awaiting_next_bets = True
@@ -495,7 +496,7 @@ def test_blackjack_whose_turn_between_hands_reports_waiting_bettors() -> None:
     game, host_player, host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "settle"
     game.awaiting_next_bets = True
@@ -517,7 +518,7 @@ def test_blackjack_whose_turn_between_hands_uses_localized_waiting_message() -> 
     game.host = "Host"
     guest_user = MockUser("Guest", locale="sr")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "settle"
     game.awaiting_next_bets = True
@@ -536,7 +537,7 @@ def test_blackjack_whose_turn_between_hands_all_bets_in_uses_default_whose_turn(
     game, host_player, host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "settle"
     game.awaiting_next_bets = True
@@ -555,7 +556,7 @@ def test_blackjack_between_hands_timer_timeout_uses_base_bet_for_missing_entries
     game, host_player, _host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "settle"
     game.options.base_bet = 15
@@ -586,7 +587,7 @@ def test_blackjack_between_hands_timer_timeout_uses_base_bet_for_missing_entries
 
 def test_blackjack_insurance_wins_when_dealer_has_blackjack() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "insurance"
     game.set_turn_players([host_player], reset_index=True)
@@ -612,7 +613,7 @@ def test_blackjack_insurance_wins_when_dealer_has_blackjack() -> None:
 
 def test_blackjack_insurance_loses_plays_discard_sound() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "insurance"
     game.set_turn_players([host_player], reset_index=True)
@@ -633,7 +634,7 @@ def test_blackjack_insurance_loses_plays_discard_sound() -> None:
 
 def test_blackjack_even_money_pays_one_to_one() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "insurance"
     game.set_turn_players([host_player], reset_index=True)
@@ -659,7 +660,7 @@ def test_blackjack_even_money_pays_one_to_one() -> None:
 
 def test_blackjack_decline_insurance_plays_sound() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "insurance"
     game.set_turn_players([host_player], reset_index=True)
@@ -689,7 +690,7 @@ def test_blackjack_reveal_dealer_hand_plays_reveal_sound() -> None:
 
 def test_blackjack_push_result_plays_push_sound() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
 
@@ -706,7 +707,7 @@ def test_blackjack_push_result_plays_push_sound() -> None:
 
 def test_blackjack_player_broke_plays_bust_sound() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
 
@@ -750,7 +751,7 @@ def test_blackjack_split_aces_auto_stand_when_enabled() -> None:
     game, host_player, _host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     game.set_turn_players([host_player, guest_player], reset_index=True)
@@ -774,7 +775,7 @@ def test_blackjack_split_aces_can_count_as_blackjack() -> None:
     game, host_player, _host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     game.set_turn_players([host_player, guest_player], reset_index=True)
@@ -796,7 +797,7 @@ def test_blackjack_settle_split_hands_independently() -> None:
     game, host_player, _host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     game.dealer_hand = [make_card(100, 10, 1), make_card(101, 8, 2)]  # 18
@@ -959,7 +960,7 @@ def test_blackjack_pitch_style_hides_other_totals_in_table_status() -> None:
     game, host_player, host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     game.options.players_cards_face_up = False
@@ -984,7 +985,7 @@ def test_blackjack_pitch_style_hides_other_totals_in_table_status() -> None:
 def test_blackjack_status_keybinds_do_not_rebuild_menus() -> None:
     game, host_player, host_user = create_game_with_host()
     game.setup_keybinds()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "players"
     host_player.chips = 100
@@ -1022,7 +1023,7 @@ def test_blackjack_dealer_reveal_supports_serbian_locale_bundle() -> None:
 
 def test_blackjack_insurance_prompt_announced_to_player() -> None:
     game, host_player, host_user = create_game_with_host()
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "insurance"
     game.dealer_hand = [make_card(1, 1, 1), make_card(2, 9, 2)]
@@ -1041,7 +1042,7 @@ def test_blackjack_insurance_prompt_announced_to_player() -> None:
 def test_blackjack_dealer_hits_soft_17_when_enabled() -> None:
     game = BlackjackGame()
     game.options.dealer_hits_soft_17 = True
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.dealer_hand = [make_card(1, 1, 1), make_card(2, 6, 2)]
     game.deck = Deck(cards=[make_card(3, 2, 3)])
     game._settle_hand = lambda: None  # type: ignore[method-assign]
@@ -1054,7 +1055,7 @@ def test_blackjack_dealer_hits_soft_17_when_enabled() -> None:
 def test_blackjack_dealer_stands_soft_17_when_disabled() -> None:
     game = BlackjackGame()
     game.options.dealer_hits_soft_17 = False
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.dealer_hand = [make_card(1, 1, 1), make_card(2, 6, 2)]
     game.deck = Deck(cards=[make_card(3, 2, 3)])
     game._settle_hand = lambda: None  # type: ignore[method-assign]
@@ -1131,7 +1132,7 @@ def test_blackjack_persistence_round_trip_preserves_new_state_and_reconnect() ->
     game, host_player, host_user = create_game_with_host()
     guest_user = MockUser("Guest")
     guest_player = game.add_player("Guest", guest_user)
-    game.status = "playing"
+    game.status = GameStatus.PLAYING
     game.game_active = True
     game.phase = "insurance"
     game.options = BlackjackOptions(

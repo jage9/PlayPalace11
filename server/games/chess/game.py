@@ -6,11 +6,12 @@ import random
 from ..base import Game, Player, GameOptions
 from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility, EditboxInput, MenuInput
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 
 from ...game_utils.options import MenuOption, BoolOption, option_field
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.poker_timer import PokerTurnTimer
+from ...game_utils.turn_timer_mixin import TurnTimerMixin
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
@@ -128,7 +129,7 @@ class ChessPlayer(Player):
 
 @register_game
 @dataclass
-class ChessGame(Game):
+class ChessGame(TurnTimerMixin, Game):
     """Chess game implementation."""
 
     players: list[ChessPlayer] = field(default_factory=list)
@@ -570,9 +571,7 @@ class ChessGame(Game):
         super().on_tick()
         if not self.game_active:
             return
-        if self.timer.tick():
-            self._handle_turn_timeout()
-        self._maybe_play_timer_warning()
+        self.on_tick_turn_timer()
         BotHelper.on_tick(self)
 
     def _start_turn(self) -> None:
@@ -581,8 +580,6 @@ class ChessGame(Game):
             return
 
         self.current_color = player.color
-        self.timer_warning_played = False
-
         # Clear selections
         self.selected_square = {}
 
@@ -601,29 +598,9 @@ class ChessGame(Game):
         self.advance_turn(announce=False)
         self._start_turn()
 
-    def _start_turn_timer(self) -> None:
-        try:
-            seconds = int(self.options.turn_timer)
-        except ValueError:
-            seconds = 0
-        if seconds <= 0:
-            self.timer.clear()
-            return
-        self.timer.start(seconds)
-        self.timer_warning_played = False
-
-    def _maybe_play_timer_warning(self) -> None:
-        try:
-            seconds = int(self.options.turn_timer)
-        except ValueError:
-            seconds = 0
-        if seconds < 20:
-            return
-        if self.timer_warning_played:
-            return
-        if self.timer.seconds_remaining() == 5:
-            self.timer_warning_played = True
-            self.play_sound("game_chess/fivesec.ogg")
+    @property
+    def timer_warning_sound(self) -> str:
+        return "game_chess/fivesec.ogg"
 
     def _handle_turn_timeout(self) -> None:
         player = self.current_player
@@ -2078,16 +2055,6 @@ class ChessGame(Game):
                     if user:
                         user.speak_l("chess-fen-error")
 
-    def _action_check_turn_timer(self, player: Player, action_id: str) -> None:
-        user = self.get_user(player)
-        if not user:
-            return
-        remaining = self.timer.seconds_remaining()
-        if remaining <= 0:
-            user.speak_l("poker-timer-disabled")
-        else:
-            user.speak_l("poker-timer-remaining", seconds=remaining)
-
     # ==========================================================================
     # Action state helpers
     # ==========================================================================
@@ -2267,32 +2234,18 @@ class ChessGame(Game):
     def _end_game(self, winner: ChessPlayer) -> None:
         """End the game with a winner."""
         self._winner_id = winner.id
-        self.timer.clear()
+        self.stop_turn_timer()
         self.finish_game()
 
     def _end_game_draw(self) -> None:
         """End the game as a draw."""
         self._winner_id = ""
-        self.timer.clear()
+        self.stop_turn_timer()
         self.finish_game()
 
     def build_game_result(self) -> GameResult:
-        from datetime import datetime
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=p.is_virtual_bot,
-                )
-                for p in self.players
-                if isinstance(p, ChessPlayer) and not p.is_spectator
-            ],
+        return self.make_game_result(
             custom_data={
                 "total_moves": len(self.move_history),
                 "winner_color": self.winner_color,

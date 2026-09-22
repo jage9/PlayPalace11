@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 from typing import Optional
 
@@ -9,7 +8,7 @@ from ..base import Game, Player
 from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, MenuInput, Visibility
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
 from ...core.ui.keybinds import KeybindState
@@ -103,13 +102,10 @@ class NineGame(Game):
     game_active: bool = False
     first_turn_player_id: Optional[str] = None  # Player who has the nine of clubs
 
-    def __post_init__(self):
-        """Initialize runtime state."""
-        super().__post_init__()
-
     def rebuild_runtime_state(self) -> None:
-        """Rebuild non-serialized state after deserialization."""
+        """Refresh card guards, including invalid callback values in older saves."""
         super().rebuild_runtime_state()
+        self._update_all_turn_actions()
 
     @classmethod
     def get_name(cls) -> str:
@@ -198,8 +194,7 @@ class NineGame(Game):
     def _broadcast_nine_message(
         self, message_key: str, sending_player: NinePlayer | None = None, **kwargs
     ) -> None:
-        """Broadcasts a localized message to all players, personalizing 'you' vs 'player',
-        with fallback for 'you' messages to 'player' messages if 'you' version is not defined."""
+        """Broadcast personalized, localized messages with recipient-specific card names."""
         for p in self.players:
             user = self.get_user(p)
             if not user:
@@ -210,10 +205,7 @@ class NineGame(Game):
             final_message_key = f"nine-player-{message_key}"  # Default to player version
 
             if sending_player and p == sending_player:
-                # Check if a specific "you" version exists for this message key
-                you_version_key = f"nine-you-{message_key}"
-                if Localization.get(target_locale, you_version_key, silent=True):
-                    final_message_key = you_version_key
+                final_message_key = f"nine-you-{message_key}"
 
             # Make a mutable copy of kwargs for localization per recipient
             msg_kwargs = dict(kwargs)
@@ -230,7 +222,8 @@ class NineGame(Game):
                     msg_kwargs["suit"], target_locale
                 )
 
-            user.speak_l(final_message_key, **msg_kwargs)
+            localized = Localization.get(target_locale, final_message_key, **msg_kwargs)
+            self.send_table_message(p, localized)
 
     # ==========================================================================
     # Game Flow
@@ -242,7 +235,7 @@ class NineGame(Game):
 
         num_players = len(self.get_active_players())
         if num_players == 5:  # Only 5 players is specifically invalid for Nine
-            errors.append(Localization.get("en", "nine-error-invalid-player-count"))
+            errors.append("nine-error-invalid-player-count")
 
         return errors
 
@@ -420,19 +413,7 @@ class NineGame(Game):
 
         winner_name = sorted_player_results[0][1] if sorted_player_results else "N/A"
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p_id,
-                    player_name=p_name,
-                    is_bot=is_bot,
-                    is_virtual_bot=is_virtual_bot,
-                )
-                for p_id, p_name, _, is_bot, is_virtual_bot in player_results
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner_name,
                 "final_scores": final_scores,
@@ -556,28 +537,19 @@ class NineGame(Game):
         if not turn_set:
             return
 
-        # Clear existing card actions
-        for i in range(1, len(player.hand) + 2):  # Account for potential new cards
-            action_id = f"play_card_slot_{i}"
-            if turn_set.get_action(action_id):
-                turn_set.remove(action_id)
-            if action_id in turn_set._order:
-                turn_set._order.remove(action_id)
+        turn_set.remove_by_prefix("play_card_slot_")
 
         # Add actions for cards in hand
-        for i, card in enumerate(player.hand, 1):
+        for i in range(1, len(player.hand) + 1):
             action_id = f"play_card_slot_{i}"
-
-            # Check if card is playable
-            is_playable, _ = self._can_play_card(player, card, check_only=True)
 
             turn_set.add(
                 Action(
                     id=action_id,
                     label="",  # Dynamic label will be set
                     handler="_action_play_card",
-                    is_enabled=(None if is_playable else "nine-reason-generic"),
-                    is_hidden=Visibility.VISIBLE,
+                    is_enabled="_is_play_card_enabled",
+                    is_hidden="_is_play_card_hidden",
                     get_label="_get_card_slot_label",
                     show_in_actions_menu=False,
                 )
@@ -628,6 +600,33 @@ class NineGame(Game):
     def _is_skip_turn_hidden(self, player: Player) -> Visibility:
         """Skip turn action is always hidden from the UI."""
         return Visibility.HIDDEN
+
+    def _is_play_card_enabled(self, player: Player, action_id: str) -> str | tuple[str, dict] | None:
+        """Return the disabled reason for a card-slot action."""
+        if self.status != "playing":
+            return "action-not-playing"
+        if not isinstance(player, NinePlayer):
+            return "action-not-available"
+        if self.current_player != player:
+            return "action-not-your-turn"
+
+        try:
+            slot = int(action_id.split("_")[-1]) - 1
+        except (ValueError, IndexError):
+            return "action-not-available"
+        if slot < 0 or slot >= len(player.hand):
+            return "action-not-available"
+        card = player.hand[slot]
+        playable, reason = self._can_play_card(player, card)
+        if playable:
+            return None
+        user = self.get_user(player)
+        locale = user.locale if user else "en"
+        return reason, {"suit": self._get_localized_suit_name(card.suit, locale)}
+
+    def _is_play_card_hidden(self, player: Player, action_id: str) -> Visibility:
+        """Card slots are visible in the turn menu, including disabled cards."""
+        return Visibility.VISIBLE
 
     def _has_valid_move(self, player: NinePlayer) -> bool:
         """Check if the player has any valid moves."""
@@ -736,7 +735,11 @@ class NineGame(Game):
             user = self.get_user(player)
             if user:
                 card_name = self._get_localized_card_name(card_to_play, user.locale)
-                user.speak_l(reason, card=card_name)  # reason contains localized message key
+                user.speak_l(
+                    reason,
+                    card=card_name,
+                    suit=self._get_localized_suit_name(card_to_play.suit, user.locale),
+                )
 
     # ==========================================================================
     # Card Play Logic
@@ -749,13 +752,10 @@ class NineGame(Game):
         Check if a card can be played.
         Returns (bool, reason_message_key)
         """
-        user = self.get_user(player)
-        locale = user.locale if user else "en"
-
         # Rule 1: First card must be Nine of Clubs
         if not self.nine_state.nine_of_clubs_played:
             if not (card.rank == RANK_NINE and card.suit == SUIT_CLUBS):
-                return False, Localization.get(locale, "nine-reason-must-play-nine-clubs")
+                return False, "nine-reason-must-play-nine-clubs"
             return True, ""  # Nine of Clubs is always playable as first card
 
         # Rule 2: Play any nine to start forming the sequence of that suit.
@@ -785,22 +785,14 @@ class NineGame(Game):
         if not check_only:  # If this is a real play attempt, return reason
             # Determine a more specific reason if possible
             if not self._has_valid_move(player):
-                return False, Localization.get(locale, "nine-reason-must-skip")
+                return False, "nine-reason-must-skip"
             elif card.rank == RANK_NINE and card.suit in self.nine_state.sequences:
                 # Trying to play a nine, but sequence already exists, and it's not a direct extension
-                return False, Localization.get(
-                    locale,
-                    "nine-reason-cannot-extend",
-                    suit=self._get_localized_suit_name(card.suit, locale),
-                )
+                return False, "nine-reason-cannot-extend"
             elif card.suit in self.nine_state.sequences:
-                return False, Localization.get(
-                    locale,
-                    "nine-reason-cannot-extend",
-                    suit=self._get_localized_suit_name(card.suit, locale),
-                )
+                return False, "nine-reason-cannot-extend"
             else:
-                return False, Localization.get(locale, "nine-reason-generic")
+                return False, "nine-reason-generic"
         return False, ""  # For check_only, if not playable, return False with empty reason
 
     def _play_card(self, player: NinePlayer, slot: int, card: Card) -> None:

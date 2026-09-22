@@ -5,6 +5,7 @@ import pytest
 
 from server.core.users.test_user import MockUser
 from server.games.farkle.game import FarkleGame, FarkleOptions
+from server.messages.localization import Localization
 
 
 def _setup_game(options: FarkleOptions | None = None):
@@ -85,8 +86,10 @@ def test_hot_dice_multiplier_progression_and_pitch():
     assert hot_dice_events[0]["pitch"] == 100
     assert hot_dice_events[1]["pitch"] == 106
     spoken = user1.get_spoken_messages()
-    assert "Hot Dice Multiplier 2" in spoken
-    assert "Hot Dice Multiplier 3" in spoken
+    for multiplier in (2, 3):
+        assert Localization.get(
+            user1.locale, "farkle-option-changed-hot-dice-multiplier", enabled=multiplier
+        ) in spoken
 
 
 def test_hot_dice_pitch_does_not_ramp_when_multiplier_off():

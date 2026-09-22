@@ -13,7 +13,7 @@ from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.options import IntOption, BoolOption, MenuOption, option_field
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
@@ -722,7 +722,6 @@ class BackgammonGame(Game):
 
     def on_tick(self) -> None:
         super().on_tick()
-        self.process_scheduled_sounds()
         if not self.game_active:
             return
         self._check_pending_hint()
@@ -1502,27 +1501,13 @@ class BackgammonGame(Game):
 
     def build_game_result(self) -> GameResult:
         """Build the game result for the end screen."""
-        from datetime import datetime
 
         gs = self.game_state
         winner = getattr(self, "_match_winner", None)
         red = self._get_player_by_color("red")
         white = self._get_player_by_color("white")
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in self.players
-                if not p.is_spectator
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "score_red": gs.score_red,

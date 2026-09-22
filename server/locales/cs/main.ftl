@@ -182,6 +182,8 @@ table-players-many = { $count } { $count ->
 }: { $players }.
 table-spectators = Diváci: { $spectators }.
 game-leave = Odejít
+game-play-again = Hrát znovu
+game-change-game = Změnit hru
 game-over = Konec hry
 game-final-scores = Konečné skóre
 game-points = { $count } { $count ->

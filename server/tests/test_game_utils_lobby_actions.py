@@ -56,6 +56,7 @@ class StubUser:
 
 class TableMock:
     def __init__(self):
+        self.members = []
         self.saved_with: list[str] = []
         self.destroyed = False
 
@@ -222,7 +223,7 @@ def test_toggle_spectator_announces_changes():
     assert player.is_spectator is False
 
 
-def test_leave_game_spectator_removed_and_menus_rebuilt():
+def test_last_spectator_leaving_destroys_empty_game():
     game = DummyLobbyGame()
     player, _ = _add_host(game)
     player.is_spectator = True
@@ -230,7 +231,7 @@ def test_leave_game_spectator_removed_and_menus_rebuilt():
     game._perform_leave_game(player)
 
     assert player.id not in [p.id for p in game.players]
-    assert game.rebuild_count == 1
+    assert game._destroyed
 
 
 def test_leave_game_midgame_converts_human_to_bot():

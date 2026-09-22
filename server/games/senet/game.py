@@ -13,7 +13,7 @@ from ..registry import register_game
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.options import MenuOption, option_field
 from ...game_utils.bot_helper import BotHelper
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
@@ -403,7 +403,6 @@ class SenetGame(Game):
 
     def on_tick(self) -> None:
         super().on_tick()
-        self.process_scheduled_sounds()
         if not self.game_active:
             return
         BotHelper.on_tick(self)
@@ -612,27 +611,13 @@ class SenetGame(Game):
         self.finish_game()
 
     def build_game_result(self) -> GameResult:
-        from datetime import datetime
 
         gs = self.game_state
         winner = getattr(self, "_winner", None)
         p1 = self._get_player_by_num(1)
         p2 = self._get_player_by_num(2)
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in self.players
-                if not p.is_spectator
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "p1_name": p1.name if p1 else "?",

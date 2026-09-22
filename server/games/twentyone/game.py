@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
 import random
 
 from ..base import Game, GameOptions, Player
@@ -11,7 +10,7 @@ from ...game_utils.action_guard_mixin import ActionGuardMixin
 from ...game_utils.actions import Action, ActionSet, MenuInput, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.cards import Card, Deck, card_name
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...messages.localization import Localization
 from ...game_utils.game_status import GameStatus
 from .bot import bot_think as compute_bot_think
@@ -2454,19 +2453,7 @@ class TwentyOneGame(ActionGuardMixin, Game):
         winner = max(players, key=lambda p: p.hp, default=None)
         final_hp = {p.name: p.hp for p in players}
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in players
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
                 "winner_hp": winner.hp if winner else 0,

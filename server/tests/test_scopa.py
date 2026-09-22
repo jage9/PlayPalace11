@@ -4,6 +4,7 @@ from pathlib import Path
 
 from server.games.scopa.game import ScopaGame, ScopaPlayer, ScopaOptions
 from server.games.scopa.capture import find_captures, select_best_capture
+from server.games.scopa.scoring import score_round
 from server.games.scopa.bot import (
     find_best_combo_chain,
     check_combo_potential,
@@ -393,6 +394,30 @@ class TestScopaPlayTest:
             game.on_tick()
 
         assert game.status == "finished"
+
+    def test_card_scoring_disabled_scores_teammates_individually(self):
+        """Disabling pooled cards makes each player an independent scorer."""
+        game = ScopaGame()
+        game.options.team_mode = "2v2"
+        game.options.team_card_scoring = False
+        for name in ("Alice", "Bob", "Carol", "Dave"):
+            game.add_player(name, MockUser(name))
+
+        game.on_start()
+        assert game.team_manager.team_mode == "2v2"
+        for player in game.players:
+            player.captured = []
+        game.players[0].captured = [Card(id=1, rank=1, suit=1)]
+        game.players[1].captured = [Card(id=2, rank=2, suit=2)]
+        game.players[2].captured = [Card(id=3, rank=3, suit=3)]
+        game.players[3].captured = [Card(id=4, rank=4, suit=4)]
+
+        score_round(game)
+
+        assert game.team_manager.get_team("Alice").round_score == 1
+        assert game.team_manager.get_team("Bob").round_score == 0
+        assert game.team_manager.get_team("Carol").round_score == 1
+        assert game.team_manager.get_team("Dave").round_score == 0
 
 
 class TestScopaPersistence:

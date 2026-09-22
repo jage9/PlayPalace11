@@ -7,11 +7,10 @@ Supports single bonk (bonker wins) and multiple bonks (last alive wins).
 
 import random
 from dataclasses import dataclass, field
-from datetime import datetime
 
 from ..base import Game, Player, GameOptions
 from ..registry import register_game
-from ...game_utils.game_result import GameResult, PlayerResult
+from ...game_utils.game_result import GameResult
 from ...game_utils.game_status import GameStatus
 from ...game_utils.options import BoolOption, option_field
 from ...messages.localization import Localization
@@ -198,23 +197,8 @@ class MetalPipeGame(Game):
 
     def build_game_result(self) -> GameResult:
         """Build the game result."""
-        all_players = [
-            p for p in self.players if isinstance(p, MetalPipePlayer) and not p.is_spectator
-        ]
 
-        return GameResult(
-            game_type=self.get_type(),
-            timestamp=datetime.now().isoformat(),
-            duration_ticks=self.sound_scheduler_tick,
-            player_results=[
-                PlayerResult(
-                    player_id=p.id,
-                    player_name=p.name,
-                    is_bot=p.is_bot,
-                    is_virtual_bot=getattr(p, "is_virtual_bot", False),
-                )
-                for p in all_players
-            ],
+        return self.make_game_result(
             custom_data={
                 "winner_names": self._winner_names,
                 "multiple_bonks": self.options.multiple_bonks,

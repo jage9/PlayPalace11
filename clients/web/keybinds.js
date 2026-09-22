@@ -223,7 +223,8 @@ export function installKeybinds({
       }
 
       const typedChar = event.key.length === 1 ? event.key.toLowerCase() : "";
-      const isTypeNavChar = /^[a-z0-9 ]$/.test(typedChar);
+      // Space is always a server keybind; letters and numbers are menu search.
+      const isTypeNavChar = /^[a-z0-9]$/.test(typedChar);
       if (
         menu.multiletterEnabled
         && isTypeNavChar
@@ -275,6 +276,11 @@ export function installKeybinds({
           return;
         }
       }
+    }
+
+    if (event.key === "Escape" && typing) {
+      // Text controls own Escape (for example, inline input cancellation).
+      return;
     }
 
     if (!menuFocused && !typing) {

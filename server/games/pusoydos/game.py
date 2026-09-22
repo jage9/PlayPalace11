@@ -785,7 +785,6 @@ class PusoyDosGame(Game, TurnTimerMixin):
                 handler="_action_check_trick",
                 is_enabled="_is_check_enabled",
                 is_hidden="_is_check_hidden",
-                include_spectators=True,
             )
         )
         action_set.add(
@@ -804,7 +803,6 @@ class PusoyDosGame(Game, TurnTimerMixin):
                 handler="_action_read_card_counts",
                 is_enabled="_is_check_enabled",
                 is_hidden="_is_check_hidden",
-                include_spectators=True,
             )
         )
         action_set.add(
@@ -814,7 +812,6 @@ class PusoyDosGame(Game, TurnTimerMixin):
                 handler="_action_check_turn_timer",
                 is_enabled="_is_check_enabled",
                 is_hidden="_is_check_hidden",
-                include_spectators=True,
             )
         )
 

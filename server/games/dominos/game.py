@@ -289,7 +289,6 @@ class DominosGame(Game):
                 handler="_action_view_chain",
                 is_enabled="_is_view_chain_enabled",
                 is_hidden="_is_view_chain_hidden",
-                include_spectators=True,
             )
         )
         action_set.add(
@@ -299,7 +298,6 @@ class DominosGame(Game):
                 handler="_action_read_ends",
                 is_enabled="_is_view_chain_enabled",
                 is_hidden="_is_view_chain_hidden",
-                include_spectators=True,
             )
         )
         action_set.add(
@@ -318,7 +316,6 @@ class DominosGame(Game):
                 handler="_action_read_counts",
                 is_enabled="_is_read_counts_enabled",
                 is_hidden="_is_read_counts_hidden",
-                include_spectators=True,
             )
         )
         self._apply_standard_action_order(action_set, user)

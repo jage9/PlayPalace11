@@ -84,7 +84,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_add_bot_hidden(self, player: "Player") -> Visibility:
-        """Add bot is always hidden (F5/keybind only)."""
+        """Add bot is hidden from the normal menu and available by keybind."""
         return Visibility.HIDDEN
 
     def _is_remove_bot_enabled(self, player: "Player") -> str | None:
@@ -98,7 +98,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_remove_bot_hidden(self, player: "Player") -> Visibility:
-        """Remove bot is always hidden (F5/keybind only)."""
+        """Remove bot is hidden from the normal menu and available by keybind."""
         return Visibility.HIDDEN
 
     def _is_toggle_spectator_enabled(self, player: "Player") -> str | None:
@@ -110,7 +110,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_toggle_spectator_hidden(self, player: "Player") -> Visibility:
-        """Toggle spectator is always hidden (F5/keybind only)."""
+        """Toggle spectator is hidden from the normal menu and available by keybind."""
         return Visibility.HIDDEN
 
     def _get_toggle_spectator_label(self, player: "Player", action_id: str) -> str:
@@ -126,7 +126,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_leave_game_hidden(self, player: "Player") -> Visibility:
-        """Leave game is always hidden (F5/keybind only)."""
+        """Leave game is hidden from the normal menu and available by keybind."""
         return Visibility.HIDDEN
 
     # --- Option actions ---
@@ -173,18 +173,12 @@ class ActionVisibilityMixin:
         """Show actions menu is always enabled."""
         return None
 
-    def _is_show_actions_hidden(self, player: "Player") -> Visibility:
-        """Show actions is hidden for players but visible to spectators."""
-        if player.is_spectator:
-            return Visibility.VISIBLE
-        return Visibility.HIDDEN
-
     def _is_always_hidden(self, player: "Player") -> Visibility:
-        """Always hide an action from menus (keybind only)."""
+        """Hide from the normal game menu; actions-menu eligibility is separate."""
         return Visibility.HIDDEN
 
     def _is_always_disabled(self, player: "Player") -> str | None:
-        """Always disable an action (used with keep_visible_when_disabled)."""
+        """Disable a display-only action without deciding its visibility."""
         return "action-locked"
 
     def _is_save_table_enabled(self, player: "Player") -> str | None:
@@ -194,7 +188,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_save_table_hidden(self, player: "Player") -> Visibility:
-        """Save table is always hidden (keybind only)."""
+        """Save table is hidden from the normal menu and available by keybind."""
         return Visibility.HIDDEN
 
     def _is_whose_turn_enabled(self, player: "Player") -> str | None:
@@ -204,7 +198,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_whose_turn_hidden(self, player: "Player") -> Visibility:
-        """Whose turn is always hidden (keybind only)."""
+        """Whose turn is hidden from the normal menu and available by keybind."""
         return Visibility.HIDDEN
 
     def _is_whos_at_table_enabled(self, player: "Player") -> str | None:
@@ -212,7 +206,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_whos_at_table_hidden(self, player: "Player") -> Visibility:
-        """Whos at table is always hidden (keybind only)."""
+        """Whos at table is hidden from the normal menu and available by keybind."""
         return Visibility.HIDDEN
 
     def _is_check_scores_enabled(self, player: "Player") -> str | None:
@@ -224,7 +218,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_check_scores_hidden(self, player: "Player") -> Visibility:
-        """Check scores is always hidden (keybind only)."""
+        """Check scores is hidden from the normal menu and available by keybind."""
         return Visibility.HIDDEN
 
     def _is_check_scores_detailed_enabled(self, player: "Player") -> str | None:
@@ -236,7 +230,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_check_scores_detailed_hidden(self, player: "Player") -> Visibility:
-        """Check scores detailed is always hidden (keybind only)."""
+        """Check scores detailed is hidden from the normal menu and available by keybind."""
         return Visibility.HIDDEN
 
     def _is_check_game_options_enabled(self, player: "Player") -> str | None:
@@ -246,7 +240,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_check_game_options_hidden(self, player: "Player") -> Visibility:
-        """Readonly game options are hidden from the turn menu (keybind/actions menu only)."""
+        """Readonly game options are hidden from the turn menu and available elsewhere."""
         return Visibility.HIDDEN
 
     def _is_predict_outcomes_enabled(self, player: "Player") -> str | None:
@@ -260,5 +254,5 @@ class ActionVisibilityMixin:
         return None
 
     def _is_predict_outcomes_hidden(self, player: "Player") -> Visibility:
-        """Predict outcomes is always hidden (keybind only)."""
+        """Predict outcomes is hidden from the normal menu and available by keybind."""
         return Visibility.HIDDEN

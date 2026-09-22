@@ -32,11 +32,11 @@ class ActionExecutionMixin:
         action_id: str,
         input_value: str | None = None,
         context: "ActionContext | None" = None,
-    ) -> None:
-        """Execute an action for a player, optionally with input value and context."""
+    ) -> bool:
+        """Execute an action, returning whether it was accepted."""
         action = self.find_action(player, action_id)
         if not action:
-            return
+            return False
 
         # Check if action is enabled using declarative callback
         resolved = self.resolve_action(player, action)
@@ -48,12 +48,21 @@ class ActionExecutionMixin:
                     user.speak_l(action.disabled_message)
                 else:
                     reason = resolved.disabled_reason
-                    if reason and reason != "action-not-available":
+                    if reason and not (
+                        reason == "action-not-available"
+                        and context is not None
+                        and getattr(context, "from_keybind", False)
+                    ):
                         if isinstance(reason, tuple):
                             user.speak_l(reason[0], **reason[1])
                         else:
                             user.speak_l(reason)
-            return
+            return False
+
+        # Close an actions menu before a command opens another UI.
+        actions_menu_open = getattr(self, "_actions_menu_open", None)
+        if actions_menu_open is not None:
+            actions_menu_open.discard(player.id)
 
         # If action requires input and we don't have it yet
         if action.input_request is not None and input_value is None:
@@ -66,16 +75,15 @@ class ActionExecutionMixin:
                 if player.id in self._pending_actions:
                     del self._pending_actions[player.id]
                 if input_value is None:
-                    return  # Bot couldn't provide input
+                    return False  # Bot couldn't provide input
             else:
                 # For humans, request input and store pending action
-                self._request_action_input(action, player)
-                return
+                return self._request_action_input(action, player)
 
         # Look up the handler method by name on this game object
         handler = getattr(self, action.handler, None)
         if not handler:
-            return
+            return False
 
         # Import here to avoid circular dependency at module level
         from ..games.base import ActionContext as AC
@@ -94,6 +102,7 @@ class ActionExecutionMixin:
         finally:
             # Clean up context
             self._action_context.pop(player.id, None)
+        return True
 
     def get_action_context(self, player: "Player") -> "ActionContext":
         """Get the current action context for a player (for use in handlers)."""
@@ -150,11 +159,11 @@ class ActionExecutionMixin:
             return req.default
         return None
 
-    def _request_action_input(self, action: Action, player: "Player") -> None:
+    def _request_action_input(self, action: Action, player: "Player") -> bool:
         """Request input from a human player for an action."""
         user = self.get_user(player)
         if not user:
-            return
+            return False
 
         req = action.input_request
         self._pending_actions[player.id] = action.id
@@ -165,7 +174,7 @@ class ActionExecutionMixin:
                 # No options available
                 del self._pending_actions[player.id]
                 user.speak_l("no-options-available")
-                return
+                return False
 
             # Check if this is a MenuOption with localized choice labels
             menu_option_meta = None
@@ -192,11 +201,15 @@ class ActionExecutionMixin:
                 multiletter=True,
                 escape_behavior=EscapeBehavior.SELECT_LAST,
             )
+            return True
 
         elif isinstance(req, EditboxInput):
             # Show editbox for text input
             prompt = Localization.get(user.locale, req.prompt)
             user.show_editbox("action_input_editbox", prompt, req.default)
+            return True
+
+        return False
 
     def end_turn(self) -> None:
         """End the current player's turn. Call this from action handlers."""

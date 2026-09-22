@@ -998,12 +998,6 @@ class MileByMileGame(Game):
 
         self._discard_card(player, slot, card)
 
-    def rebuild_player_menu(self, player, *, position: int | None = None) -> None:
-        """Skip rebuilding if this player has a pending discard confirmation."""
-        if self._pending_actions.get(player.id) == "discard_confirm":
-            return
-        super().rebuild_player_menu(player, position=position)
-
     def _show_discard_confirm(self, player: MileByMilePlayer, slot: int, user) -> None:
         """Show a yes/no confirmation to discard the unplayable card."""
         self._pending_discard_slot[player.id] = slot

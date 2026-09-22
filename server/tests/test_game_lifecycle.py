@@ -10,6 +10,7 @@ from server.game_utils.game_result import GameResult
 from server.game_utils.game_status import GameStatus
 from server.game_utils.actions import Action, ActionSet
 from server.games.registry import GameRegistry
+from server.games.base import TransientDisplayState
 from server.games.pig.game import PigGame
 from server.games.farkle.game import FarkleGame
 from server.games.threes.game import ThreesGame
@@ -30,6 +31,34 @@ def make_table(game_class, count=None):
     game.setup_keybinds()
     table.game = game
     return table
+
+
+@pytest.mark.parametrize("game_class", GameRegistry.get_all(), ids=lambda cls: cls.get_type())
+def test_game_refreshes_preserve_open_interactions(game_class):
+    game = make_table(game_class).game
+    game.on_start()
+    player = game.players[0]
+    user = game.get_user(player)
+    for interaction in ("actions", "input", "display"):
+        game._actions_menu_open.clear()
+        game._pending_actions.clear()
+        game._transient_display_state.clear()
+        if interaction == "actions":
+            game._actions_menu_open.add(player.id)
+        elif interaction == "input":
+            game._pending_actions[player.id] = "confirmation"
+        else:
+            game._transient_display_state[player.id] = TransientDisplayState(kind="status_box")
+        user.messages.clear()
+
+        game.rebuild_all_menus()
+        game.update_all_menus()
+
+        assert not any(message.type in ("show_menu", "update_menu") for message in user.messages)
+
+    game._transient_display_state.clear()
+    game.rebuild_player_menu(player)
+    assert any(message.type == "show_menu" for message in user.messages)
 
 
 @pytest.mark.parametrize("game_class", [cls for cls in GameRegistry.get_all()
@@ -58,6 +87,14 @@ def test_each_game_can_save_finish_and_start_again_at_the_same_table(game_class)
     game.finish_game()
     result = game._last_game_result
     assert result is not None
+    player = game.players[0]
+    user = game.get_user(player)
+    game.handle_event(player, {"type": "keybind", "key": "f5"})
+    assert player.id in game._actions_menu_open
+    game.handle_event(player, {
+        "type": "menu", "menu_id": "actions_menu", "selection_id": "go_back",
+    })
+    assert user.messages[-1].data["menu_id"] == "game_over"
     saved = game_class.from_json(game.to_json())
     assert saved._last_game_result.get_player_ids() == result.get_player_ids()
     members = list(table.members)

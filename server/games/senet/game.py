@@ -292,8 +292,8 @@ class SenetGame(Game):
         play_selection_sound: bool = False,
     ) -> None:
         if self._destroyed or self.status == "finished":
-            return
-        if self._is_transient_display_open(player):
+            return super().rebuild_player_menu(player, position=position)
+        if self._is_player_ui_busy(player):
             return
         user = self.get_user(player)
         if not user:
@@ -321,7 +321,7 @@ class SenetGame(Game):
     ) -> None:
         if self._destroyed or self.status == "finished":
             return
-        if self._is_transient_display_open(player):
+        if self._is_player_ui_busy(player):
             return
         user = self.get_user(player)
         if not user:
@@ -341,13 +341,8 @@ class SenetGame(Game):
     ) -> tuple[list[MenuItem], list[MenuItem]]:
         grid_items: list[MenuItem] = []
         other_items: list[MenuItem] = []
-        for resolved in self.get_all_visible_actions(player):
-            label = resolved.label
-            if not resolved.enabled and resolved.action.show_disabled_label:
-                unavailable = Localization.get(user.locale, "visibility-unavailable")
-                label = f"{label}; {unavailable}"
-            item = MenuItem(text=label, id=resolved.action.id, sound=resolved.sound)
-            if resolved.action.id.startswith("sq_"):
+        for item in self._build_action_menu_items(player, user):
+            if item.id.startswith("sq_"):
                 grid_items.append(item)
             else:
                 other_items.append(item)

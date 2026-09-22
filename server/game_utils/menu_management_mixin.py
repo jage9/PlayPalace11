@@ -59,6 +59,14 @@ class MenuManagementMixin:
         """Return True when a transient display is open for a player."""
         return player.id in self._transient_display_state
 
+    def _is_player_ui_busy(self, player: "Player") -> bool:
+        """Keep automatic game-menu refreshes from replacing an open interaction."""
+        return (
+            self._is_transient_display_open(player)
+            or player.id in self._pending_actions
+            or player.id in self._actions_menu_open
+        )
+
     def _show_transient_display(
         self,
         player: "Player",
@@ -178,13 +186,13 @@ class MenuManagementMixin:
         """
         if self._destroyed:
             return
+        if self._is_player_ui_busy(player):
+            return
         if self.status == "finished":
             if self._last_game_result is None:
                 # Older saved tables did not retain the completed result on the game.
                 self._last_game_result = self.build_game_result()
             self._show_end_screen(self._last_game_result, player)
-            return
-        if self._is_transient_display_open(player):
             return
         user = self.get_user(player)
         if not user:
@@ -217,7 +225,7 @@ class MenuManagementMixin:
             return
         if self.status == "finished":
             return
-        if self._is_transient_display_open(player):
+        if self._is_player_ui_busy(player):
             return
         user = self.get_user(player)
         if not user:

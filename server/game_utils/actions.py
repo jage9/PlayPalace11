@@ -67,7 +67,7 @@ class Action(DataClassJSONMixin):
         get_label: Optional method name for dynamic label.
         get_sound: Optional method name for highlight sound.
         input_request: Optional MenuInput/EditboxInput.
-        show_in_actions_menu: If True, shown in actions list.
+        show_in_actions_menu: If True, shown in the actions menu when enabled.
         disabled_message: Locale key spoken when activated while disabled.
     """
 
@@ -80,7 +80,6 @@ class Action(DataClassJSONMixin):
     get_sound: str | None = None  # Optional method name (e.g., "_get_roll_sound")
     input_request: MenuInput | EditboxInput | None = None
     show_in_actions_menu: bool = True
-    include_spectators: bool = False  # Whether spectators can see/execute this action
     disabled_message: str = ""  # Locale key spoken when activated while disabled
     show_disabled_label: bool = True  # Append "unavailable" suffix when disabled but visible
 

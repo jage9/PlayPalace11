@@ -48,6 +48,8 @@ class EventHandlingMixin:
 
         if self._is_transient_display_open(player) and menu_id != TRANSIENT_DISPLAY_MENU_ID:
             return
+        if player.id in self._pending_actions and menu_id in ("turn_menu", "actions_menu"):
+            return
 
         if menu_id == "turn_menu":
             self._handle_turn_menu_selection(player, event, selection_id)
@@ -94,7 +96,7 @@ class EventHandlingMixin:
 
     def _handle_keybind_event(self, player: "Player", event: dict) -> None:
         """Handle a keybind press event."""
-        if self._is_transient_display_open(player):
+        if self._is_transient_display_open(player) or player.id in self._pending_actions:
             return
 
         key = self._normalize_keybind(event)
@@ -134,11 +136,7 @@ class EventHandlingMixin:
         if action_id == "go_back":
             self.rebuild_player_menu(player)
             return
-        action = self.find_action(player, action_id)
-        if action:
-            resolved = self.resolve_action(player, action)
-            if resolved.enabled:
-                self.execute_action(player, action_id)
+        self.execute_action(player, action_id)
         # Don't rebuild if action opened another transient UI
         if (
             player.id not in self._pending_actions
@@ -151,32 +149,19 @@ class EventHandlingMixin:
 
     def _handle_turn_menu_selection(self, player: "Player", event: dict, selection_id: str) -> None:
         self._actions_menu_open.discard(player.id)
-        action = self.find_action(player, selection_id) if selection_id else None
-        if action:
-            resolved = self.resolve_action(player, action)
-            if resolved.enabled:
-                self.execute_action(player, selection_id)
-                if player.id not in self._pending_actions:
-                    self.rebuild_all_menus()
-            else:
-                user = self.get_user(player)
-                if user:
-                    if action.disabled_message:
-                        user.speak_l(action.disabled_message)
-                    elif resolved.disabled_reason:
-                        if isinstance(resolved.disabled_reason, tuple):
-                            key, kwargs = resolved.disabled_reason
-                            user.speak_l(key, **kwargs)
-                        else:
-                            user.speak_l(resolved.disabled_reason)
+        if selection_id:
+            # A supplied ID is authoritative, even if the action has disappeared.
+            accepted = self.execute_action(player, selection_id)
+            if accepted and player.id not in self._pending_actions:
+                self.rebuild_all_menus()
             return
 
         selection = event.get("selection", 1) - 1
         visible = self.get_all_visible_actions(player)
         if 0 <= selection < len(visible):
             resolved = visible[selection]
-            self.execute_action(player, resolved.action.id)
-            if player.id not in self._pending_actions:
+            accepted = self.execute_action(player, resolved.action.id)
+            if accepted and player.id not in self._pending_actions:
                 self.rebuild_all_menus()
 
     def _handle_action_input_menu(self, player: "Player", event: dict, selection_id: str) -> None:
@@ -267,21 +252,8 @@ class EventHandlingMixin:
             if keybind.requires_focus and menu_item_id not in keybind.actions:
                 continue
             for action_id in keybind.actions:
-                action = self.find_action(player, action_id)
-                if action:
-                    resolved = self.resolve_action(player, action)
-                    if resolved.enabled:
-                        self.execute_action(player, action_id, context=context)
-                        executed_any = True
-                    elif action.disabled_message:
-                        user = self.get_user(player)
-                        if user:
-                            user.speak_l(action.disabled_message)
-                    elif resolved.disabled_reason:
-                        if resolved.disabled_reason != "action-not-available":
-                            user = self.get_user(player)
-                            if user:
-                                user.speak_l(resolved.disabled_reason)
+                if self.execute_action(player, action_id, context=context):
+                    executed_any = True
         return executed_any
 
     def _should_rebuild_after_keybind(self, player: "Player", executed_any: bool) -> bool:

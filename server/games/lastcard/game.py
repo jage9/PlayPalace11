@@ -688,7 +688,6 @@ class LastCardGame(Game, TurnTimerMixin):
                 handler="_action_read_top",
                 is_enabled="_is_check_enabled",
                 is_hidden="_is_check_hidden",
-                include_spectators=True,
             )
         )
         action_set.add(
@@ -698,7 +697,6 @@ class LastCardGame(Game, TurnTimerMixin):
                 handler="_action_read_counts",
                 is_enabled="_is_check_enabled",
                 is_hidden="_is_check_hidden",
-                include_spectators=True,
             )
         )
         action_set.add(
@@ -708,7 +706,6 @@ class LastCardGame(Game, TurnTimerMixin):
                 handler="_action_check_turn_timer",
                 is_enabled="_is_check_enabled",
                 is_hidden="_is_check_hidden",
-                include_spectators=True,
             )
         )
         action_set.add(
@@ -718,7 +715,6 @@ class LastCardGame(Game, TurnTimerMixin):
                 handler="_action_read_draw_penalty",
                 is_enabled="_is_check_enabled",
                 is_hidden="_is_check_hidden",
-                include_spectators=True,
             )
         )
         action_set.add(

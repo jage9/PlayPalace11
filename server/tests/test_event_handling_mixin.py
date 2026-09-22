@@ -91,7 +91,15 @@ class DummyGame(EventHandlingMixin):
 
     def execute_action(
         self, player: Player, action_id: str, input_value=None, context=None
-    ) -> None:
+    ) -> bool:
+        resolved = self._resolved.get(action_id)
+        if resolved is None:
+            return False
+        if not resolved.enabled:
+            user = self.get_user(player)
+            if user and resolved.disabled_reason:
+                user.speak_l(resolved.disabled_reason)
+            return False
         self.executed.append(
             (
                 player.id,
@@ -102,6 +110,7 @@ class DummyGame(EventHandlingMixin):
                 },
             )
         )
+        return True
 
     def get_all_visible_actions(self, _player: Player) -> list[DummyResolved]:
         return self._visible_actions
@@ -231,6 +240,22 @@ def test_turn_menu_selection_by_index_fallback():
 
     assert game.executed[-1] == (player.id, "defend", {"input": None, "context": None})
     assert game.rebuild_all_calls == 1
+
+
+def test_turn_menu_unknown_selection_id_is_rejected_without_index_fallback():
+    game = DummyGame()
+    player = make_player("p3")
+    enabled = DummyResolved(DummyAction("defend"), enabled=True)
+    game.set_visible_actions([enabled])
+    game.register_action("defend")
+
+    game.handle_event(
+        player,
+        {"type": "menu", "menu_id": "turn_menu", "selection_id": "stale-id", "selection": 1},
+    )
+
+    assert game.executed == []
+    assert game.rebuild_all_calls == 0
 
 
 def test_action_input_menu_executes_and_clears_pending():

@@ -92,7 +92,7 @@ class ActionSetCreationMixin:
         return action_set
 
     def create_standard_action_set(self, player: "Player") -> ActionSet:
-        """Create the standard action set (F5, save) for a player."""
+        """Create the standard action set for a player."""
         user = self.get_user(player)
         locale = user.locale if user else "en"
 
@@ -100,12 +100,12 @@ class ActionSetCreationMixin:
         action_set.add(Action(
             id="stop_game", label=Localization.get(locale, "game-stop"),
             handler="_action_stop_game", is_enabled="_is_stop_game_enabled",
-            is_hidden="_is_always_hidden", include_spectators=True,
+            is_hidden="_is_always_hidden",
         ))
         action_set.add(Action(
             id="change_game", label=Localization.get(locale, "game-change-game"),
             handler="_action_change_game", is_enabled="_is_change_game_enabled",
-            is_hidden="_is_always_hidden", include_spectators=True,
+            is_hidden="_is_always_hidden",
         ))
         action_set.add(
             Action(
@@ -234,7 +234,7 @@ class ActionSetCreationMixin:
         )
         # Standard keybinds
         self.define_keybind(
-            "escape",
+            "f5",
             "Actions menu",
             ["show_actions"],
             state=KeybindState.ALWAYS,

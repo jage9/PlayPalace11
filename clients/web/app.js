@@ -856,37 +856,6 @@ function sendKeybind(payload) {
   network.send({ type: "keybind", ...payload });
 }
 
-function runEscapeAction() {
-  const menu = store.state.currentMenu;
-  if (!menu || menu.menuId === "main_menu") {
-    return;
-  }
-  if (menu.escapeBehavior === "escape_event") {
-    sendEscape();
-    return;
-  }
-  if (menu.escapeBehavior === "select_last_option") {
-    const lastIndex = menu.items.length - 1;
-    if (lastIndex >= 0) {
-      menuView.setSelection(lastIndex);
-      sendMenuSelection(lastIndex);
-    }
-    return;
-  }
-
-  const menuIndex = menu.items.length ? menu.selection + 1 : null;
-  const currentItem = menu.items[menu.selection] || null;
-  sendKeybind({
-    key: "escape",
-    control: false,
-    alt: false,
-    shift: false,
-    menu_id: menu.menuId,
-    menu_index: menuIndex,
-    menu_item_id: currentItem?.id ?? null,
-  });
-}
-
 function sendListOnline() {
   network.send({ type: "list_online" });
 }
@@ -1105,11 +1074,12 @@ function installActionsDialogTabTrap(dialogEl) {
   });
 }
 
-function closeActionsDialog({ sendEscapeForActions = false } = {}) {
-  if (sendEscapeForActions && activeActionsMenu?.menuId) {
+function closeActionsDialog({ sendGoBackForActions = false } = {}) {
+  if (sendGoBackForActions && activeActionsMenu?.menuId) {
     network.send({
-      type: "escape",
+      type: "menu",
       menu_id: activeActionsMenu.menuId,
+      selection_id: "go_back",
     });
   }
   pendingActionsMenuRequest = false;
@@ -1120,6 +1090,14 @@ function closeActionsDialog({ sendEscapeForActions = false } = {}) {
   if (elements.actionsDialog?.open) {
     elements.actionsDialog.close();
   }
+  if (sendGoBackForActions && store.state.connection.authenticated) {
+    elements.menuList.focus();
+  }
+}
+
+function handleActionsDialogCancel(event) {
+  event.preventDefault();
+  closeActionsDialog({ sendGoBackForActions: true });
 }
 
 function sendActionMenuSelection(actionsMenu, selectionIndex) {
@@ -1152,7 +1130,7 @@ function openActionsDialogForMenu(actionsMenu) {
     button.textContent = item.text;
     button.addEventListener("click", () => {
       sendActionMenuSelection(actionsMenu, index);
-      closeActionsDialog({ sendEscapeForActions: false });
+      closeActionsDialog();
       elements.menuList.focus();
     });
     li.appendChild(button);
@@ -1172,7 +1150,18 @@ function requestActionsDialog() {
     return;
   }
   pendingActionsMenuRequest = true;
-  runEscapeAction();
+  const menu = store.state.currentMenu;
+  const menuIndex = menu.items.length ? menu.selection + 1 : null;
+  const currentItem = menu.items[menu.selection] || null;
+  sendKeybind({
+    key: "f5",
+    control: false,
+    alt: false,
+    shift: false,
+    menu_id: menu.menuId,
+    menu_index: menuIndex,
+    menu_item_id: currentItem?.id ?? null,
+  });
 }
 
 function handleAuthorizeSuccess(packet, { refreshed = false } = {}) {
@@ -1590,7 +1579,7 @@ async function bootstrap() {
     requestActionsDialog();
   });
   elements.actionsCancel?.addEventListener("click", () => {
-    closeActionsDialog({ sendEscapeForActions: true });
+    closeActionsDialog({ sendGoBackForActions: true });
   });
 
   elements.musicVolume?.addEventListener("input", (event) => {
@@ -1656,6 +1645,7 @@ async function bootstrap() {
   elements.loginDialog.addEventListener("cancel", (event) => {
     event.preventDefault();
   });
+  elements.actionsDialog.addEventListener("cancel", handleActionsDialogCancel);
 
   installAudioUnlock();
   installInGameTabTrap();

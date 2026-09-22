@@ -39,6 +39,30 @@ Shared modules are usually a bad fit for:
 
 If two games only “sound similar” but their rules diverge quickly, keep the rule engine local.
 
+## Action and Menu Contract
+
+An action can be visible in the normal `turn_menu`, enabled, and eligible for
+the separate actions menu independently. Visibility controls whether the
+normal menu includes an item; enabled callbacks return `None` when usable or a
+localization key (optionally with arguments) explaining why it is unavailable;
+`show_in_actions_menu` controls the separate list of currently enabled actions.
+Use the name "actions menu" independently of its current shortcut. The normal
+`turn_menu` also displays lobby controls and option groups, despite its name.
+Action permissions belong to enabled callbacks; hidden callbacks only control
+normal-menu presentation. Keybind spectator
+access is an additional filter controlled by `Keybind.include_spectators`.
+
+F5 opens the actions menu. Escape selects Back or Cancel in menus configured
+for that behavior; it does not open the actions menu from the normal game menu.
+Normal-menu refreshes preserve open actions menus, pending input, and temporary
+displays. Completing a game or changing games clears those interactions.
+
+Actions may request a menu or editbox input, which creates a modal step before
+the handler runs. Games may also generate actions from live cards or board
+locations, and may override menu rebuilding for a grid or placement layout.
+Those are valid game-specific presentations as long as ordinary action
+execution still goes through the shared action pipeline.
+
 ## Big Picture
 
 There are three broad layers in `server/game_utils/`:

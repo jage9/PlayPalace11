@@ -51,7 +51,7 @@ Game ends when any player reaches **winning score** (default 500, range 1–1000
 - **S/Shift+S**: Score summaries (global)
 - **Ctrl+Q**: Leave table (global)
 
-**Note:** Card items should not appear in Escape actions menu. space/P only when applicable.
+**Note:** Card items should not appear in the actions menu. space/P only when applicable.
 
 ## Options
 - **Turn timer**: same choices as poker. If timer expires, perform default bot action for that turn or have bot complete the turn if already draw/played wild without suit. Resets on drawing a card or entering wild suit selection. Five-second warning should still play during suit selection if possible.
@@ -92,7 +92,7 @@ Game ends when any player reaches **winning score** (default 500, range 1–1000
 
 ## UI / Menu Behavior
 - Turn menu shows playable cards + draw/pass when allowed.
-- Escape actions menu excludes per-card items.
+- Actions menu excludes per-card items.
 - Wild suit selection is a submenu phase: only C/H/S/D accepted. Pirates and other games use submenus like this.
 
 ## Bot Logic (Initial), in separate file.

@@ -558,7 +558,7 @@ class BackgammonGame(Game):
     ) -> None:
         if self._destroyed or self.status == "finished":
             return
-        if self._is_transient_display_open(player):
+        if self._is_player_ui_busy(player):
             return
         user = self.get_user(player)
         if not user:
@@ -579,13 +579,8 @@ class BackgammonGame(Game):
         """Build point items and other items for the turn menu."""
         point_items: list[MenuItem] = []
         other_items: list[MenuItem] = []
-        for resolved in self.get_all_visible_actions(player):
-            label = resolved.label
-            if not resolved.enabled and resolved.action.show_disabled_label:
-                unavailable = Localization.get(user.locale, "visibility-unavailable")
-                label = f"{label}; {unavailable}"
-            item = MenuItem(text=label, id=resolved.action.id, sound=resolved.sound)
-            if resolved.action.id.startswith("point_"):
+        for item in self._build_action_menu_items(player, user):
+            if item.id.startswith("point_"):
                 point_items.append(item)
             else:
                 other_items.append(item)
@@ -599,8 +594,8 @@ class BackgammonGame(Game):
         play_selection_sound: bool = False,
     ) -> None:
         if self._destroyed or self.status == "finished":
-            return
-        if self._is_transient_display_open(player):
+            return super().rebuild_player_menu(player, position=position)
+        if self._is_player_ui_busy(player):
             return
         user = self.get_user(player)
         if not user:
@@ -765,8 +760,9 @@ class BackgammonGame(Game):
         if action_id and action_id.startswith("point_") and action_id.count("_") == 2:
             if isinstance(player, BackgammonPlayer):
                 self._action_point_click(player, action_id)
-                return
-        super().execute_action(player, action_id, input_value=input_value, context=context)
+                return True
+            return False
+        return super().execute_action(player, action_id, input_value=input_value, context=context)
 
     def _should_rebuild_after_keybind(self, player, executed_any: bool) -> bool:
         """Skip auto-rebuild when navigation already sent an update."""

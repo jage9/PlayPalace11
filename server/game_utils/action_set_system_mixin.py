@@ -63,14 +63,18 @@ class ActionSetSystemMixin:
         )
 
     def get_all_visible_actions(self, player: "Player") -> list[ResolvedAction]:
-        """Get all visible (enabled and not hidden) actions for a player, in order."""
+        """Get all visible actions for the normal turn menu, in order.
+
+        Visible and enabled are independent: a visible action may carry a
+        disabled reason for the client to announce.
+        """
         result = []
         for action_set in self.get_action_sets(player):
             result.extend(action_set.get_visible_actions(self, player))
         return result
 
     def get_all_enabled_actions(self, player: "Player") -> list[ResolvedAction]:
-        """Get all enabled actions for a player (for the actions menu), in order."""
+        """Get enabled actions for the actions menu, in order."""
         result = []
         for action_set in self.get_action_sets(player):
             result.extend(action_set.get_enabled_actions(self, player))

@@ -131,7 +131,6 @@ class RouletteGame(Game):
         actions.add(Action(
             id="wheel_status", label="", handler="_action_wheel_status", is_enabled="",
             is_hidden="_is_selection_hidden", get_label="_get_selection_label",
-            include_spectators=True,
         ))
         actions.add(Action(
             id="play_joker", label="", handler="_action_play_joker",

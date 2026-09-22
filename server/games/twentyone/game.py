@@ -579,16 +579,17 @@ class TwentyOneGame(ActionGuardMixin, Game):
         except (ValueError, IndexError):
             return None
 
-    def _request_action_input(self, action: Action, player: Player) -> None:
-        super()._request_action_input(action, player)
+    def _request_action_input(self, action: Action, player: Player) -> bool:
+        accepted = super()._request_action_input(action, player)
         if action.id != "play_modifier":
-            return
+            return accepted
         if self._pending_actions.get(player.id) != action.id:
-            return
+            return accepted
         p = player if isinstance(player, TwentyOnePlayer) else None
         if not p:
-            return
+            return accepted
         self._play_sound_for_player(p, SOUND_CHANGE_MENU_OPEN, volume=65)
+        return accepted
 
     def _action_hit(self, player: Player, action_id: str) -> None:
         p = player if isinstance(player, TwentyOnePlayer) else None

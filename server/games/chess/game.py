@@ -504,7 +504,7 @@ class ChessGame(TurnTimerMixin, Game):
             square_items.reverse()
 
         user.show_menu(
-            "turn_menu",
+            "game_menu",
             square_items + other_items,
             multiletter=False,
             escape_behavior=EscapeBehavior.KEYBIND,

@@ -240,7 +240,7 @@ class ActionVisibilityMixin:
         return None
 
     def _is_check_game_options_hidden(self, player: "Player") -> Visibility:
-        """Readonly game options are hidden from the turn menu and available elsewhere."""
+        """Readonly game options are hidden from the game menu and available elsewhere."""
         return Visibility.HIDDEN
 
     def _is_predict_outcomes_enabled(self, player: "Player") -> str | None:

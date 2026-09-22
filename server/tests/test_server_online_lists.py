@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from server.core.server import Server
+from server.game_utils.menu_management_mixin import MenuManagementMixin
 
 
 class DummyUser:
@@ -59,12 +60,14 @@ class FakeTables:
         return self.tables.get(username)
 
 
-class FakeGame:
+class FakeGame(MenuManagementMixin):
     """Game stub capturing status box calls."""
 
     def __init__(self, user_uuid: str, *, transient_open: bool = False) -> None:
         self.user_uuid = user_uuid
         self.transient_open = transient_open
+        self._pending_actions = {}
+        self._actions_menu_open = set()
         self.status_calls: list[list[str]] = []
 
     def get_player_by_id(self, player_id: str):
@@ -148,9 +151,14 @@ async def test_handle_list_online_with_games_menu(server):
 
 
 @pytest.mark.asyncio
-async def test_handle_list_online_with_games_ignored_while_transient_open(server):
+@pytest.mark.parametrize("interaction", ["display", "input", "actions"])
+async def test_handle_list_online_with_games_preserves_open_interaction(server, interaction):
     user = DummyUser("alice")
-    game = FakeGame(user.uuid, transient_open=True)
+    game = FakeGame(user.uuid, transient_open=interaction == "display")
+    if interaction == "input":
+        game._pending_actions[user.uuid] = "confirmation"
+    elif interaction == "actions":
+        game._actions_menu_open.add(user.uuid)
     table = SimpleNamespace(game=game, game_type="mock", listing_game_type="mock")
     server._users = {"alice": user}
     server._tables = FakeTables({"alice": table})

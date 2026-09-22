@@ -206,7 +206,7 @@ class ActionSet(DataClassJSONMixin):
         return result
 
     def get_visible_actions(self, game: "Game", player: "Player") -> list[ResolvedAction]:
-        """Get visible actions for the turn menu.
+        """Get visible actions for the game menu.
 
         Visibility and enabled are independent states. Disabled actions
         remain in the menu with an unavailable indicator.

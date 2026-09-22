@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from ..games.base import Player, ActionContext
 
 from .menu_management_mixin import TRANSIENT_DISPLAY_MENU_ID
+from .actions import EditboxInput, MenuInput
 
 
 class EventHandlingMixin:
@@ -48,11 +49,11 @@ class EventHandlingMixin:
 
         if self._is_transient_display_open(player) and menu_id != TRANSIENT_DISPLAY_MENU_ID:
             return
-        if player.id in self._pending_actions and menu_id in ("turn_menu", "actions_menu"):
+        if player.id in self._pending_actions and menu_id in ("game_menu", "actions_menu"):
             return
 
-        if menu_id == "turn_menu":
-            self._handle_turn_menu_selection(player, event, selection_id)
+        if menu_id == "game_menu":
+            self._handle_game_menu_selection(player, event, selection_id)
 
         elif menu_id == "actions_menu":
             # Actions menu - use selection_id directly
@@ -89,7 +90,11 @@ class EventHandlingMixin:
         if input_id == "action_input_editbox":
             # Handle action input editbox submission
             if player.id in self._pending_actions:
-                action_id = self._pending_actions.pop(player.id)
+                action_id = self._pending_actions[player.id]
+                action = self.find_action(player, action_id)
+                if action and not isinstance(action.input_request, EditboxInput):
+                    return
+                self._pending_actions.pop(player.id)
                 if text:  # Non-empty input
                     self.execute_action(player, action_id, text)
             self.rebuild_player_menu(player)
@@ -132,7 +137,7 @@ class EventHandlingMixin:
         """Handle selection from the actions menu."""
         # Actions menu is no longer open
         self._actions_menu_open.discard(player.id)
-        # Handle "back" - just return to turn menu
+        # Handle "back" - just return to game menu
         if action_id == "go_back":
             self.rebuild_player_menu(player)
             return
@@ -147,7 +152,7 @@ class EventHandlingMixin:
         ):
             self.rebuild_player_menu(player)
 
-    def _handle_turn_menu_selection(self, player: "Player", event: dict, selection_id: str) -> None:
+    def _handle_game_menu_selection(self, player: "Player", event: dict, selection_id: str) -> None:
         self._actions_menu_open.discard(player.id)
         if selection_id:
             # A supplied ID is authoritative, even if the action has disappeared.
@@ -166,10 +171,11 @@ class EventHandlingMixin:
 
     def _handle_action_input_menu(self, player: "Player", event: dict, selection_id: str) -> None:
         if player.id in self._pending_actions:
-            action_id = self._pending_actions.pop(player.id)
-            resolved_selection_id = selection_id or self._resolve_action_input_selection_id(
-                player, action_id, event
+            action_id = self._pending_actions[player.id]
+            resolved_selection_id = self._resolve_action_input_selection_id(
+                player, action_id, event, selection_id
             )
+            self._pending_actions.pop(player.id, None)
             if resolved_selection_id and resolved_selection_id != "_cancel":
                 self.execute_action(player, action_id, resolved_selection_id)
         if (
@@ -180,24 +186,23 @@ class EventHandlingMixin:
             self.rebuild_player_menu(player)
 
     def _resolve_action_input_selection_id(
-        self, player: "Player", action_id: str, event: dict
+        self, player: "Player", action_id: str, event: dict, selection_id: str = ""
     ) -> str | None:
         action = self.find_action(player, action_id)
         if not action:
             return None
         input_request = action.input_request
-        if not input_request:
+        if not isinstance(input_request, MenuInput):
             return None
+
+        options = self._get_menu_options_for_action(action, player)
+        if selection_id:
+            return selection_id if options and selection_id in options else None
 
         selection = event.get("selection")
         if not isinstance(selection, int):
             return None
         selection_index = selection - 1
-
-        if hasattr(self, "_get_menu_options_for_action"):
-            options = self._get_menu_options_for_action(action, player)  # type: ignore[attr-defined]
-        else:
-            options = None
 
         if options and 0 <= selection_index < len(options):
             return options[selection_index]

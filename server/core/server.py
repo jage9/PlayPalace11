@@ -4382,7 +4382,7 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         if table and table.game:
             player = table.game.get_player_by_id(user.uuid)
             if player:
-                if table.game._is_transient_display_open(player):
+                if table.game._is_player_ui_busy(player):
                     return
                 table.game.status_box(player, self._format_online_users_lines(user))
                 return

@@ -14,7 +14,7 @@ TRANSIENT_DISPLAY_MENU_ID = "transient_display"
 
 
 class MenuManagementMixin:
-    """Build and update turn menus and status boxes.
+    """Build and update game menus and status boxes.
 
     Expected Game attributes:
         _destroyed: bool.
@@ -106,7 +106,7 @@ class MenuManagementMixin:
         speak_key: str | None = None,
         rebuild_menu: bool = True,
     ) -> None:
-        """Close a transient display and optionally rebuild the turn menu."""
+        """Close a transient display and optionally rebuild the game menu."""
         user = self.get_user(player)
         if user:
             user.remove_menu(TRANSIENT_DISPLAY_MENU_ID)
@@ -172,7 +172,7 @@ class MenuManagementMixin:
                 return
 
     def rebuild_player_menu(self, player: "Player", *, position: int | None = None) -> None:
-        """Rebuild the turn menu for a player.
+        """Rebuild the game menu for a player.
 
         Args:
             player: The player whose menu to rebuild.
@@ -200,7 +200,7 @@ class MenuManagementMixin:
 
         items = self._build_action_menu_items(player, user)
         user.show_menu(
-            "turn_menu",
+            "game_menu",
             items,
             multiletter=False,
             escape_behavior=EscapeBehavior.KEYBIND,
@@ -220,7 +220,7 @@ class MenuManagementMixin:
         selection_id: str | None = None,
         play_selection_sound: bool = False,
     ) -> None:
-        """Update the turn menu for a player, preserving focus position."""
+        """Update the game menu for a player, preserving focus position."""
         if self._destroyed:
             return
         if self.status == "finished":
@@ -233,7 +233,7 @@ class MenuManagementMixin:
 
         items = self._build_action_menu_items(player, user)
         user.update_menu(
-            "turn_menu", items, selection_id=selection_id, play_selection_sound=play_selection_sound
+            "game_menu", items, selection_id=selection_id, play_selection_sound=play_selection_sound
         )
 
     def update_all_menus(self) -> None:

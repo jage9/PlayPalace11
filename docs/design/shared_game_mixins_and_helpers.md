@@ -41,13 +41,13 @@ If two games only “sound similar” but their rules diverge quickly, keep the 
 
 ## Action and Menu Contract
 
-An action can be visible in the normal `turn_menu`, enabled, and eligible for
+An action can be visible in the normal `game_menu`, enabled, and eligible for
 the separate actions menu independently. Visibility controls whether the
 normal menu includes an item; enabled callbacks return `None` when usable or a
 localization key (optionally with arguments) explaining why it is unavailable;
 `show_in_actions_menu` controls the separate list of currently enabled actions.
 Use the name "actions menu" independently of its current shortcut. The normal
-`turn_menu` also displays lobby controls and option groups, despite its name.
+`game_menu` displays lobby controls and option groups as well as gameplay actions.
 Action permissions belong to enabled callbacks; hidden callbacks only control
 normal-menu presentation. Keybind spectator
 access is an additional filter controlled by `Keybind.include_spectators`.

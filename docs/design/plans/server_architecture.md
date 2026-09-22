@@ -167,8 +167,8 @@ Example menu packet:
 
 ### Event Flow Example
 
-1. Server sends menu with menu_id "turn_menu" and items with IDs "roll", "hold", "leave".
+1. Server sends menu with menu_id "game_menu" and items with IDs "roll", "hold", "leave".
 2. User navigates to "Hold" and presses Enter.
-3. Client sends menu packet with menu_id "turn_menu" and selection 2.
-4. Alternatively, if user presses F5 while "Hold" is highlighted, client sends keybind packet with key "f5", menu_id "turn_menu", menu_index 2, and menu_item_id "hold".
-5. Server handles the event using menu_item_id "hold" to determine the action, not the numeric index.
+3. Client sends a menu packet with menu_id "game_menu", selection_id "hold", and selection 2. The stable selection_id identifies the action; the number supports clients that do not send IDs.
+4. Alternatively, if the game binds H to Hold, the client sends a keybind packet with key "h", menu_id "game_menu", menu_index 2, and menu_item_id "hold".
+5. The server looks up the key's binding and checks the referenced action's enabled callback. The highlighted item supplies context only where the binding or handler requires it. F5 opens the actions menu regardless of the highlighted game action.

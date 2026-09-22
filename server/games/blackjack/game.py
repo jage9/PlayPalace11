@@ -778,47 +778,6 @@ class BlackjackGame(TurnTimerMixin, Game):
             include_spectators=True,
         )
 
-    def _handle_keybind_event(self, player: Player, event: dict) -> None:
-        """Handle keybinds with blackjack-specific no-rebuild read/status keys."""
-        key = self._normalize_keybind(event)
-        menu_item_id = event.get("menu_item_id")
-        menu_index = event.get("menu_index")
-
-        keybinds = self._keybinds.get(key)
-        if keybinds is None:
-            return
-
-        is_spectator = self._is_player_spectator(player)
-
-        from ..base import ActionContext
-
-        context = ActionContext(
-            menu_item_id=menu_item_id,
-            menu_index=menu_index,
-            from_keybind=True,
-        )
-
-        executed_any = self._execute_keybinds(player, keybinds, is_spectator, menu_item_id, context)
-
-        no_rebuild_keys = {
-            "t",
-            "ctrl+w",
-            "s",
-            "shift+s",
-            "b",
-            "ctrl+r",
-            "r",
-            "c",
-            "e",
-            "shift+r",
-            "shift+t",
-        }
-        if key in no_rebuild_keys:
-            return
-
-        if self._should_rebuild_after_keybind(player, executed_any):
-            self.rebuild_all_menus()
-
     # ======================================================================
     # Game flow
     # ======================================================================
@@ -1456,6 +1415,7 @@ class BlackjackGame(TurnTimerMixin, Game):
         user = self.get_user(player)
         if not user:
             return
+        self._suppress_keybind_rebuild(player)
 
         lines: list[str] = []
         for other in self.get_active_players():

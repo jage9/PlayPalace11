@@ -13,7 +13,7 @@ function installForTarget(target, { multiletterEnabled = true } = {}) {
 
   const menuElement = { tagName: "UL" };
   const menu = {
-    menuId: "turn_menu",
+    menuId: "game_menu",
     items: [{ id: "play", text: "Play" }],
     selection: 0,
     multiletterEnabled,

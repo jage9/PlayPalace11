@@ -625,7 +625,7 @@ class NineGame(Game):
         return reason, {"suit": self._get_localized_suit_name(card.suit, locale)}
 
     def _is_play_card_hidden(self, player: Player, action_id: str) -> Visibility:
-        """Card slots are visible in the turn menu, including disabled cards."""
+        """Card slots are visible in the game menu, including disabled cards."""
         return Visibility.VISIBLE
 
     def _has_valid_move(self, player: NinePlayer) -> bool:

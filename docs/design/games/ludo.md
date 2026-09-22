@@ -32,7 +32,7 @@ Classic Ludo: race four tokens around the track and into the home column. First 
 - Captures do not occur on safe squares (including optional safe start squares).
 
 ## Actions & Keybinds
-- Turn menu:
+- Game menu:
   - Roll die (`R`).
   - View board status (`V`).
 - Actions menu:

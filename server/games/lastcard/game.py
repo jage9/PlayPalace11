@@ -653,7 +653,7 @@ class LastCardGame(Game, TurnTimerMixin):
                 )
             )
 
-        # Sort hand (web-only, visible in turn menu for mobile users)
+        # Sort hand (web-only, visible in game menu for mobile users)
         action_set.add(
             Action(
                 id="cycle_hand_sort_turn",
@@ -881,7 +881,7 @@ class LastCardGame(Game, TurnTimerMixin):
                 )
             )
 
-        # Web-specific turn menu reordering:
+        # Web-specific game menu reordering:
         # [Reaction: buzzer, jump_in] → [Context: colors, challenge, accept,
         #  swap targets] → [Cards + confirm] → [Draw, Pass] → [Sort]
         user = self.get_user(player)
@@ -2351,7 +2351,7 @@ class LastCardGame(Game, TurnTimerMixin):
         return Visibility.HIDDEN  # Keybind-only
 
     def _is_sort_turn_hidden(self, player: Player) -> Visibility:
-        """Sort hand button in turn menu: web-only."""
+        """Sort hand button in game menu: web-only."""
         if self.status != "playing" or player.is_spectator:
             return Visibility.HIDDEN
         user = self.get_user(player)

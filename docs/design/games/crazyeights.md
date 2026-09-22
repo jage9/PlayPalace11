@@ -41,9 +41,9 @@ Game ends when any player reaches **winning score** (default 500, range 1–1000
 4. End turn → advance to next player based on direction and effects.
 
 ## Controls / Keybinds
-- **Arrow keys + Enter**: select card or action from turn menu, normal menu
-- **Space**: Draw (only when allowed). Also in turn menu under cards.
-- **P**: Pass (only when allowed). Also in turn menu under cards.
+- **Arrow keys + Enter**: select card or action from game menu, normal menu
+- **Space**: Draw (only when allowed). Also in game menu under cards.
+- **P**: Pass (only when allowed). Also in game menu under cards.
 - **C**: Read current top card. No label, just the card itself, 7 of clubs, or reverse of spades. If a wild, say the suit (“Wild, hearts”).
 - **E**: read each player and number of cards they have remaining. bob 4, jane 3. read in table order, not sorted.
 - **T**: Whose turn (global)
@@ -91,7 +91,7 @@ Game ends when any player reaches **winning score** (default 500, range 1–1000
 - **Timer**: if expires, call bot decision for current player.
 
 ## UI / Menu Behavior
-- Turn menu shows playable cards + draw/pass when allowed.
+- Game menu shows playable cards + draw/pass when allowed.
 - Actions menu excludes per-card items.
 - Wild suit selection is a submenu phase: only C/H/S/D accepted. Pirates and other games use submenus like this.
 

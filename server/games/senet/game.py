@@ -303,7 +303,7 @@ class SenetGame(Game):
         use_grid = len(grid_items) == 30
 
         user.show_menu(
-            "turn_menu",
+            "game_menu",
             grid_items + other_items,
             multiletter=False,
             escape_behavior=EscapeBehavior.KEYBIND,
@@ -330,7 +330,7 @@ class SenetGame(Game):
         grid_items, other_items = self._build_menu_items(player, user)
 
         user.update_menu(
-            "turn_menu",
+            "game_menu",
             grid_items + other_items,
             selection_id=selection_id,
             play_selection_sound=play_selection_sound,

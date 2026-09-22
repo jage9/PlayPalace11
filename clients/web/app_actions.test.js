@@ -46,7 +46,7 @@ function loadActionsFunctions() {
       state: {
         connection: { authenticated: true },
         currentMenu: {
-          menuId: "turn_menu",
+          menuId: "game_menu",
           items: [{ id: "play", text: "Play" }],
           selection: 0,
         },
@@ -83,10 +83,21 @@ test("Actions button requests the server F5 keybind", () => {
     control: false,
     alt: false,
     shift: false,
-    menu_id: "turn_menu",
+    menu_id: "game_menu",
     menu_index: 1,
     menu_item_id: "play",
   }]);
+});
+
+test("Actions button remains available when the game menu has no rows", () => {
+  const { context, sent } = loadActionsFunctions();
+  context.store.state.currentMenu.items = [];
+
+  assert.equal(context.canOpenActionsPopup(), true);
+  context.requestActionsDialog();
+
+  assert.equal(sent[0].key, "f5");
+  assert.equal(sent[0].menu_item_id, null);
 });
 
 test("Actions dialog cancel sends go_back and restores menu focus", () => {

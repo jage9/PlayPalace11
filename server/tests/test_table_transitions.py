@@ -35,7 +35,7 @@ def test_host_can_stop_restart_and_change_each_game(game_class):
 
     game.execute_action(host, "start_game")
     assert game.status == table.status == GameStatus.PLAYING
-    assert "turn_menu" in host_user.menus
+    assert "game_menu" in host_user.menus
 
     host_user.show_menu("stale_options", ["stale"])
     host_user.show_editbox("action_input_editbox", "stale")

@@ -79,7 +79,7 @@ class TestThreesGameUnit:
 
         assert any(
             message.type == "update_menu"
-            and message.data.get("menu_id") == "turn_menu"
+            and message.data.get("menu_id") == "game_menu"
             and message.data.get("selection_id") == "toggle_die_0"
             for message in user.messages
         )
@@ -103,7 +103,7 @@ class TestThreesGameUnit:
             message
             for message in user.messages
             if message.type == "update_menu"
-            and message.data.get("menu_id") == "turn_menu"
+            and message.data.get("menu_id") == "game_menu"
             and message.data.get("selection_id")
         ]
         assert updates

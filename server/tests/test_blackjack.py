@@ -450,6 +450,25 @@ def test_blackjack_b_keybind_between_hands_opens_change_bet_input() -> None:
     assert host_user.editboxes["action_input_editbox"]["prompt"] == "Change your bet"
 
 
+def test_blackjack_keybind_is_ignored_while_action_input_is_pending() -> None:
+    game, host_player, host_user = create_game_with_host()
+    guest_user = MockUser("Guest")
+    guest_player = game.add_player("Guest", guest_user)
+    game.setup_keybinds()
+    game.status = GameStatus.PLAYING
+    game.game_active = True
+    game.phase = "players"
+    host_player.chips = 100
+    host_player.bet = 10
+    guest_player.chips = 80
+    guest_player.bet = 20
+    game._pending_actions[host_player.id] = "change_bet"
+
+    game._handle_keybind_event(host_player, {"key": "b"})
+
+    assert host_user.get_last_spoken() is None
+
+
 def test_blackjack_actions_menu_hides_bet_previous_action() -> None:
     game, host_player, _host_user = create_game_with_host()
     game.status = GameStatus.PLAYING
@@ -1005,6 +1024,28 @@ def test_blackjack_status_keybinds_do_not_rebuild_menus() -> None:
 
     menu_events = [m for m in host_user.messages if m.type in {"show_menu", "update_menu"}]
     assert menu_events == []
+
+
+def test_blackjack_read_key_does_not_suppress_next_gameplay_refresh() -> None:
+    game, host_player, host_user = create_game_with_host()
+    game.setup_keybinds()
+    game.status = GameStatus.PLAYING
+    game.game_active = True
+    game.phase = "players"
+    host_player.chips = 100
+    host_player.bet = 10
+    host_player.hand = [make_card(1, 10, 1), make_card(2, 7, 2)]
+    game.dealer_hand = [make_card(3, 9, 3), make_card(4, 8, 4)]
+    game.dealer_hole_revealed = True
+    game.set_turn_players([host_player], reset_index=True)
+    host_user.messages = []
+    # Isolate the event-driven refresh from updates performed by the handler.
+    game._action_stand = lambda *_: None
+
+    game._handle_keybind_event(host_player, {"key": "r"})
+    game._handle_keybind_event(host_player, {"key": "x"})
+
+    assert any(message.type in {"show_menu", "update_menu"} for message in host_user.messages)
 
 
 def test_blackjack_dealer_reveal_supports_serbian_locale_bundle() -> None:

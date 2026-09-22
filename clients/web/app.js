@@ -812,10 +812,7 @@ function canOpenActionsPopup() {
   if (!menu || !menu.menuId || menu.menuId === "main_menu") {
     return false;
   }
-  if (!menu.items.length) {
-    return false;
-  }
-  return menu.menuId === "turn_menu";
+  return menu.menuId === "game_menu";
 }
 
 function updateActionsButtonVisibility() {
@@ -1233,6 +1230,7 @@ function handlePacket(packet) {
       }
 
       let selection = 0;
+      const previousSettings = previousMenu.menuId === packet.menu_id ? previousMenu : {};
 
       if (packet.selection_id) {
         const byId = items.findIndex((item) => item.id === packet.selection_id);
@@ -1271,10 +1269,10 @@ function handlePacket(packet) {
         menuId: packet.menu_id,
         items,
         selection,
-        multiletterEnabled: packet.multiletter_enabled ?? true,
-        escapeBehavior: packet.escape_behavior ?? "keybind",
-        gridEnabled: packet.grid_enabled ?? false,
-        gridWidth: packet.grid_width ?? 1,
+        multiletterEnabled: packet.multiletter_enabled ?? previousSettings.multiletterEnabled ?? true,
+        escapeBehavior: packet.escape_behavior ?? previousSettings.escapeBehavior ?? "keybind",
+        gridEnabled: packet.grid_enabled ?? previousSettings.gridEnabled ?? false,
+        gridWidth: packet.grid_width ?? previousSettings.gridWidth ?? 1,
       });
       if (packet.play_selection_sound && items.length > 0) {
         playMenuSelectionSound(items[Math.max(0, Math.min(selection, items.length - 1))]);

@@ -1048,7 +1048,7 @@ class OptionsHandlerMixin:
         )
 
     def _close_game_options_view(self, player: "Player") -> None:
-        """Close the read-only in-game options viewer and restore the turn menu."""
+        """Close the read-only in-game options viewer and restore the game menu."""
         self._close_transient_display(player)
 
     def _action_check_game_options(self, player: "Player", action_id: str) -> None:

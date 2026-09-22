@@ -59,6 +59,7 @@ def test_game_refreshes_preserve_open_interactions(game_class):
     game._transient_display_state.clear()
     game.rebuild_player_menu(player)
     assert any(message.type == "show_menu" for message in user.messages)
+    assert user.messages[-1].data["menu_id"] == "game_menu"
 
 
 @pytest.mark.parametrize("game_class", [cls for cls in GameRegistry.get_all()

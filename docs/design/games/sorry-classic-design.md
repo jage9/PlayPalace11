@@ -108,7 +108,7 @@ No networking objects or non-serializable runtime handles are stored in game sta
 4. If one legal move and `auto_apply_single_move=true`:
    - apply automatically
 5. Otherwise:
-   - present legal move actions in turn menu
+   - present legal move actions in game menu
    - player selects one
 6. Apply move and resolve effects:
    - bump/send opponent pawn to start

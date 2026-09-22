@@ -61,8 +61,8 @@ The server will own modal behavior. When a transient display is open for a playe
   - Enter on leaf read-only items does nothing and does not speak an error
   - No gameplay keybinds/actions should execute while open
 - Rebuild behavior:
-  - While a transient display is open, turn-menu rebuild/update calls should not replace it
-  - Closing the display restores the normal turn menu cleanly
+  - While a transient display is open, game-menu rebuild/update calls should not replace it
+  - Closing the display restores the normal game menu cleanly
 
 ## Test Plan
 - Add focused tests for the shared transient-display handler:

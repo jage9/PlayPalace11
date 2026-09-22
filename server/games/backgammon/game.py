@@ -569,14 +569,14 @@ class BackgammonGame(Game):
             point_items = point_items[12:] + point_items[:12]
 
         user.update_menu(
-            "turn_menu",
+            "game_menu",
             point_items + other_items,
             selection_id=selection_id,
             play_selection_sound=play_selection_sound,
         )
 
     def _build_menu_items(self, player: "Player", user) -> tuple[list[MenuItem], list[MenuItem]]:
-        """Build point items and other items for the turn menu."""
+        """Build point items and other items for the game menu."""
         point_items: list[MenuItem] = []
         other_items: list[MenuItem] = []
         for item in self._build_action_menu_items(player, user):
@@ -610,7 +610,7 @@ class BackgammonGame(Game):
             point_items = point_items[12:] + point_items[:12]
 
         user.show_menu(
-            "turn_menu",
+            "game_menu",
             point_items + other_items,
             multiletter=False,
             escape_behavior=EscapeBehavior.KEYBIND,

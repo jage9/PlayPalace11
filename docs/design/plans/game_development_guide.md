@@ -85,8 +85,8 @@ Buffers: if a message advances game state or narrates table action, route it to 
 
 Action/menu conventions:
 - Lobby menus are for table management only (start game, options, bots). Keep game actions out of the lobby.
-- Turn-menu actions should reflect things a player can do now. Keybinds are fine, but per-card/per-choice actions should not appear in the Actions menu; use `show_in_actions_menu=False` for those.
-- Non-turn game actions (e.g., view board, read top card/pot) should be Actions-menu only, not turn menu.
+- Game-menu actions should be relevant to the current situation; a visible action may be disabled with a reason. Keep per-card/per-choice actions out of the actions menu with `show_in_actions_menu=False`.
+- Information commands (e.g., view board, read top card/pot) belong in the actions menu and may have hotkeys. Games may also show them in the game menu where direct access is useful, especially for web users.
 - Keep Actions menu order consistent: turn actions → game-specific actions → standard/global actions.
 - If the game uses a custom status readout (e.g., Pirates/Mile by Mile), hide base `check_scores`/`check_scores_detailed` and wire `S`/`Shift+S` to the custom status.
 - If you want the global score system to work, initialize and update `TeamManager` (even in individual mode) unless you have a game-specific alternative. If your game tracks scores on player objects instead of TeamManager, you must override `_action_check_scores`, `_action_check_scores_detailed`, `_is_check_scores_enabled`, and `_is_check_scores_detailed_enabled` — otherwise the S key will always say "no scores available."

@@ -175,7 +175,7 @@ def test_draw_mode_empty_boneyard_enables_knock_instead() -> None:
     assert game._is_knock_enabled(player1) is None
 
 
-def test_draw_button_does_not_remove_hand_tiles_from_turn_menu() -> None:
+def test_draw_button_does_not_remove_hand_tiles_from_game_menu() -> None:
     game = make_game(start=True, draw_mode="draw")
     player1, _player2 = game.get_active_players()
     game.current_player = player1
@@ -187,7 +187,7 @@ def test_draw_button_does_not_remove_hand_tiles_from_turn_menu() -> None:
     game.boneyard = [DominoTile(id=3, left=0, right=0)]
     game.rebuild_player_menu(player1)
 
-    menu_ids = [item.id for item in game.get_user(player1).menus["turn_menu"]["items"]]
+    menu_ids = [item.id for item in game.get_user(player1).menus["game_menu"]["items"]]
 
     assert "draw" in menu_ids
     assert "play_tile_1" in menu_ids
@@ -374,7 +374,7 @@ def test_hand_tiles_remain_visible_when_not_players_turn() -> None:
     ]
     game.rebuild_player_menu(player1)
 
-    menu_ids = [item.id for item in game.get_user(player1).menus["turn_menu"]["items"]]
+    menu_ids = [item.id for item in game.get_user(player1).menus["game_menu"]["items"]]
 
     assert "play_tile_1" in menu_ids
     assert "play_tile_2" in menu_ids
@@ -410,14 +410,14 @@ def test_knock_and_blocked_sounds_broadcast_to_all_players() -> None:
     assert "game_dominos/blocked.ogg" in user2.get_sounds_played()
 
 
-def test_web_turn_menu_shows_info_actions_and_orders_score_above_turn_and_table() -> None:
+def test_web_game_menu_shows_info_actions_and_orders_score_above_turn_and_table() -> None:
     game = make_game(start=False)
     player1, _player2 = game.get_active_players()
     set_web_client(game, player1)
     game.on_start()
     game.rebuild_player_menu(player1)
 
-    menu_ids = [item.id for item in game.get_user(player1).menus["turn_menu"]["items"]]
+    menu_ids = [item.id for item in game.get_user(player1).menus["game_menu"]["items"]]
 
     for action_id in ["read_ends", "read_hand", "view_chain", "read_counts"]:
         assert action_id in menu_ids

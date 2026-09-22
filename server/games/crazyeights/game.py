@@ -1303,7 +1303,7 @@ class CrazyEightsGame(TurnTimerMixin, Game):
         for p in self.players:
             user = self.get_user(p)
             if user:
-                user.remove_menu("turn_menu")
+                user.remove_menu("game_menu")
         self.finish_game()
 
     def build_game_result(self) -> GameResult:

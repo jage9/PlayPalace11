@@ -1520,7 +1520,7 @@ def test_cards_hidden_during_swap_target():
 
 
 # ============================================================================
-# Web client: buzzer, jump-in, sort visible in turn menu
+# Web client: buzzer, jump-in, sort visible in game menu
 # ============================================================================
 
 
@@ -1576,8 +1576,8 @@ def test_web_jump_in_visible_during_window():
     assert game._is_jump_in_hidden(cp) == Visibility.HIDDEN
 
 
-def test_web_sort_visible_in_turn_menu():
-    """Web clients see sort hand button in turn menu."""
+def test_web_sort_visible_in_game_menu():
+    """Web clients see sort hand button in game menu."""
     from ..game_utils.actions import Visibility
 
     game = make_game()
@@ -1594,8 +1594,8 @@ def test_web_sort_visible_in_turn_menu():
     assert game._is_sort_turn_hidden(p) == Visibility.VISIBLE
 
 
-def test_web_turn_menu_order():
-    """Web turn menu places reaction buttons before cards, utilities after."""
+def test_web_game_menu_order():
+    """Web game menu places reaction buttons before cards, utilities after."""
     game = make_game(jump_in=True, buzzer_enabled=True)
     players = add_bots(game, 3)
     start_game(game)

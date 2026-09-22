@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from server.games.base import Player, ActionContext, TransientDisplayState
 
 from server.game_utils.event_handling_mixin import EventHandlingMixin
+from server.game_utils.actions import MenuInput
 from server.game_utils.game_result import GameResult
 from server.game_utils.game_result_mixin import GameResultMixin
 from server.game_utils.menu_management_mixin import TRANSIENT_DISPLAY_MENU_ID
@@ -14,6 +15,7 @@ from server.game_utils.menu_management_mixin import TRANSIENT_DISPLAY_MENU_ID
 class DummyAction:
     id: str
     disabled_message: str = ""
+    input_request: MenuInput | None = None
 
 
 @dataclass
@@ -208,7 +210,7 @@ def make_player(player_id: str = "p1") -> Player:
     return Player(id=player_id, name=f"Player-{player_id}")
 
 
-def test_turn_menu_selection_by_id_executes_action():
+def test_game_menu_selection_by_id_executes_action():
     game = DummyGame()
     player = make_player()
     game._actions_menu_open.add(player.id)
@@ -216,7 +218,7 @@ def test_turn_menu_selection_by_id_executes_action():
 
     game.handle_event(
         player,
-        {"type": "menu", "menu_id": "turn_menu", "selection_id": "attack"},
+        {"type": "menu", "menu_id": "game_menu", "selection_id": "attack"},
     )
 
     assert player.id not in game._actions_menu_open
@@ -224,7 +226,7 @@ def test_turn_menu_selection_by_id_executes_action():
     assert game.rebuild_all_calls == 1
 
 
-def test_turn_menu_selection_by_index_fallback():
+def test_game_menu_selection_by_index_fallback():
     game = DummyGame()
     player = make_player("p2")
     disabled = DummyResolved(DummyAction("wait"), enabled=False)
@@ -235,14 +237,14 @@ def test_turn_menu_selection_by_index_fallback():
 
     game.handle_event(
         player,
-        {"type": "menu", "menu_id": "turn_menu", "selection": 2},
+        {"type": "menu", "menu_id": "game_menu", "selection": 2},
     )
 
     assert game.executed[-1] == (player.id, "defend", {"input": None, "context": None})
     assert game.rebuild_all_calls == 1
 
 
-def test_turn_menu_unknown_selection_id_is_rejected_without_index_fallback():
+def test_game_menu_unknown_selection_id_is_rejected_without_index_fallback():
     game = DummyGame()
     player = make_player("p3")
     enabled = DummyResolved(DummyAction("defend"), enabled=True)
@@ -251,7 +253,7 @@ def test_turn_menu_unknown_selection_id_is_rejected_without_index_fallback():
 
     game.handle_event(
         player,
-        {"type": "menu", "menu_id": "turn_menu", "selection_id": "stale-id", "selection": 1},
+        {"type": "menu", "menu_id": "game_menu", "selection_id": "stale-id", "selection": 1},
     )
 
     assert game.executed == []
@@ -263,6 +265,8 @@ def test_action_input_menu_executes_and_clears_pending():
     player = make_player()
     game._pending_actions[player.id] = "cast_spell"
     game.register_action("cast_spell")
+    game._actions["cast_spell"].input_request = MenuInput(prompt="choose", options="spells")
+    game._get_menu_options_for_action = lambda action, player: ["fireball"]
 
     game.handle_event(
         player,
@@ -344,7 +348,7 @@ def test_transient_display_blocks_unrelated_menu_events():
 
     game.handle_event(
         player,
-        {"type": "menu", "menu_id": "turn_menu", "selection_id": "attack"},
+        {"type": "menu", "menu_id": "game_menu", "selection_id": "attack"},
     )
 
     assert game.executed == []

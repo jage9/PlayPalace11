@@ -182,7 +182,7 @@ class Table(DataClassJSONMixin):
         if game.get_type() == previous.get_type() and hasattr(previous, "options"):
             game.options = deepcopy(previous.options)
         elif game.get_type() == "roulette" and previous.roulette:
-            for name in ("included_games", "finish_mode", "total_rounds", "target_score"):
+            for name in ("included_games", "finish_mode", "total_rounds", "target_score", "jokers"):
                 setattr(game.options, name, deepcopy(getattr(previous.roulette, name)))
         self._replace_game(game, players)
         return True
@@ -202,7 +202,8 @@ class Table(DataClassJSONMixin):
             if user:
                 user.stop_music()
                 user.stop_ambience()
-                for menu_id in ("game_over", "change_game", "leave_game_confirm", "actions_menu"):
+                for menu_id in ("game_over", "change_game", "leave_game_confirm", "actions_menu",
+                                "transient_display"):
                     user.remove_menu(menu_id)
                 game.attach_user(player.id, user)
             game.setup_player_actions(player)
@@ -243,19 +244,45 @@ class Table(DataClassJSONMixin):
         return choices
 
     def start_roulette_round(self) -> bool:
-        """Draw a compatible game and start one round with fresh game state."""
-        import random
+        """Start the next round's wheel after the previous result screen."""
+        from server.games.roulette.game import RouletteGame
 
         previous = self.game
+        if not previous or previous.status != GameStatus.FINISHED:
+            return False
+        session = previous.roulette
+        if session is None or session.finished:
+            return False
+        if not self.get_roulette_games(session.included_games):
+            previous.broadcast_l("roulette-no-compatible-games")
+            return False
+        game = RouletteGame(roulette=session)
+        for name in ("included_games", "finish_mode", "total_rounds", "target_score", "jokers"):
+            setattr(game.options, name, deepcopy(getattr(session, name)))
+        members = {member.username for member in self.members}
+        players = [p for p in previous.players if not p.replaced_human or p.name in members]
+        self._replace_game(game, players)
+        game.on_start()
+        game.validate_actions()
+        self.save_game_state()
+        return True
+
+    def play_roulette_game(self, game_type: str) -> bool:
+        """Launch the selected game once its joker window has expired."""
+        from server.games.roulette.game import RouletteGame
+
+        previous = self.game
+        if (not isinstance(previous, RouletteGame) or previous.selection_phase != "joker"
+                or previous.selection_ticks > 0 or previous.selected_game != game_type):
+            return False
         session = previous.roulette
         if session is None or session.finished:
             return False
         choices = self.get_roulette_games(session.included_games)
-        if not choices:
-            previous.broadcast_l("roulette-no-compatible-games")
+        cls = next((cls for cls in choices if cls.get_type() == game_type), None)
+        if cls is None:
             return False
-        alternatives = [cls for cls in choices if cls.get_type() != session.previous_game]
-        game = random.choice(alternatives or choices)()
+        game = cls()
         game.roulette = session
         session.round_number += 1
         session.previous_game = game.get_type()

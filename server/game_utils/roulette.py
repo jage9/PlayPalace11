@@ -13,6 +13,8 @@ class RouletteSession(DataClassJSONMixin):
     finish_mode: str = "rounds"
     total_rounds: int = 7
     target_score: int = 2000
+    jokers: int = 1
+    jokers_remaining: dict[str, int] = field(default_factory=dict)
     round_number: int = 0
     previous_game: str = ""
     scores: dict[str, int | float] = field(default_factory=dict)

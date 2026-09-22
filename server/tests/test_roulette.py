@@ -17,6 +17,7 @@ def make_table(count=2):
     game = RouletteGame()
     game._table = table
     game.host = "Alice"
+    game.setup_keybinds()
     for name in ["Alice", *[f"Guest{i}" for i in range(count - 1)]]:
         user = MockUser(name)
         table.add_member(name, user)
@@ -25,9 +26,20 @@ def make_table(count=2):
     return table
 
 
+def advance_selection(table, ticks=200):
+    for _ in range(ticks):
+        table.on_tick()
+
+
 def test_options_defaults_and_exclusive_limits():
     options = RouletteOptions()
     assert options.total_rounds == 7 and options.target_score == 2000
+    assert options.jokers == 1
+    joker_option = options.get_option_metas()["jokers"]
+    assert joker_option.validate_and_convert("0") == (True, 0)
+    assert joker_option.validate_and_convert("10") == (True, 10)
+    assert joker_option.validate_and_convert("-1") == (True, 0)
+    assert joker_option.validate_and_convert("11") == (True, 10)
     assert set(options.included_games) == {cls.get_type() for cls in GameRegistry.get_all()
                                            if cls is not RouletteGame}
     assert options._is_option_visible("total_rounds")
@@ -45,6 +57,7 @@ def test_session_switches_games_restores_and_finishes_once():
     lobby.options.total_rounds = 2
     ids = [p.id for p in lobby.players]
     lobby.on_start()
+    advance_selection(table)
     first = table.game
     assert first.game_active and first.roulette.round_number == 1
     assert table.listing_game_type == "roulette" and table.game_type == first.get_type()
@@ -66,6 +79,7 @@ def test_session_switches_games_restores_and_finishes_once():
     assert table.game is restored
     restored.handle_event(restored.players[0], {"type": "menu", "menu_id": "game_over",
                                                "selection_id": "roulette_next"})
+    advance_selection(table)
     second = table.game
     assert second.get_type() != first.get_type()
     assert second.roulette.round_number == 2 and second.game_active
@@ -107,5 +121,23 @@ def test_incompatible_pool_keeps_the_lobby_and_spectators_do_not_count():
     lobby.players[-1].is_spectator = True
     assert not lobby.prestart_validate()
     lobby.on_start()
+    advance_selection(table)
     assert table.game.get_type() == "chess"
     assert table.game.players[-1].is_spectator
+
+
+def test_departure_during_selection_returns_to_lobby_without_spending_a_round():
+    table = make_table()
+    wheel = table.game
+    wheel.options.included_games = ["chess"]
+    wheel.on_start()
+    advance_selection(table, 100)
+    guest = wheel.players[1]
+    balances = dict(wheel.roulette.jokers_remaining)
+    wheel._perform_leave_game(guest)
+    table.remove_member(guest.name)
+    advance_selection(table, 200)
+    assert table.game is wheel
+    assert wheel.status == GameStatus.WAITING and wheel.selection_phase == "idle"
+    assert wheel.roulette.round_number == 0
+    assert wheel.roulette.jokers_remaining == balances

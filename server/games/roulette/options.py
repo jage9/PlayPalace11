@@ -82,6 +82,18 @@ class RouletteOptions(GameOptions):
         ),
         visible_when=("finish_mode", lambda value: value == "score"),
     )
+    jokers: int = option_field(
+        IntOption(
+            default=1,
+            min_val=0,
+            max_val=10,
+            value_key="jokers",
+            label="roulette-set-jokers",
+            prompt="roulette-enter-jokers",
+            change_msg="roulette-option-changed-jokers",
+            description="roulette-desc-jokers",
+        )
+    )
     included_games: list[str] = field(
         default_factory=get_game_types,
         metadata={

@@ -23,6 +23,8 @@ class PlayerResult(DataClassJSONMixin):
         player_name: Display name.
         is_bot: True for bot players.
         is_virtual_bot: True for server-level bots (included in stats).
+        score: Native game score, before any session scoring rules.
+        session_points: Points awarded by the containing session, if any.
     """
 
     player_id: str
@@ -31,6 +33,7 @@ class PlayerResult(DataClassJSONMixin):
     is_virtual_bot: bool = False  # True for server-level virtual bots (include in stats)
     score: int | float | None = None
     team_id: str | None = None
+    session_points: int | float | None = None
 
 
 @dataclass

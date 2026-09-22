@@ -628,7 +628,7 @@ class NinetyNineGame(Game):
             self._eliminate_player(player)
 
         winner_ids = [p.id for p in self.alive_players if p.id != player.id]
-        if self.finish_round(winner_ids=winner_ids, scores={}):
+        if self.finish_round(winner_ids=winner_ids, score_points={}):
             return
         self._check_game_end()
         if self.game_active:
@@ -816,7 +816,7 @@ class NinetyNineGame(Game):
                 winner_ids = [player.id]
             else:
                 winner_ids = [p.id for p in self.alive_players if p.id != player.id]
-            if self.finish_round(winner_ids=winner_ids, scores={}):
+            if self.finish_round(winner_ids=winner_ids, score_points={}):
                 return
 
         # Always check if game should end (someone may have been eliminated)
@@ -944,7 +944,7 @@ class NinetyNineGame(Game):
             self._eliminate_player(player)
 
         winner_ids = [p.id for p in self.alive_players if p.id != player.id]
-        if self.finish_round(winner_ids=winner_ids, scores={}):
+        if self.finish_round(winner_ids=winner_ids, score_points={}):
             return
         self._check_game_end()
         if self.game_active:

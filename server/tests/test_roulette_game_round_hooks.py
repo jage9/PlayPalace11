@@ -44,6 +44,7 @@ def test_threes_roulette_inverts_low_score_for_score_mode():
     assert game._last_game_result.get_winner_ids() == [first.id]
     assert game.roulette.scores[first.id] == 4
     assert game.roulette.scores[second.id] == 2
+    assert [(p.score, p.session_points) for p in game._last_game_result.player_results] == [(26, 4), (28, 2)]
 
 
 def test_inverse_scopa_uses_target_minus_penalty_and_lowest_score_wins():
@@ -60,6 +61,10 @@ def test_inverse_scopa_uses_target_minus_penalty_and_lowest_score_wins():
     game._end_round()
     assert game.roulette.scores == {first.id: 350, second.id: 300}
     assert game._last_game_result.get_winner_ids() == [first.id]
+    assert [(p.score, p.session_points) for p in game._last_game_result.player_results] == [(150, 350), (200, 300)]
+    restored = ScopaGame.from_json(game.to_json())
+    assert restored._last_game_result == game._last_game_result
+    assert restored.roulette.scores == game.roulette.scores
 
 
 def test_negative_lastcard_still_counts_the_hand_winner():

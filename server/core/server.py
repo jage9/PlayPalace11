@@ -3118,6 +3118,7 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
                     is_virtual_bot=p.get("is_virtual_bot", False),
                     score=player_metadata.get(p["player_id"], {}).get("score"),
                     team_id=player_metadata.get(p["player_id"], {}).get("team_id"),
+                    session_points=player_metadata.get(p["player_id"], {}).get("session_points"),
                 )
                 for p in player_rows
             ]
@@ -4043,7 +4044,7 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
                 **result.custom_data,
                 "winner_ids": result.get_winner_ids(),
                 "_player_results": {
-                    p.player_id: {"score": p.score, "team_id": p.team_id}
+                    p.player_id: {"score": p.score, "team_id": p.team_id, "session_points": p.session_points}
                     for p in result.player_results
                 },
             },

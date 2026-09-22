@@ -656,7 +656,7 @@ class LudoGame(Game):
         if player.finished_count >= 4:
             self.play_sound("game_pig/win.ogg")
             self.broadcast_l("ludo-winner", player=player.name, color=player.color)
-            if self.finish_round(winner_ids=[player.id], scores={}):
+            if self.finish_round(winner_ids=[player.id], score_points={}):
                 return
             self.finish_game()
             return

@@ -1153,7 +1153,7 @@ class HumanityCardsGame(Game):
         self.play_sound(f"game_cards/draw{random.randint(1, 4)}.ogg")  # nosec B311
         if self.finish_round(
             winner_ids=[player_id for player_id, _points in scored],
-            scores=dict(scored),
+            score_points=dict(scored),
         ):
             return
         # Primary winner checked first; with independent multiple scorers, pick highest

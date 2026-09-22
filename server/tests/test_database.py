@@ -28,7 +28,8 @@ def _insert_user(db: Database, username: str, trust=None, approved=1):
     db._conn.commit()
 
 
-def test_server_result_round_trip_retains_team_winners_and_scores(db):
+@pytest.mark.parametrize("session_points", [None, 1, 350])
+def test_server_result_round_trip_retains_team_winners_and_scores(db, session_points):
     from server.core.server import Server
     from server.game_utils.game_result import GameResult, PlayerResult
 
@@ -36,7 +37,8 @@ def test_server_result_round_trip_retains_team_winners_and_scores(db):
     server._db = db
     result = GameResult(
         game_type="pig", timestamp="2026-09-22T12:00:00", duration_ticks=100,
-        player_results=[PlayerResult("alice", "Alice", False, score=100, team_id="0"),
+        player_results=[PlayerResult("alice", "Alice", False, score=100, team_id="0",
+                                     session_points=session_points),
                         PlayerResult("bob", "Bob", False, score=100, team_id="0")],
         winner_ids=["alice", "bob"],
         custom_data={"winner_name": "Team 1", "final_scores": {"Team 1": 100}},

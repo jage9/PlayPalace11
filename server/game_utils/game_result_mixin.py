@@ -31,7 +31,10 @@ class GameResultMixin:
         destroy().
     """
 
-    def finish_game(self, show_end_screen: bool = True, *, result: GameResult | None = None) -> None:
+    def finish_game(
+        self, show_end_screen: bool = True, *, result: GameResult | None = None,
+        score_points: dict[str, int | float] | None = None,
+    ) -> None:
         """Mark the game as finished, persist result, and optionally show end screen.
 
         Call this instead of setting status directly to ensure proper cleanup.
@@ -41,6 +44,7 @@ class GameResultMixin:
             show_end_screen: Whether to show the end screen (default True).
                              Set to False if you want to show it manually.
             result: A completed round result when ending a roulette round early.
+            score_points: Score-mode point candidates, separate from native scores.
         """
         if self._last_game_result is not None:
             return
@@ -54,7 +58,7 @@ class GameResultMixin:
         self._last_game_result = result
         if self.roulette:
             self.event_queue.clear()
-            self.roulette.record_round(result)
+            self.roulette.record_round(result, score_points=score_points)
             if self.roulette.finished:
                 self._persist_result(self.roulette.build_result(result))
         else:
@@ -72,30 +76,33 @@ class GameResultMixin:
     def finish_round(
         self,
         winner_ids: list[str] | None = None,
-        scores: dict[str, int | float] | None = None,
+        score_points: dict[str, int | float] | None = None,
     ) -> bool:
         """Stop at a completed hand/round only when this is a roulette session.
 
         Games call this after scoring and before resetting for their next round.
-        Explicit scores are earned points by player ID; an empty mapping denotes
-        a game without points, which receives roulette's win award instead.
+        score_points supplies score-mode point candidates by player ID, such as
+        inverted penalties or net chip gains. An empty mapping requests the
+        unscored win award. Native scores remain in PlayerResult.score; the
+        session records its actual awards in PlayerResult.session_points.
         """
         if self.roulette is None:
             return False
         if self._last_game_result is not None:
             return True
         result = self.build_game_result()
-        if scores is not None:
-            for player in result.player_results:
-                player.score = scores.get(player.player_id)
         if winner_ids is not None:
             result.winner_ids = winner_ids
         else:
-            scored_players = [p for p in result.player_results if p.score is not None]
+            scores = (
+                {p.player_id: p.score for p in result.player_results}
+                if score_points is None else score_points
+            )
+            scored_players = [p for p in result.player_results if scores.get(p.player_id) is not None]
             if scored_players:
-                best = max(p.score for p in scored_players)
-                result.winner_ids = [p.player_id for p in scored_players if p.score == best]
-        self.finish_game(result=result)
+                best = max(scores[p.player_id] for p in scored_players)
+                result.winner_ids = [p.player_id for p in scored_players if scores[p.player_id] == best]
+        self.finish_game(result=result, score_points=score_points)
         return True
 
     def build_game_result(self) -> GameResult:

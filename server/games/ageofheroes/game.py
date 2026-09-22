@@ -3334,7 +3334,7 @@ class AgeOfHeroesGame(Game):
                     for player in active_players
                     if territory_scores[player.id] == highest_score
                 ],
-                scores=territory_scores,
+                score_points=territory_scores,
             ):
                 return
 

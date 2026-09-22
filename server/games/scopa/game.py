@@ -786,7 +786,7 @@ class ScopaGame(Game):
         # Commit round scores to total
         self.team_manager.commit_round_scores()
 
-        if self.finish_round(scores=round_scores):
+        if self.finish_round(score_points=round_scores):
             return
 
         # Check for winner

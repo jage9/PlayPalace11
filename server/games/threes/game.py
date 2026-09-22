@@ -389,7 +389,7 @@ class ThreesGame(ActionGuardMixin, RoundBasedGameMixin, Game, DiceGameMixin):
             winner_ids=[
                 player.id for player in active_players if player.total_score == lowest_score
             ],
-            scores={player.id: 30 - player.total_score for player in active_players},
+            score_points={player.id: 30 - player.total_score for player in active_players},
         ):
             return
 

@@ -91,6 +91,7 @@ def test_session_switches_games_restores_and_finishes_once():
     table._server.on_game_result.assert_called_once()
     result = table._server.on_game_result.call_args.args[0]
     assert result.game_type == "roulette" and set(result.get_winner_ids()) == set(ids)
+    assert all(p.score == 1 and p.session_points is None for p in result.player_results)
     assert not table.start_roulette_round()
     assert table.prepare_next_game("Alice", "roulette")
     assert table.game.options.included_games == ["pig", "chess"]
@@ -111,6 +112,30 @@ def test_score_mode_uses_earned_points_or_unscored_win_award():
     ))
     assert session.scores == {"a": 450, "b": 50} and session.finished
     assert session.duration_ticks == 60
+
+
+@pytest.mark.parametrize("mode, score_points, awards", [
+    ("rounds", {"a": 350, "b": 300}, [1, 0]),
+    ("score", {"a": 350, "b": 300}, [350, 300]),
+    ("score", {"a": 0, "b": -50}, [0, 0]),
+    ("score", {}, [100, 0]),
+    ("score", None, [150, 200]),
+])
+def test_session_awards_preserve_native_scores(mode, score_points, awards):
+    session = RouletteSession(["example"], finish_mode=mode)
+    result = GameResult("example", "now", 20, [
+        PlayerResult("a", "Alice", False, score=150),
+        PlayerResult("b", "Bob", False, score=200),
+    ], winner_ids=["a"])
+    session.record_round(result, score_points=score_points)
+    assert [p.score for p in result.player_results] == [150, 200]
+    assert [p.session_points for p in result.player_results] == awards
+    assert session.scores == dict(zip(["a", "b"], awards))
+    assert GameResult.from_json(result.to_json()) == result
+    legacy = result.to_dict()
+    for player in legacy["player_results"]:
+        del player["session_points"]
+    assert all(p.session_points is None for p in GameResult.from_dict(legacy).player_results)
 
 
 def test_incompatible_pool_keeps_the_lobby_and_spectators_do_not_count():

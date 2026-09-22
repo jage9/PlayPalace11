@@ -1094,7 +1094,7 @@ class TwentyOneGame(ActionGuardMixin, Game):
             if outcome == "p2_wins"
             else []
         )
-        if self.finish_round(winner_ids=winner_ids, scores={}):
+        if self.finish_round(winner_ids=winner_ids, score_points={}):
             return
         survivors = self._alive_players()
         if len(survivors) <= 1:

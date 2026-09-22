@@ -703,7 +703,7 @@ class FiveCardDrawGame(TurnTimerMixin, Game):
         round_scores = self._resolve_pots()
         self._announce_showdown_hands(skip_best=True)
         if self.finish_round(
-            winner_ids=list(self.last_showdown_winner_ids), scores=round_scores
+            winner_ids=list(self.last_showdown_winner_ids), score_points=round_scores
         ):
             return
         self._queue_new_hand()
@@ -727,7 +727,7 @@ class FiveCardDrawGame(TurnTimerMixin, Game):
             player_id: (amount if player_id == winner.id else 0) - contribution
             for player_id, contribution in contributions.items()
         }
-        if self.finish_round(winner_ids=[winner.id], scores=round_scores):
+        if self.finish_round(winner_ids=[winner.id], score_points=round_scores):
             return
         self._queue_new_hand()
 

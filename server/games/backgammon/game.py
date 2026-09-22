@@ -1454,7 +1454,7 @@ class BackgammonGame(Game):
 
         if self.finish_round(
             winner_ids=[winner.id],
-            scores={p.id: gs.score_red if p.color == "red" else gs.score_white
+            score_points={p.id: gs.score_red if p.color == "red" else gs.score_white
                     for p in self.get_active_players()},
         ):
             return

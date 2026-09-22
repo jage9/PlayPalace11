@@ -2666,7 +2666,7 @@ class LastCardGame(Game, TurnTimerMixin):
                 p.id: max(0, self.options.winning_score - p.score) for p in active
             }
             winner_ids = [winner.id]
-        if self.finish_round(winner_ids=winner_ids, scores=round_scores):
+        if self.finish_round(winner_ids=winner_ids, score_points=round_scores):
             return
 
         # Clear hands between rounds so they're hidden from UI
@@ -2717,7 +2717,7 @@ class LastCardGame(Game, TurnTimerMixin):
             }
         else:
             round_scores = {}
-        if self.finish_round(winner_ids=[], scores=round_scores):
+        if self.finish_round(winner_ids=[], score_points=round_scores):
             return
 
         for p in active:

@@ -478,7 +478,7 @@ class MidnightGame(ActionGuardMixin, RoundBasedGameMixin, Game, DiceGameMixin):
 
         if self.finish_round(
             winner_ids=[player.id for player in winners] if qualified_players else [],
-            scores={
+            score_points={
                 player.id: (player.round_score if player.qualified else 0)
                 for player in active_players
             },

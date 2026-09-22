@@ -27,22 +27,29 @@ class RouletteSession(DataClassJSONMixin):
             return max(self.scores.values(), default=0) >= self.target_score
         return self.round_number >= self.total_rounds
 
-    def record_round(self, result: GameResult) -> None:
-        """Count wins or accumulate the game's earned points, depending on mode."""
+    def record_round(
+        self, result: GameResult, *, score_points: dict[str, int | float] | None = None,
+    ) -> None:
+        """Record session awards without changing the game's native scores."""
         self.duration_ticks += result.duration_ticks
         for player in result.player_results:
             if player.player_id not in self.scores:
                 self.participants.append(player)
                 self.scores[player.player_id] = 0
         winners = set(result.get_winner_ids())
-        has_points = any(p.score is not None for p in result.player_results)
+        scores = (
+            {p.player_id: p.score for p in result.player_results}
+            if score_points is None else score_points
+        )
+        has_points = any(scores.get(p.player_id) is not None for p in result.player_results)
         for player in result.player_results:
             if self.finish_mode == "rounds":
                 earned = int(player.player_id in winners)
             elif has_points:
-                earned = max(0, player.score or 0)
+                earned = max(0, scores.get(player.player_id) or 0)
             else:
                 earned = 100 if player.player_id in winners else 0
+            player.session_points = earned
             self.scores[player.player_id] += earned
 
     def build_result(self, last_round: GameResult) -> GameResult:
@@ -53,7 +60,7 @@ class RouletteSession(DataClassJSONMixin):
             game_type="roulette",
             timestamp=last_round.timestamp,
             duration_ticks=self.duration_ticks,
-            player_results=[replace(p, score=self.scores[p.player_id], team_id=None)
+            player_results=[replace(p, score=self.scores[p.player_id], team_id=None, session_points=None)
                             for p in self.participants],
             winner_ids=winners,
             custom_data={"rounds": self.round_number, "finish_mode": self.finish_mode},

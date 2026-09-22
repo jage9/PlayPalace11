@@ -2354,7 +2354,7 @@ class BlackjackGame(TurnTimerMixin, Game):
             if isinstance(player, BlackjackPlayer) and player.id in self.hand_start_chips
         }
         winner_ids = [player_id for player_id, score in round_scores.items() if score > 0]
-        if self.finish_round(winner_ids=winner_ids, scores=round_scores):
+        if self.finish_round(winner_ids=winner_ids, score_points=round_scores):
             return
 
         remaining = [

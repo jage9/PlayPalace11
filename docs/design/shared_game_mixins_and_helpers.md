@@ -201,6 +201,12 @@ positive net chip gains rather than bankroll totals. Only the completed Roulette
 session is recorded in statistics; shortened rounds do not count as ordinary
 full matches in their individual games.
 
+`PlayerResult.score` retains the native game score; `session_points` records the
+actual Roulette award for that round. Games pass transformed score-mode values
+through `finish_round(score_points=...)`, using an empty mapping for the unscored
+win award. Omitting the mapping uses native scores. Session totals remain in
+`RouletteSession.scores`; the final Roulette result uses those totals as its scores.
+
 Threes has no score target, so its one-round inversion uses the maximum possible
 ordinary score of 30. Nine and Ludo use the no-points award: remaining cards and
 pieces at home describe progress, rather than a points-based match score.

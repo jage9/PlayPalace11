@@ -1,7 +1,7 @@
 """Base game class and player dataclass."""
 
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, TYPE_CHECKING, Protocol, runtime_checkable
+from typing import Any, ClassVar
 from abc import ABC, abstractmethod
 import logging
 import threading
@@ -91,35 +91,6 @@ class Player(DataClassJSONMixin):
 
 # Re-export GameOptions from options module for backwards compatibility
 GameOptions = DeclarativeGameOptions
-
-
-if TYPE_CHECKING:
-
-    @runtime_checkable
-    class GameProtocol(Protocol):
-        """Protocol documenting the interface that Game mixins expect.
-
-        This is a compile-time-only contract. Each mixin in the Game class
-        assumes these attributes and methods exist on ``self``. Defining them
-        here lets type-checkers verify that the concrete Game class (and its
-        subclasses) satisfy the contract.
-        """
-
-        players: list[Player]
-        status: GameStatus
-        game_active: bool
-        host: str
-        round: int
-        turn_index: int
-        turn_direction: int
-
-        def get_user(self, player: Player) -> User | None: ...
-        def broadcast_l(self, message_id: str, **kwargs: Any) -> None: ...
-        def broadcast_personal_l(
-            self, player: Player, message_id: str, **kwargs: Any
-        ) -> None: ...
-        def advance_turn(self) -> None: ...
-        def finish_game(self) -> None: ...
 
 
 @dataclass

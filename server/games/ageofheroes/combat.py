@@ -131,44 +131,6 @@ def declare_war(
     return True
 
 
-def check_olympics_defense(game: AgeOfHeroesGame) -> AgeOfHeroesPlayer | None:
-    """Check if defender has Olympic Games card to cancel war."""
-    active_players = game.get_active_players()
-    war = game.war_state
-
-    if war.defender_index < 0 or war.defender_index >= len(active_players):
-        return None
-
-    defender = active_players[war.defender_index]
-    if not hasattr(defender, "hand"):
-        return None
-
-    # Check if defender has Olympic Games
-    for card in defender.hand:
-        if card.card_type == CardType.EVENT and card.subtype == EventType.OLYMPICS:
-            return defender
-
-    return None
-
-
-def use_olympics(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> bool:
-    """Use Olympic Games to cancel war."""
-    # Find and remove Olympics card
-    for i, card in enumerate(player.hand):
-        if card.card_type == CardType.EVENT and card.subtype == EventType.OLYMPICS:
-            removed = player.hand.pop(i)
-            game.discard_pile.append(removed)
-
-            # Cancel the war
-            game.war_state.cancelled_by_olympics = True
-            game.play_sound("game_ageofheroes/olympics.ogg")
-
-            game.broadcast_l("ageofheroes-olympics-cancel", name=player.name)
-            return True
-
-    return False
-
-
 def prepare_forces(
     game: AgeOfHeroesGame,
     player: AgeOfHeroesPlayer,
@@ -715,26 +677,6 @@ def return_surviving_forces(game: AgeOfHeroesGame) -> None:
 
     # Reset war state
     war.reset()
-
-
-def check_fortune_reroll(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> bool:
-    """Check if player has Fortune card for reroll."""
-    for card in player.hand:
-        if card.card_type == CardType.EVENT and card.subtype == EventType.FORTUNE:
-            return True
-    return False
-
-
-def use_fortune_reroll(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> bool:
-    """Use Fortune card to reroll dice."""
-    for i, card in enumerate(player.hand):
-        if card.card_type == CardType.EVENT and card.subtype == EventType.FORTUNE:
-            removed = player.hand.pop(i)
-            game.discard_pile.append(removed)
-            game.broadcast_l("ageofheroes-fortune-reroll", name=player.name)
-            game.play_sound("game_ageofheroes/fortune.ogg")
-            return True
-    return False
 
 
 def jolt_war_bots(game: AgeOfHeroesGame) -> None:

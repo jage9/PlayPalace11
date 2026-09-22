@@ -241,36 +241,6 @@ def get_player_offers(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> list[
     return [offer for offer in game.trade_offers if offer.player_index == player_index]
 
 
-def format_offer(game: AgeOfHeroesGame, offer: TradeOffer, locale: str) -> str:
-    """Format a trade offer for display."""
-    active_players = game.get_active_players()
-
-    if offer.player_index >= len(active_players):
-        return ""
-
-    offerer = active_players[offer.player_index]
-    if not hasattr(offerer, "hand"):
-        return ""
-
-    if offer.card_index >= len(offerer.hand):
-        return ""
-
-    offered_card = offerer.hand[offer.card_index]
-    offered_name = get_card_name(offered_card, locale)
-
-    # Format wanted
-    if offer.wanted_type is None and offer.wanted_subtype is None:
-        wanted_name = Localization.get(locale, "ageofheroes-any-card")
-    elif offer.wanted_subtype is not None:
-        # Create a dummy card for name lookup
-        wanted_card = Card(id=-1, card_type=offer.wanted_type or "", subtype=offer.wanted_subtype)
-        wanted_name = get_card_name(wanted_card, locale)
-    else:
-        wanted_name = offer.wanted_type or ""
-
-    return f"{offerer.name}: {offered_name} -> {wanted_name}"
-
-
 def announce_offer(
     game: AgeOfHeroesGame, player: AgeOfHeroesPlayer, offered_card: Card, wanted_subtype: str | None
 ) -> None:

@@ -24,7 +24,6 @@ from .combat import (
     can_declare_war,
     get_valid_war_targets,
     get_valid_war_goals,
-    check_olympics_defense,
     declare_war,
     prepare_forces,
     execute_war_battle,
@@ -438,71 +437,6 @@ def bot_select_armies(
     return (armies, generals, heroes_as_armies, heroes_as_generals)
 
 
-def bot_should_use_olympics(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> bool:
-    """Bot decides whether to use Olympic Games to cancel war."""
-    if not player.tribe_state:
-        return False
-
-    # Use Olympics if:
-    # 1. We have few armies to defend
-    # 2. The war goal threatens our victory
-
-    our_armies = player.tribe_state.get_available_armies()
-    our_cities = player.tribe_state.cities
-    our_monument = player.tribe_state.monument_progress
-
-    war = game.war_state
-
-    # Definitely use if we have no armies
-    if our_armies == 0:
-        return True
-
-    # Use if conquest and we're close to losing
-    if war.goal == WarGoal.CONQUEST and our_cities <= 1:
-        return True
-
-    # Use if destruction and we're close to monument victory
-    if war.goal == WarGoal.DESTRUCTION and our_monument >= 4:
-        return True
-
-    # Use if we're significantly outnumbered
-    attacker_strength = war.get_attacker_total_armies() + war.get_attacker_total_generals()
-    defender_strength = our_armies + player.tribe_state.fortresses
-    if attacker_strength > defender_strength * 2:
-        return True
-
-    return False
-
-
-def bot_should_use_fortune(
-    game: AgeOfHeroesGame, player: AgeOfHeroesPlayer, lost_roll: bool
-) -> bool:
-    """Bot decides whether to use Fortune to reroll."""
-    if not lost_roll:
-        return False
-
-    if not player.tribe_state:
-        return False
-
-    war = game.war_state
-    active_players = game.get_active_players()
-    player_index = active_players.index(player)
-
-    # Use if we're the attacker and close to winning
-    if player_index == war.attacker_index:
-        if war.get_attacker_total_armies() > 0:
-            # Use Fortune to try to win
-            return True
-
-    # Use if we're the defender and about to lose badly
-    if player_index == war.defender_index:
-        if war.get_defender_total_armies() <= 1:
-            # Last chance - use Fortune
-            return True
-
-    return False
-
-
 def score_card_for_discard(card: Card, player: AgeOfHeroesPlayer) -> int:
     """Score a card for discard decision. Higher = more likely to discard."""
     if not player.tribe_state:
@@ -548,24 +482,6 @@ def score_card_for_discard(card: Card, player: AgeOfHeroesPlayer) -> int:
             score = 70
 
     return score
-
-
-def bot_select_card_to_discard(game: AgeOfHeroesGame, player: AgeOfHeroesPlayer) -> int:
-    """Bot selects which card to discard. Returns card index."""
-    if not player.hand:
-        return 0
-
-    # Score each card
-    best_index = 0
-    best_score = -1
-
-    for i, card in enumerate(player.hand):
-        score = score_card_for_discard(card, player)
-        if score > best_score:
-            best_score = score
-            best_index = i
-
-    return best_index
 
 
 # ==========================================================================

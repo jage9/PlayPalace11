@@ -1385,13 +1385,6 @@ function handlePacket(packet) {
       });
       break;
     }
-    case "update_options_lists": {
-      store.setServerOptions({
-        games: packet.games || [],
-        languages: packet.languages || {},
-      });
-      break;
-    }
     default: {
       break;
     }

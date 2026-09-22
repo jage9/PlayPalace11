@@ -1,19 +1,5 @@
 """Mixin for turn timer logic in games."""
 
-from typing import Any, Protocol
-
-from .poker_timer import PokerTurnTimer
-
-
-class TurnTimerGameProtocol(Protocol):
-    """Protocol for games using TurnTimerMixin."""
-
-    timer: PokerTurnTimer
-    options: Any  # Must have turn_timer attribute
-
-    def play_sound(self, sound: str) -> None: ...
-    def _on_turn_timeout(self) -> None: ...
-
 
 class TurnTimerMixin:
     """Mixin for managing turn timers.

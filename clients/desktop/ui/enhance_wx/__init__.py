@@ -1,9 +1,7 @@
-"""
-Enhanced wxPython controls with accessibility and selection management.
+"""Small wxPython helpers for tree selection and UI event sounds.
 
 Sub-modules:
-- general_accessibility: Platform-specific accessibility notification utilities
-- list_selection: Selection management mixins and managed list controls
-- accessible_lists: Accessible checkable list controls
-- audio_events: audio feedback for ui events
+- tree_selection: Tree controls with predictable focus after deletion
+- list_selection: The FocusAfterDelete option used by tree selection
+- audio_events: Audio feedback for UI events
 """

@@ -9,6 +9,8 @@ import pytest
 
 from server.games.threes.game import ThreesGame
 from server.games.midnight.game import MidnightGame
+from server.games.yahtzee.game import YahtzeeGame
+from server.game_utils.actions import Visibility
 from server.core.users.preferences import DiceKeepingStyle, UserPreferences
 from server.core.users.test_user import MockUser
 
@@ -27,6 +29,44 @@ class PreferenceMockUser(MockUser):
 
 class TestActionIdPassing:
     """Test that action_id is passed to methods that accept it."""
+
+    @pytest.mark.parametrize("game_class", [ThreesGame, MidnightGame, YahtzeeGame])
+    @pytest.mark.parametrize("legacy_callbacks", [False, True])
+    def test_saved_dice_callbacks_preserve_per_die_rules(self, game_class, legacy_callbacks):
+        """Old and new saved action names retain each game's per-die behavior."""
+        game = game_class()
+        user = MockUser("Alice")
+        player = game.add_player("Alice", user)
+        game.on_start()
+        player.dice.values = list(range(1, player.dice.num_dice + 1))
+        player.dice.locked = {0}
+        player.dice.kept = {0, 1}
+        turn_set = game.get_action_set(player, "turn")
+        if legacy_callbacks:
+            for i in range(player.dice.num_dice):
+                action = turn_set.get_action(f"toggle_die_{i}")
+                action.is_enabled = f"_is_toggle_die_{i}_enabled"
+                action.is_hidden = f"_is_toggle_die_{i}_hidden"
+                action.get_label = f"_get_toggle_die_{i}_label"
+
+        loaded = game_class.from_json(game.to_json())
+        loaded.rebuild_runtime_state()
+        loaded.attach_user(player.id, user)
+        player = loaded.get_player_by_id(player.id)
+        turn_set = loaded.get_action_set(player, "turn")
+        for i in range(player.dice.num_dice):
+            action = turn_set.get_action(f"toggle_die_{i}")
+            resolved = turn_set.resolve_action(loaded, player, action)
+            assert resolved.disabled_reason == loaded._is_dice_toggle_enabled(player, i)
+            assert resolved.visible == (
+                loaded._is_dice_toggle_hidden(player, i) == Visibility.VISIBLE
+            )
+            assert resolved.label == loaded._get_dice_toggle_label(player, i)
+
+        loaded.execute_action(player, "toggle_die_0")
+        assert player.dice.kept == {0, 1}
+        loaded.execute_action(player, "toggle_die_2")
+        assert player.dice.kept == {0, 1, 2}
 
     def test_threes_dice_toggle_with_5_dice(self):
         """Test Threes with 5 dice - all toggle actions should work."""

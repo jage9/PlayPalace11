@@ -25,11 +25,6 @@ export function createStore() {
     },
     historyBuffer: "all",
     audioUnlocked: false,
-    pendingInput: null,
-    serverOptions: {
-      games: [],
-      languages: {},
-    },
   };
 
   const listeners = new Set();
@@ -82,14 +77,6 @@ export function createStore() {
     },
     setAudioUnlocked(unlocked) {
       state.audioUnlocked = unlocked;
-      notify();
-    },
-    setPendingInput(inputState) {
-      state.pendingInput = inputState;
-      notify();
-    },
-    setServerOptions(patch) {
-      Object.assign(state.serverOptions, patch);
       notify();
     },
   };

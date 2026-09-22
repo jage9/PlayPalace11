@@ -304,39 +304,6 @@ def build_road(
     return True
 
 
-def get_construction_menu_items(
-    game: AgeOfHeroesGame, player: AgeOfHeroesPlayer, locale: str
-) -> list[tuple[str, str]]:
-    """Get menu items for construction selection.
-
-    Returns list of (building_type, label) tuples.
-    """
-    items = []
-
-    for building_type in BuildingType:
-        if can_build(game, player, building_type):
-            building_name = get_building_name(building_type, locale)
-
-            # Add cost info
-            required = BUILDING_COSTS.get(building_type, [])
-            cost_parts = []
-            for resource in set(required):
-                count = required.count(resource)
-                from ...messages.localization import Localization
-
-                resource_name = Localization.get(locale, f"ageofheroes-resource-{resource}")
-                if count > 1:
-                    cost_parts.append(f"{count}x {resource_name}")
-                else:
-                    cost_parts.append(resource_name)
-
-            cost_str = " + ".join(cost_parts)
-            label = f"{building_name} ({cost_str})"
-            items.append((building_type, label))
-
-    return items
-
-
 def execute_single_build(
     game: AgeOfHeroesGame, player: AgeOfHeroesPlayer, building_type: str, auto_road: bool = False
 ) -> bool:

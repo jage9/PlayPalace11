@@ -3108,6 +3108,7 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
 
         for row in results:
             custom_data = json.loads(row[4]) if row[4] else {}
+            player_metadata = custom_data.get("_player_results", {})
             player_rows = self._db.get_game_result_players(row[0])
             player_results = [
                 PlayerResult(
@@ -3115,6 +3116,8 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
                     player_name=p["player_name"],
                     is_bot=p["is_bot"],
                     is_virtual_bot=p.get("is_virtual_bot", False),
+                    score=player_metadata.get(p["player_id"], {}).get("score"),
+                    team_id=player_metadata.get(p["player_id"], {}).get("team_id"),
                 )
                 for p in player_rows
             ]
@@ -4036,7 +4039,14 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
                 (p.player_id, p.player_name, p.is_bot, getattr(p, "is_virtual_bot", False))
                 for p in result.player_results
             ],
-            custom_data=result.custom_data,
+            custom_data={
+                **result.custom_data,
+                "winner_ids": result.get_winner_ids(),
+                "_player_results": {
+                    p.player_id: {"score": p.score, "team_id": p.team_id}
+                    for p in result.player_results
+                },
+            },
         )
 
     def on_table_save(self, table, username: str) -> None:

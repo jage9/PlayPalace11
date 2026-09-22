@@ -28,6 +28,25 @@ def _insert_user(db: Database, username: str, trust=None, approved=1):
     db._conn.commit()
 
 
+def test_server_result_round_trip_retains_team_winners_and_scores(db):
+    from server.core.server import Server
+    from server.game_utils.game_result import GameResult, PlayerResult
+
+    server = Server.__new__(Server)
+    server._db = db
+    result = GameResult(
+        game_type="pig", timestamp="2026-09-22T12:00:00", duration_ticks=100,
+        player_results=[PlayerResult("alice", "Alice", False, score=100, team_id="0"),
+                        PlayerResult("bob", "Bob", False, score=100, team_id="0")],
+        winner_ids=["alice", "bob"],
+        custom_data={"winner_name": "Team 1", "final_scores": {"Team 1": 100}},
+    )
+    server.on_game_result(result)
+    restored = server._get_game_results("pig")[0]
+    assert restored.get_winner_ids() == result.winner_ids
+    assert restored.player_results == result.player_results
+
+
 def test_initialize_trust_levels_promotes_first_user(db):
     _insert_user(db, "owner", trust=None)
 

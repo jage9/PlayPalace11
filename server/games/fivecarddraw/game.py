@@ -29,7 +29,6 @@ from ...game_utils.poker_state import order_after_button
 from ...game_utils.poker_showdown import order_winners_by_button, format_showdown_lines
 from ...game_utils.poker_payout import resolve_pots_with_payouts
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 from .bot import bot_think
 
@@ -381,8 +380,7 @@ class FiveCardDrawGame(TurnTimerMixin, Game):
     # Game flow
     # ==========================================================================
     def on_start(self) -> None:
-        self.status = GameStatus.PLAYING
-        self.game_active = True
+        self.begin_game()
         for player in self.players:
             player.chips = self.options.starting_chips
         self._team_manager.team_mode = "individual"

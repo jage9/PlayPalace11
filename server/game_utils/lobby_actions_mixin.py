@@ -67,7 +67,12 @@ class LobbyActionsMixin:
     """
 
     def _action_start_game(self, player: "Player", action_id: str) -> None:
-        """Start the game."""
+        self.start_game()
+
+    def start_game(self) -> bool:
+        """Validate and start a lobby, then install its initialized game controls."""
+        if self._destroyed or self.status != GameStatus.WAITING:
+            return False
         # Validate configuration before starting
         errors = self.prestart_validate()
         if errors:
@@ -78,7 +83,7 @@ class LobbyActionsMixin:
                     self.broadcast_l(error_key, buffer="table", **kwargs)
                 else:
                     self.broadcast_l(error, buffer="table")
-            return
+            return False
 
         # Announce game is starting
         self.broadcast_l("game-starting")
@@ -86,6 +91,45 @@ class LobbyActionsMixin:
         # Start the game (subclasses implement this)
         self.on_start()
         self.validate_actions()
+        self.rebuild_all_menus()
+        return self.status == GameStatus.PLAYING
+
+    def _action_stop_game(self, player: "Player", action_id: str) -> None:
+        """Stop without saving a result, returning this table to its lobby."""
+        if self._is_stop_game_enabled(player):
+            return
+        table = self._table
+        if table.prepare_next_game(player.name, "roulette" if self.roulette else None):
+            table.game.broadcast_l("game-stopped", player=player.name)
+
+    def _action_change_game(self, player: "Player", action_id: str) -> None:
+        if not self._is_change_game_enabled(player):
+            self._show_change_game_menu(player)
+
+    def _show_change_game_menu(self, player: "Player") -> None:
+        """Offer games that fit the table's retained players."""
+        from ..games.registry import GameRegistry
+
+        if self._is_change_game_enabled(player):
+            return
+        user = self.get_user(player)
+        if not user:
+            return
+        count = sum(not p.is_spectator or p.eliminated for p in self._table.get_retained_players())
+        games = [cls for cls in GameRegistry.get_all() if cls.get_max_players() >= count]
+        items = [MenuItem(text=Localization.get(user.locale, cls.get_name_key()), id=cls.get_type())
+                 for cls in games]
+        items.sort(key=lambda item: item.text.casefold())
+        items.append(MenuItem(text=Localization.get(user.locale, "back"), id="back"))
+        self._show_transient_display(player, kind="change_game", items=items, multiletter=True)
+
+    def _handle_change_game_selection(self, player: "Player", selection: str) -> None:
+        if self._is_change_game_enabled(player):
+            return
+        if selection == "back":
+            self._close_transient_display(player)
+        elif selection:
+            self._table.prepare_next_game(player.name, selection)
 
     def _bot_input_add_bot(self, player: "Player") -> str | None:
         """Get bot name for add_bot action."""

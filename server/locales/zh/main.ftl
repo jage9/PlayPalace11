@@ -313,3 +313,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } bots) overrides: { $ov
 virtual-bots-profiles-no-overrides = inherits base configuration
 
 localization-in-progress-try-again = 本地化正在进行中。请在一分钟后重试。
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

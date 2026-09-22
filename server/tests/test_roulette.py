@@ -2,6 +2,8 @@
 
 from unittest.mock import Mock
 
+import pytest
+
 from server.core.tables.table import Table
 from server.core.users.test_user import MockUser
 from server.game_utils.game_result import GameResult, PlayerResult
@@ -141,3 +143,59 @@ def test_departure_during_selection_returns_to_lobby_without_spending_a_round():
     assert wheel.status == GameStatus.WAITING and wheel.selection_phase == "idle"
     assert wheel.roulette.round_number == 0
     assert wheel.roulette.jokers_remaining == balances
+
+
+@pytest.mark.parametrize("game_class", [cls for cls in GameRegistry.get_all()
+                                       if cls is not RouletteGame], ids=lambda cls: cls.get_type())
+def test_roulette_starts_every_game_with_its_own_defaults(game_class):
+    table = make_table(max(RouletteGame.get_min_players(), game_class.get_min_players()))
+    wheel = table.game
+    wheel.options.included_games = [game_class.get_type()]
+    wheel.options.total_rounds = 19
+    wheel.options.target_score = 7654
+    wheel.execute_action(wheel.players[0], "start_game")
+    advance_selection(table)
+    selected = table.game
+    assert type(selected) is game_class
+    assert selected.status == table.status == GameStatus.PLAYING
+    assert getattr(selected, "options", None) == getattr(game_class(), "options", None)
+    assert selected.roulette.total_rounds == 19
+    assert selected.roulette.target_score == 7654
+
+
+def test_stop_roulette_returns_to_session_lobby_and_repeated_games_use_defaults():
+    table = make_table()
+    table._server = Mock()
+    wheel = table.game
+    wheel.options.included_games = ["pig"]
+    wheel.options.jokers = 4
+    wheel.on_start()
+    advance_selection(table)
+    first = table.game
+    defaults = type(first.options)()
+    first.options.target_score += 100
+    first.finish_round(winner_ids=[first.players[0].id])
+    assert table.start_roulette_round()
+    advance_selection(table)
+    second = table.game
+    assert second.options == defaults and second.options is not first.options
+    second.execute_action(second.players[0], "stop_game")
+    lobby = table.game
+    assert isinstance(lobby, RouletteGame) and lobby.roulette is None
+    assert lobby.options.included_games == ["pig"] and lobby.options.jokers == 4
+    assert lobby.options.included_games is not first.roulette.included_games
+    assert lobby.status == table.status == GameStatus.WAITING
+    table._server.on_game_result.assert_not_called()
+
+
+def test_legacy_wheel_countdown_restores_into_shared_timer():
+    table = make_table()
+    wheel = table.game
+    wheel.on_start()
+    saved = wheel.to_dict()
+    saved["selection_ticks"] = 37
+    saved["round_timer_ticks"] = 0
+    saved["round_timer_state"] = "idle"
+    restored = RouletteGame.from_dict(saved)
+    assert restored.round_timer_ticks == 37 and restored.round_timer_state == "counting"
+    assert restored.selection_ticks == 0

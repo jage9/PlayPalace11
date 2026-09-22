@@ -386,3 +386,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } boți) suprascrie: { $
 virtual-bots-profiles-no-overrides = moștenește configurația de bază
 
 localization-in-progress-try-again = Localizarea este în curs. Vă rugăm să încercați din nou peste un minut.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

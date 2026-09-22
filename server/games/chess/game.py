@@ -13,7 +13,6 @@ from ...game_utils.bot_helper import BotHelper
 from ...game_utils.poker_timer import PokerTurnTimer
 from ...game_utils.turn_timer_mixin import TurnTimerMixin
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 from server.core.users.bot import Bot
 from server.core.users.base import User, MenuItem, EscapeBehavior
@@ -524,8 +523,7 @@ class ChessGame(TurnTimerMixin, Game):
     # ==========================================================================
 
     def on_start(self) -> None:
-        self.status = GameStatus.PLAYING
-        self.game_active = True
+        self.begin_game()
         self.round = 1
 
         self.play_music("game_chess/mus.ogg")

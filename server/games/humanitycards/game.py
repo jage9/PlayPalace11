@@ -24,7 +24,6 @@ from ...game_utils.options import (
     option_field,
 )
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 
 
@@ -1244,8 +1243,7 @@ class HumanityCardsGame(Game):
 
     def on_start(self) -> None:
         """Called when the game starts."""
-        self.status = GameStatus.PLAYING
-        self.game_active = True
+        self.begin_game()
         self.round = 0
         self.judge_indices = []
         self.last_winner_index = -1

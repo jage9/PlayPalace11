@@ -382,3 +382,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } botar) åsidosätter: 
 virtual-bots-profiles-no-overrides = ärver baskonfiguration
 
 localization-in-progress-try-again = Lokalisering pågår. Försök igen om en minut.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

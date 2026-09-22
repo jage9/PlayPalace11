@@ -382,3 +382,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } बॉट) ओवर�
 virtual-bots-profiles-no-overrides = आधार कॉन्फ़िगरेशन विरासत में मिलता है
 
 localization-in-progress-try-again = स्थानीयकरण जारी है। कृपया एक मिनट बाद फिर प्रयास करें।
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

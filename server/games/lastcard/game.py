@@ -20,7 +20,6 @@ from ...game_utils.options import IntOption, BoolOption, MenuOption, option_fiel
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.poker_timer import PokerTurnTimer
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 from server.core.users.bot import Bot
 from server.core.users.base import User
@@ -938,11 +937,9 @@ class LastCardGame(Game, TurnTimerMixin):
     # ==========================================================================
 
     def on_start(self) -> None:
-        self.status = GameStatus.PLAYING
-        self.game_active = True
+        self.begin_game()
         self.round = 0
 
-        self._sync_table_status()
         self.play_music(SOUND_MUSIC)
 
         self._team_manager.team_mode = "individual"

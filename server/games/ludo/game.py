@@ -11,7 +11,6 @@ from ...game_utils.game_result import GameResult
 from ...game_utils.options import GameOptions, IntOption, option_field, BoolOption
 from ...game_utils.teams import TeamResultBuilder
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 from .bot import bot_think
 
@@ -186,8 +185,7 @@ class LudoGame(Game):
 
     def on_start(self) -> None:
         """Start the game."""
-        self.status = GameStatus.PLAYING
-        self.game_active = True
+        self.begin_game()
         self.last_roll = 0
 
         active_players = self.get_active_players()

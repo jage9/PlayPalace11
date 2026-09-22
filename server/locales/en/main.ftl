@@ -580,3 +580,6 @@ localization-in-progress-try-again = Localization in progress. Please try again 
 
 # Errors
 internal-error = Something went wrong. Please try again.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

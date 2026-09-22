@@ -382,3 +382,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } ربات) بازنوی
 virtual-bots-profiles-no-overrides = ارث‌بری پیکربندی پایه
 
 localization-in-progress-try-again = بومی‌سازی در حال انجام است. لطفاً یک دقیقه دیگر دوباره تلاش کنید.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

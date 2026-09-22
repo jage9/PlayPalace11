@@ -25,6 +25,21 @@ class MenuManagementMixin:
         get_all_visible_actions(player) -> list[ResolvedAction].
     """
 
+    def clear_game_ui(self) -> None:
+        """Discard game controls, pending input, and background audio at a transition."""
+        self._pending_actions.clear()
+        self._transient_display_state.clear()
+        self._actions_menu_open.clear()
+        self._options_path.clear()
+        self.current_music = ""
+        self.current_ambience = ""
+        for player in self.players:
+            user = self.get_user(player)
+            if user:
+                user.clear_ui()
+                user.stop_music()
+                user.stop_ambience()
+
     def _build_action_menu_items(self, player: "Player", user: "User") -> list[MenuItem]:
         """Build menu items from visible actions for a player."""
         items: list[MenuItem] = []
@@ -107,6 +122,8 @@ class MenuManagementMixin:
             handler = getattr(self, "_handle_game_options_display_selection", None)
             if handler:
                 handler(player, selection_id)
+        elif state.kind == "change_game":
+            self._handle_change_game_selection(player, selection_id)
 
     def _remember_transient_display_position(self, player: "Player", event: dict) -> None:
         """Remember the user's current position within an open transient display."""

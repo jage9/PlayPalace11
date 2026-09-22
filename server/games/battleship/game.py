@@ -22,7 +22,6 @@ from ...game_utils.options import MenuOption, BoolOption, option_field
 from ...game_utils.poker_timer import PokerTurnTimer
 from ...game_utils.turn_timer_mixin import TurnTimerMixin
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 from server.core.users.base import MenuItem, EscapeBehavior
 from .bot import bot_think as _bot_think
@@ -518,12 +517,10 @@ class BattleshipGame(GridGameMixin, TurnTimerMixin, Game):
     # ------------------------------------------------------------------ #
 
     def on_start(self) -> None:
+        self.begin_game()
         size = int(self.options.grid_size)
         self.grid_rows = size
         self.grid_cols = size
-        self.status = GameStatus.PLAYING
-        self._sync_table_status()
-        self.game_active = True
 
         # Initialize boards for all active players
         for player in self.get_active_players():

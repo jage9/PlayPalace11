@@ -335,9 +335,16 @@ class Game(
         if self._table:
             self._table.status = self.status
 
+    def begin_game(self) -> None:
+        """Enter play with the same table status and clean UI for every game."""
+        self.clear_game_ui()
+        self.status = GameStatus.PLAYING
+        self.game_active = True
+        self._sync_table_status()
+
     @abstractmethod
     def on_start(self) -> None:
-        """Start game logic after lobby transitions to playing."""
+        """Call begin_game(), then initialize this game's rules and first turn."""
         ...
 
     def on_tick(self) -> None:

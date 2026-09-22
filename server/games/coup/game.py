@@ -23,7 +23,6 @@ from ...game_utils.actions import Action, ActionSet, Visibility, MenuInput
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.game_result import GameResult
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 
 from .cards import Deck, Card, Character
@@ -130,9 +129,7 @@ class CoupGame(Game):
 
     def on_start(self) -> None:
         """Called when the game starts."""
-        self.status = GameStatus.PLAYING
-        self._sync_table_status()
-        self.game_active = True
+        self.begin_game()
         self.round = 1
 
         # Initialize deck

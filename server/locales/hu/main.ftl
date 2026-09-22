@@ -382,3 +382,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } bot) felülírások: {
 virtual-bots-profiles-no-overrides = örökli az alap konfigurációt
 
 localization-in-progress-try-again = A lokalizáció folyamatban van. Kérjük, próbálja újra egy perc múlva.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

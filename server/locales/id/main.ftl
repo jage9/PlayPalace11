@@ -382,3 +382,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } bot) override: { $over
 virtual-bots-profiles-no-overrides = mewarisi konfigurasi dasar
 
 localization-in-progress-try-again = Lokalisasi sedang diproses. Silakan coba lagi dalam satu menit.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

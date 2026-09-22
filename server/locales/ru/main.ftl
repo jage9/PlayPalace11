@@ -422,3 +422,6 @@ virtual-bots-profiles-line = { $profile } (ботов: { $bot_count }) пере�
 virtual-bots-profiles-no-overrides = наследует базовую конфигурацию
 
 localization-in-progress-try-again = Локализация ещё загружается. Пожалуйста, попробуйте снова через минуту.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

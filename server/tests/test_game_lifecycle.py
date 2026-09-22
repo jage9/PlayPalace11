@@ -81,9 +81,9 @@ def test_end_screen_replay_authorization_and_switching_games():
     table = make_table(PigGame)
     game = table.game
     host, guest = game.players
-    assert not table.prepare_next_game(host.name)
+    assert not table.prepare_next_game(guest.name)
     game.on_start()
-    assert not table.prepare_next_game(host.name, "chess")
+    assert not table.prepare_next_game(guest.name, "chess")
     game.finish_game()
     assert not table.prepare_next_game(guest.name, "chess")
     assert not table.prepare_next_game(host.name, "unknown")
@@ -94,6 +94,31 @@ def test_end_screen_replay_authorization_and_switching_games():
     assert [p.id for p in table.game.players] == [host.id, guest.id]
     table.game._action_start_game(table.game.players[0], "start_game")
     assert table.game.game_active
+
+
+def test_host_can_switch_active_games_without_saving_results_or_reusing_options():
+    table = make_table(PigGame)
+    table._server = Mock()
+    game = table.game
+    host, guest = game.players
+    game.options.target_score = 4321
+    game.on_start()
+    game.execute_action(guest, "stop_game")
+    game.execute_action(guest, "change_game")
+    game._handle_change_game_selection(guest, "farkle")
+    assert table.game is game and game.game_active
+    game.execute_action(host, "change_game")
+    game.handle_event(host, {"type": "menu", "menu_id": "transient_display", "selection_id": "back"})
+    assert table.game is game and not game._transient_display_state
+    game.execute_action(host, "change_game")
+    game.handle_event(host, {"type": "menu", "menu_id": "transient_display", "selection_id": "farkle"})
+    assert isinstance(table.game, FarkleGame)
+    assert table.game.options == FarkleGame().options
+    assert not game.game_active and game._destroyed
+    table._server.on_game_result.assert_not_called()
+    assert table.prepare_next_game(host.name, "pig")
+    assert table.game.options == PigGame().options
+    assert not table.prepare_next_game(guest.name, "chess")
 
 
 def test_eliminated_player_remains_in_results_and_rejoins_next_game():
@@ -193,7 +218,7 @@ def test_switch_menu_excludes_departed_replacement_bots_from_seat_count():
     game.finish_game()
     host = game.players[0]
     game._show_change_game_menu(host)
-    items = game.get_user(host).menus["change_game"]["items"]
+    items = game.get_user(host).menus["transient_display"]["items"]
     assert any(item.id == "chess" for item in items)
     assert table.prepare_next_game(host.name, "chess")
     assert len(table.game.players) == 2

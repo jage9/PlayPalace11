@@ -11,7 +11,6 @@ from dataclasses import dataclass, field
 from ..base import Game, Player, GameOptions
 from ..registry import register_game
 from ...game_utils.game_result import GameResult
-from ...game_utils.game_status import GameStatus
 from ...game_utils.options import BoolOption, option_field
 from ...messages.localization import Localization
 
@@ -90,8 +89,7 @@ class MetalPipeGame(Game):
 
     def on_start(self) -> None:
         """Called when the game starts."""
-        self.status = GameStatus.PLAYING
-        self.game_active = True
+        self.begin_game()
 
         active_players = self.get_active_players()
         self._winner_names = []

@@ -1,6 +1,7 @@
 """Options for the Roulette game."""
 
-from dataclasses import dataclass, field
+from copy import deepcopy
+from dataclasses import dataclass, field, fields
 
 from ...game_utils.options import (
     GameOptions,
@@ -9,6 +10,7 @@ from ...game_utils.options import (
     MultiSelectOption,
     option_field,
 )
+from ...game_utils.roulette import RouletteSession
 from ..registry import GameRegistry
 
 
@@ -40,6 +42,21 @@ _GAME_NAME_KEYS = get_game_name_keys()
 @dataclass
 class RouletteOptions(GameOptions):
     """Configurable limits and game pool for a Roulette session."""
+
+    @classmethod
+    def from_session(cls, session: RouletteSession) -> "RouletteOptions":
+        """Create options copied from a Roulette session."""
+        return cls(
+            **{
+                option.name: deepcopy(getattr(session, option.name))
+                for option in fields(cls)
+            }
+        )
+
+    def update_session(self, session: RouletteSession) -> None:
+        """Copy these options into an existing Roulette session."""
+        for option in fields(self):
+            setattr(session, option.name, deepcopy(getattr(self, option.name)))
 
     finish_mode: str = option_field(
         MenuOption(

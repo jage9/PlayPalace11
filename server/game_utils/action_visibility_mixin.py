@@ -44,6 +44,18 @@ class ActionVisibilityMixin:
 
     # --- Lobby actions ---
 
+    def _is_change_game_enabled(self, player: "Player") -> str | None:
+        if self._destroyed or not self._table:
+            return "action-not-available"
+        if player.name != self.host:
+            return "action-not-host"
+        return None
+
+    def _is_stop_game_enabled(self, player: "Player") -> str | None:
+        if self.status != "playing":
+            return "action-not-available"
+        return self._is_change_game_enabled(player)
+
     def _is_start_game_enabled(self, player: "Player") -> str | None:
         """Check if start_game action is enabled."""
         if self.status != "waiting":

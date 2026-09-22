@@ -52,6 +52,7 @@ class DummyKeybind:
 
 class DummyGame(EventHandlingMixin):
     def __init__(self):
+        self._destroyed = False
         self._actions_menu_open: set[str] = set()
         self._pending_actions: dict[str, str] = {}
         self._transient_display_state: dict[str, TransientDisplayState] = {}
@@ -135,6 +136,7 @@ class DummyGame(EventHandlingMixin):
 
 class DummyEndScreenGame(GameResultMixin, EventHandlingMixin):
     def __init__(self):
+        self._destroyed = False
         self.roulette = None
         self.game_active = False
         self.status = "finished"

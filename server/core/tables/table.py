@@ -69,6 +69,7 @@ class Table(DataClassJSONMixin):
         """Set the game instance and update serialized state."""
         self._game = value
         if value:
+            self.status = getattr(value, "status", self.status)
             self.game_json = value.to_json()
 
     def add_member(self, username: str, user: "User", as_spectator: bool = False) -> None:
@@ -155,23 +156,27 @@ class Table(DataClassJSONMixin):
         """Check if the game can start."""
         return self.player_count >= min_players
 
+    def get_retained_players(self) -> list:
+        """Keep seated players and bots, excluding departed humans' replacements."""
+        members = {member.username for member in self.members}
+        return [p for p in self.game.players if not p.replaced_human or p.name in members]
+
     def prepare_next_game(self, username: str, game_type: str | None = None) -> bool:
-        """Keep the table and seats, but replace a finished game with a fresh lobby.
+        """Keep the table and seats, replacing the current game with a fresh lobby.
 
         Replays retain options. Switching games uses the new game's defaults.
+        Stopping an unfinished game discards that game without recording a result.
         A fresh instance prevents hands, timers, and queued actions leaking between games.
         """
         from server.games.registry import get_game_class
 
         previous = self.game
-        if not previous or previous.status != GameStatus.FINISHED or username != previous.host:
+        if not previous or previous._destroyed or username != previous.host:
             return False
         game_class = get_game_class(game_type or self.game_type)
         if game_class is None:
             return False
-        member_names = {member.username for member in self.members}
-        players = [p for p in previous.players
-                   if not p.replaced_human or p.name in member_names]
+        players = self.get_retained_players()
         if sum(not p.is_spectator or p.eliminated for p in players) > game_class.get_max_players():
             user = self.get_user(username)
             if user:
@@ -182,29 +187,24 @@ class Table(DataClassJSONMixin):
         if game.get_type() == previous.get_type() and hasattr(previous, "options"):
             game.options = deepcopy(previous.options)
         elif game.get_type() == "roulette" and previous.roulette:
-            for name in ("included_games", "finish_mode", "total_rounds", "target_score", "jokers"):
-                setattr(game.options, name, deepcopy(getattr(previous.roulette, name)))
-        self._replace_game(game, players)
+            game.options = type(game.options).from_session(previous.roulette)
+        self._replace_game(game)
         return True
 
-    def _replace_game(self, game: "Game", players: list) -> None:
+    def _replace_game(self, game: "Game") -> None:
         """Install fresh player state while retaining this table's users and seats."""
         previous = self.game
+        previous.clear_game_ui()
         game.host = previous.host
         game._table = self
         game.setup_keybinds()
-        for old_player in players:
+        for old_player in self.get_retained_players():
             player = game.create_player(old_player.id, old_player.name, is_bot=old_player.is_bot)
             player.is_virtual_bot = old_player.is_virtual_bot
             player.is_spectator = old_player.is_spectator and not old_player.eliminated
             game.players.append(player)
             user = previous.get_user(old_player)
             if user:
-                user.stop_music()
-                user.stop_ambience()
-                for menu_id in ("game_over", "change_game", "leave_game_confirm", "actions_menu",
-                                "transient_display"):
-                    user.remove_menu(menu_id)
                 game.attach_user(player.id, user)
             game.setup_player_actions(player)
             for member in self.members:
@@ -212,8 +212,10 @@ class Table(DataClassJSONMixin):
                     member.is_spectator = player.is_spectator
 
         previous._destroyed = True
+        previous.game_active = False
+        previous.event_queue.clear()
+        previous.clear_scheduled_sounds()
         previous._table = None
-        previous._pending_actions.clear()
         self.game_type = game.get_type()
         self.host = game.host
         self.status = GameStatus.WAITING
@@ -225,10 +227,7 @@ class Table(DataClassJSONMixin):
         """Only offer games whose default rules support every seated participant."""
         from server.games.registry import get_game_class
 
-        previous = self.game
-        members = {member.username for member in self.members}
-        players = [p for p in previous.get_result_players()
-                   if not p.replaced_human or p.name in members]
+        players = [p for p in self.get_retained_players() if not p.is_spectator or p.eliminated]
         choices = []
         for game_type in dict.fromkeys(included_games):
             cls = get_game_class(game_type)
@@ -257,13 +256,9 @@ class Table(DataClassJSONMixin):
             previous.broadcast_l("roulette-no-compatible-games")
             return False
         game = RouletteGame(roulette=session)
-        for name in ("included_games", "finish_mode", "total_rounds", "target_score", "jokers"):
-            setattr(game.options, name, deepcopy(getattr(session, name)))
-        members = {member.username for member in self.members}
-        players = [p for p in previous.players if not p.replaced_human or p.name in members]
-        self._replace_game(game, players)
-        game.on_start()
-        game.validate_actions()
+        game.options = type(game.options).from_session(session)
+        self._replace_game(game)
+        game.start_game()
         self.save_game_state()
         return True
 
@@ -273,7 +268,7 @@ class Table(DataClassJSONMixin):
 
         previous = self.game
         if (not isinstance(previous, RouletteGame) or previous.selection_phase != "joker"
-                or previous.selection_ticks > 0 or previous.selected_game != game_type):
+                or previous.round_timer_ticks > 0 or previous.selected_game != game_type):
             return False
         session = previous.roulette
         if session is None or session.finished:
@@ -286,9 +281,7 @@ class Table(DataClassJSONMixin):
         game.roulette = session
         session.round_number += 1
         session.previous_game = game.get_type()
-        members = {member.username for member in self.members}
-        players = [p for p in previous.players if not p.replaced_human or p.name in members]
-        self._replace_game(game, players)
+        self._replace_game(game)
         for player in game.players:
             user = game.get_user(player)
             if user:
@@ -296,9 +289,7 @@ class Table(DataClassJSONMixin):
                 game.send_table_message(player, Localization.get(
                     user.locale, "roulette-round-start", round=session.round_number,
                     game=Localization.get(user.locale, game.get_name_key())))
-        game.on_start()
-        game._sync_table_status()
-        game.validate_actions()
+        game.start_game()
         self.save_game_state()
         return True
 

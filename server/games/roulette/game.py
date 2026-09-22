@@ -9,6 +9,7 @@ from ...core.ui.keybinds import KeybindState
 from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.game_status import GameStatus
 from ...game_utils.roulette import RouletteSession
+from ...game_utils.round_timer import RoundTransitionTimer
 from ...messages.localization import Localization
 from .options import RouletteOptions
 
@@ -18,9 +19,17 @@ from .options import RouletteOptions
 class RouletteGame(Game):
     options: RouletteOptions = field(default_factory=RouletteOptions)
     selection_phase: str = "idle"
-    selection_ticks: int = 0
+    selection_ticks: int = 0  # Read countdowns saved before the shared timer was used.
     selected_game: str = ""
     blocked_games: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        self._round_timer = RoundTransitionTimer(self, delay_seconds=5)
+        if self.selection_ticks > 0:
+            self.round_timer_ticks = self.selection_ticks
+            self.round_timer_state = RoundTransitionTimer.COUNTING
+            self.selection_ticks = 0
 
     @classmethod
     def get_name(cls) -> str:
@@ -50,15 +59,11 @@ class RouletteGame(Game):
             return
         if self.roulette is None:
             self.roulette = RouletteSession(included_games=[])
-        for name in ("included_games", "finish_mode", "total_rounds", "target_score", "jokers"):
-            value = getattr(self.options, name)
-            setattr(self.roulette, name, list(value) if isinstance(value, list) else value)
+        self.options.update_session(self.roulette)
         for player in self.get_active_players():
             self.roulette.jokers_remaining.setdefault(player.id, self.roulette.jokers)
         self.blocked_games.clear()
-        self.status = GameStatus.PLAYING
-        self.game_active = True
-        self._sync_table_status()
+        self.begin_game()
         self._spin_wheel()
 
     def _available_games(self) -> list[type]:
@@ -70,12 +75,12 @@ class RouletteGame(Game):
     def _spin_wheel(self) -> None:
         """Restart the five-second spin without consuming a round."""
         self.selection_phase = "spinning"
-        self.selection_ticks = 5 * self.TICKS_PER_SECOND
+        self._round_timer.start()
         self.selected_game = ""
         self.clear_scheduled_sounds()
         # Reuse the short click at progressively wider intervals as the wheel slows.
         tick = 0
-        while tick < self.selection_ticks:
+        while tick < self.round_timer_ticks:
             self.schedule_sound("click.ogg", delay_ticks=tick)
             tick += 2 + tick // 20
         self.broadcast_l("roulette-spinning")
@@ -85,10 +90,11 @@ class RouletteGame(Game):
         if self._destroyed:
             return
         super().on_tick()
-        if self.status != GameStatus.PLAYING or self.selection_ticks <= 0:
-            return
-        self.selection_ticks -= 1
-        if self.selection_ticks:
+        if self.status == GameStatus.PLAYING:
+            self._round_timer.on_tick()
+
+    def on_round_timer_ready(self) -> None:
+        if self._destroyed or self.status != GameStatus.PLAYING:
             return
         if self.selection_phase == "joker":
             if not self._table.play_roulette_game(self.selected_game):
@@ -107,7 +113,7 @@ class RouletteGame(Game):
         selected = random.choice(alternatives or choices)
         self.selected_game = selected.get_type()
         self.selection_phase = "joker"
-        self.selection_ticks = 5 * self.TICKS_PER_SECOND
+        self._round_timer.start()
         self.play_sound("game_squares/diceroll1.ogg")
         for player in self.players:
             user = self.get_user(player)
@@ -158,7 +164,7 @@ class RouletteGame(Game):
 
     def _is_joker_enabled(self, player: Player) -> str | None:
         if (self._destroyed or player.is_spectator or self.status != GameStatus.PLAYING
-                or self.selection_phase != "joker" or self.selection_ticks <= 0):
+                or self.selection_phase != "joker" or self.round_timer_ticks <= 0):
             return "roulette-joker-unavailable"
         if not self.roulette or self.roulette.jokers_remaining.get(player.id, 0) <= 0:
             return "roulette-no-jokers"

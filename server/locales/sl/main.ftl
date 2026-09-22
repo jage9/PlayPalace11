@@ -382,3 +382,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } botov) prepiše: { $ov
 virtual-bots-profiles-no-overrides = podeduje osnovno konfiguracijo
 
 localization-in-progress-try-again = Lokalizacija je v teku. Poskusite znova čez minuto.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

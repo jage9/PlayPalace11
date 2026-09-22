@@ -97,6 +97,16 @@ class ActionSetCreationMixin:
         locale = user.locale if user else "en"
 
         action_set = ActionSet(name="standard")
+        action_set.add(Action(
+            id="stop_game", label=Localization.get(locale, "game-stop"),
+            handler="_action_stop_game", is_enabled="_is_stop_game_enabled",
+            is_hidden="_is_always_hidden", include_spectators=True,
+        ))
+        action_set.add(Action(
+            id="change_game", label=Localization.get(locale, "game-change-game"),
+            handler="_action_change_game", is_enabled="_is_change_game_enabled",
+            is_hidden="_is_always_hidden", include_spectators=True,
+        ))
         action_set.add(
             Action(
                 id="show_actions",

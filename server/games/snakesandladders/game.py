@@ -13,7 +13,6 @@ from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.game_result import GameResult
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 
 
@@ -74,9 +73,8 @@ class SnakesAndLaddersGame(Game):
 
     def on_start(self) -> None:
         """Called when the game starts."""
-        self.status = GameStatus.PLAYING
+        self.begin_game()
 
-        self.game_active = True
 
         # Initialize players
         for p in self.players:

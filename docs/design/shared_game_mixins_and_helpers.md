@@ -166,8 +166,12 @@ and `get_player_score()` rather than interpreting each game's display strings.
 Use `eliminate_player()` when a participant sits out the rest of a game; their
 result remains recorded even though they no longer take turns.
 
-`finish_game()` saves once and retains the result for reconnects. After completion,
-the host can play again or select another game at the same table. The table's
+`start_game()` validates the lobby, invokes the game's `on_start()`, and installs
+the initialized controls. Each `on_start()` calls `begin_game()` to clear old
+controls and synchronize the game and table status before applying its own rules.
+`finish_game()` saves once and retains the result for reconnects. The host can
+stop or change games through the actions menu while playing, or replay after
+completion. Stopping or switching an unfinished game does not save a result. The table's
 `prepare_next_game()` creates a fresh game and player state, retains seats and
 spectator roles, and copies options only for a replay of the same game. New games
 must keep authoritative state in dataclass fields; do not add per-game replay reset
@@ -184,6 +188,11 @@ starting another one. It is a no-op outside Roulette. Games with no shorter
 scored unit finish normally. Roulette chooses only games whose default rules
 support the current seats, avoiding immediate repeats when another choice exists.
 The host advances from the round result screen to the next random game.
+Each selected game uses its own default options. Roulette session settings are
+copied through `RouletteOptions.from_session()` and `update_session()`, separately
+from those game options. Wheel spins and joker windows use `RoundTransitionTimer`.
+All replacements clear pending input and client UI through `clear_game_ui()`;
+the game chooser uses the shared transient display so turn updates cannot hide it.
 
 Rounds mode awards one point per winning player, including ties. Score mode
 uses earned game points, awards 100 per winner in games without points, and

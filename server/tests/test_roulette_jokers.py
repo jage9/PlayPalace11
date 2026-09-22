@@ -62,7 +62,7 @@ def test_first_valid_joker_blocks_game_and_survives_restore_and_next_round():
     assert wheel.blocked_games == [blocked] and wheel.roulette.round_number == 0
     advance_selection(table, 37)
     wheel = restore_wheel(table)
-    assert wheel.selection_ticks == 63 and wheel.blocked_games == [blocked]
+    assert wheel.round_timer_ticks == 63 and wheel.blocked_games == [blocked]
     advance_selection(table, 63)
     assert wheel.selected_game != blocked and wheel.selection_phase == "joker"
     press_j(table, alice)
@@ -71,7 +71,7 @@ def test_first_valid_joker_blocks_game_and_survives_restore_and_next_round():
     assert wheel.roulette.jokers_remaining[guest.id] == 1  # Only one unblocked game remains.
     advance_selection(table, 42)
     wheel = restore_wheel(table)
-    assert wheel.selection_ticks == 58 and wheel.selection_phase == "joker"
+    assert wheel.round_timer_ticks == 58 and wheel.selection_phase == "joker"
     advance_selection(table, 58)
     game = table.game
     assert game.get_type() != blocked and game.roulette.round_number == 1

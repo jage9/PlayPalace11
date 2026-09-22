@@ -370,3 +370,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count }개 봇) 재정의: { $
 virtual-bots-profiles-no-overrides = 기본 구성 상속
 
 localization-in-progress-try-again = 현지화 작업이 진행 중입니다. 1분 후에 다시 시도해 주세요.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

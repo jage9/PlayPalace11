@@ -382,3 +382,6 @@ virtual-bots-profiles-line = { $profile } (ama-bots angu-{ $bot_count }) kweqiwe
 virtual-bots-profiles-no-overrides = idla ifa ukucushwa okuyisisekelo
 
 localization-in-progress-try-again = Ukuhumusha kusaqhubeka. Sicela uzame futhi emzuzwini.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

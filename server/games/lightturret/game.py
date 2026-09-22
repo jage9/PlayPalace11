@@ -14,7 +14,6 @@ from ...game_utils.bot_helper import BotHelper
 from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, option_field, GameOptions
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 
 
@@ -292,8 +291,7 @@ class LightTurretGame(Game):
 
     def on_start(self) -> None:
         """Called when the game starts."""
-        self.status = GameStatus.PLAYING
-        self.game_active = True
+        self.begin_game()
         self.round = 0
 
         # Initialize players with starting power

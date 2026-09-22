@@ -382,3 +382,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } bots) ghi đè: { $ove
 virtual-bots-profiles-no-overrides = kế thừa cấu hình gốc
 
 localization-in-progress-try-again = Bản địa hóa đang được xử lý. Vui lòng thử lại sau một phút.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

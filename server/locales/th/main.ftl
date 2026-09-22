@@ -370,3 +370,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } บอต) แทน�
 virtual-bots-profiles-no-overrides = สืบทอดการกำหนดค่าพื้นฐาน
 
 localization-in-progress-try-again = กำลังโหลดการแปลภาษา โปรดลองอีกครั้งในอีกหนึ่งนาที
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

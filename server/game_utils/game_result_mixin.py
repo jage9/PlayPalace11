@@ -44,6 +44,7 @@ class GameResultMixin:
         """
         if self._last_game_result is not None:
             return
+        self.clear_game_ui()
         self.game_active = False
         self.status = GameStatus.FINISHED
         self._sync_table_status()
@@ -247,29 +248,3 @@ class GameResultMixin:
                 self._show_change_game_menu(player)
             elif selection == "roulette_next" and self.roulette and not self.roulette.finished:
                 self._table.start_roulette_round()
-
-    def _show_change_game_menu(self, player: "Player") -> None:
-        """Offer compatible games while keeping the same table and membership."""
-        from ..games.registry import GameRegistry
-
-        user = self.get_user(player)
-        if not user:
-            return
-        members = {member.username for member in self._table.members}
-        count = sum(not p.replaced_human or p.name in members
-                    for p in self.get_result_players())
-        games = [cls for cls in GameRegistry.get_all() if cls.get_max_players() >= count]
-        items = [MenuItem(text=Localization.get(user.locale, cls.get_name_key()), id=cls.get_type())
-                 for cls in games]
-        items.sort(key=lambda item: item.text.casefold())
-        items.append(MenuItem(text=Localization.get(user.locale, "back"), id="back"))
-        user.show_menu("change_game", items, multiletter=True,
-                       escape_behavior=EscapeBehavior.SELECT_LAST)
-
-    def _handle_change_game_selection(self, player: "Player", selection: str) -> None:
-        if self.status != GameStatus.FINISHED or not self._table or player.name != self.host:
-            return
-        if selection == "back":
-            self._show_end_screen(self._last_game_result, player)
-        elif selection:
-            self._table.prepare_next_game(player.name, selection)

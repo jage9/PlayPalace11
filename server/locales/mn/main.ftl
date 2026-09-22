@@ -382,3 +382,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } бот) дарж би�
 virtual-bots-profiles-no-overrides = үндсэн тохиргооноос өвлөнө
 
 localization-in-progress-try-again = Нутагшуулалт хийгдэж байна. Нэг минутын дараа дахин оролдоно уу.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

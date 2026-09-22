@@ -12,6 +12,7 @@ class EventHandlingMixin:
     """Handle menu/editbox/keybind events for a game.
 
     Expected Game attributes:
+        _destroyed: bool.
         _actions_menu_open: set[str].
         _pending_actions: dict[str, str].
         _keybinds: dict[str, list[Keybind]].
@@ -27,6 +28,8 @@ class EventHandlingMixin:
 
     def handle_event(self, player: "Player", event: dict) -> None:
         """Handle an event from a player."""
+        if self._destroyed:
+            return
         event_type = event.get("type")
 
         if event_type == "menu":

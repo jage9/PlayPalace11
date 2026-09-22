@@ -12,7 +12,6 @@ from ...game_utils.bot_helper import BotHelper
 from ...game_utils.cards import Card, Deck, card_name
 from ...game_utils.game_result import GameResult
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from .bot import bot_think as compute_bot_think
 from server.core.ui.keybinds import KeybindState
 
@@ -855,8 +854,7 @@ class TwentyOneGame(ActionGuardMixin, Game):
         )
 
     def on_start(self) -> None:
-        self.status = GameStatus.PLAYING
-        self.game_active = True
+        self.begin_game()
         self.phase = "turns"
         self.round_number = 0
         self.round_starter_index = 0

@@ -14,7 +14,6 @@ from ...game_utils.options import BoolOption, IntOption, MenuOption, option_fiel
 from ...game_utils.poker_timer import PokerTurnTimer
 from ...game_utils.turn_timer_mixin import TurnTimerMixin
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 from .bot import bot_think
 
@@ -825,8 +824,7 @@ class BlackjackGame(TurnTimerMixin, Game):
     # ======================================================================
 
     def on_start(self) -> None:
-        self.status = GameStatus.PLAYING
-        self.game_active = True
+        self.begin_game()
         self.phase = "settle"
         self.hand_number = 0
         self.next_hand_wait_ticks = 0

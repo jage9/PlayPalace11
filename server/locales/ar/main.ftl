@@ -468,3 +468,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } { $bot_count ->
 virtual-bots-profiles-no-overrides = يرث الإعدادات الأساسية
 
 localization-in-progress-try-again = جارٍ إعداد الترجمة. يُرجى المحاولة مرة أخرى بعد دقيقة.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

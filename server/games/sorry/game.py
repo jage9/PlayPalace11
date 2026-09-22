@@ -10,7 +10,6 @@ from ...game_utils.actions import Action, ActionSet, Visibility
 from ...game_utils.bot_helper import BotHelper
 from ...game_utils.options import BoolOption, GameOptions, MenuOption, option_field
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from ...game_utils.game_result import GameResult
 from server.core.ui.keybinds import KeybindState
 from .bot import choose_move
@@ -834,10 +833,9 @@ class SorryGame(Game):
 
     def on_start(self) -> None:
         """Start the game."""
+        self.begin_game()
         self._resolve_rules_profile_id()
         rules = self.get_rules_profile()
-        self.status = GameStatus.PLAYING
-        self.game_active = True
         self.round = 0
 
         active_players = self.get_active_players()

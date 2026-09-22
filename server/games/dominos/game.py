@@ -15,7 +15,6 @@ from ...game_utils.game_result import GameResult
 from ...game_utils.options import IntOption, MenuOption, BoolOption, TeamModeOption, option_field
 from ...game_utils.teams import TeamManager
 from ...messages.localization import Localization
-from ...game_utils.game_status import GameStatus
 from server.core.ui.keybinds import KeybindState
 
 
@@ -545,9 +544,7 @@ class DominosGame(Game):
         )
 
     def on_start(self) -> None:
-        self.status = GameStatus.PLAYING
-        self._sync_table_status()
-        self.game_active = True
+        self.begin_game()
         self.round = 0
         self._setup_teams()
         self.set_turn_players(self.get_active_players())

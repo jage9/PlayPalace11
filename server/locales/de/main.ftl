@@ -382,3 +382,6 @@ virtual-bots-profiles-line = { $profile } ({ $bot_count } Bots) Überschreibunge
 virtual-bots-profiles-no-overrides = erbt Basiskonfiguration
 
 localization-in-progress-try-again = Die Lokalisierung wird noch geladen. Bitte versuchen Sie es in einer Minute erneut.
+
+game-stop = Stop game and return to lobby
+game-stopped = The game was stopped by { $player }.

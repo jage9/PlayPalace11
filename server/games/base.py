@@ -17,6 +17,7 @@ from ..game_utils.options import (
     OptionsHandlerMixin,
 )
 from ..game_utils.game_result import GameResult, PlayerResult
+from ..game_utils.roulette import RouletteSession
 from ..game_utils.teams import TeamManager
 from ..game_utils.game_sound_mixin import GameSoundMixin
 from ..game_utils.game_communication_mixin import GameCommunicationMixin
@@ -169,6 +170,7 @@ class Game(
     # Team manager (serialized for persistence)
     _team_manager: TeamManager = field(default_factory=TeamManager)
     _last_game_result: GameResult | None = None
+    roulette: RouletteSession | None = None
 
     def __post_init__(self):
         """Initialize non-serialized state."""

@@ -395,6 +395,8 @@ class NineGame(Game):
             )
             self._broadcast_nine_message("game-ended")
 
+        if self.finish_round(winner_ids=[winner_id], scores={}):
+            return
         self.finish_game()
 
     def build_game_result(self) -> GameResult:

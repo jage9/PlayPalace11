@@ -332,6 +332,12 @@ class PigGame(PushYourLuckBotMixin, ActionGuardMixin, RoundBasedGameMixin, Game)
         # Check for winners by checking teams, not individual players
         # This prevents multiple teammates from all being counted as winners
         active_players = self.get_active_players()
+
+        # Roulette ends after this complete turn cycle, before the normal
+        # target-score/tiebreaker flow starts another round.
+        if self.finish_round():
+            return
+
         winning_teams = []
         high_score = 0
 

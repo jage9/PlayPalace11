@@ -2661,6 +2661,17 @@ class LastCardGame(Game, TurnTimerMixin):
 
         self._sync_team_scores()
 
+        if self.options.scoring_mode == "classic":
+            round_scores = {winner.id: total}
+            winner_ids = [winner.id]
+        else:
+            round_scores = {
+                p.id: max(0, self.options.winning_score - p.score) for p in active
+            }
+            winner_ids = [winner.id]
+        if self.finish_round(winner_ids=winner_ids, scores=round_scores):
+            return
+
         # Clear hands between rounds so they're hidden from UI
         for p in active:
             p.hand = []
@@ -2702,6 +2713,15 @@ class LastCardGame(Game, TurnTimerMixin):
 
         self.play_sound(SOUND_LOSE_ROUND)
         self._sync_team_scores()
+
+        if self.options.scoring_mode == "negative":
+            round_scores = {
+                p.id: max(0, self.options.winning_score - p.score) for p in active
+            }
+        else:
+            round_scores = {}
+        if self.finish_round(winner_ids=[], scores=round_scores):
+            return
 
         for p in active:
             p.hand = []

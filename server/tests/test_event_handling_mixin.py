@@ -135,6 +135,7 @@ class DummyGame(EventHandlingMixin):
 
 class DummyEndScreenGame(GameResultMixin, EventHandlingMixin):
     def __init__(self):
+        self.roulette = None
         self.game_active = False
         self.status = "finished"
         self.players: list[Player] = []

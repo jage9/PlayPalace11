@@ -918,6 +918,9 @@ class FarkleGame(ActionGuardMixin, RoundBasedGameMixin, Game):
         """Handle end of a round."""
         # Check for winners
         active_players = self.get_active_players()
+        if self.finish_round():
+            return
+
         winners = []
         high_score = 0
 

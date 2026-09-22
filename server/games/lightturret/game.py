@@ -378,6 +378,11 @@ class LightTurretGame(Game):
 
     def _on_turn_end(self) -> None:
         """Handle end of a player's turn."""
+        round_is_complete = self.turn_index >= len(self.turn_players) - 1
+        if self.roulette and (round_is_complete or self._check_for_winner() is not None):
+            if self.finish_round():
+                return
+
         # Check for game end conditions
         winner = self._check_for_winner()
         if winner is not None:
@@ -385,7 +390,7 @@ class LightTurretGame(Game):
             return
 
         # Check if round is over
-        if self.turn_index >= len(self.turn_players) - 1:
+        if round_is_complete:
             self._start_round()
         else:
             self.advance_turn(announce=False)

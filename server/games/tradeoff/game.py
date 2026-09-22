@@ -1025,6 +1025,9 @@ class TradeoffGame(Game):
         if leader:
             self.broadcast_l("tradeoff-leader", player=leader.name, score=best_score)
 
+        if self.finish_round():
+            return
+
         # Check for winner
         for p in active_players:
             score = self._get_player_score(p.name)

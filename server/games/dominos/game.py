@@ -880,6 +880,10 @@ class DominosGame(Game):
         self.previous_round_winner_id = winner.id
         self.broadcast_l("dominos-round-won", buffer="table", player=winner.name, points=points)
         self.play_sound(SOUND_WIN_ROUND)
+        team = self.team_manager.get_team(winner.name)
+        if self.finish_round(winner_ids=[p.id for p in self.get_active_players()
+                                        if team and p.name in team.members]):
+            return
         if self._check_match_winner():
             return
         self._schedule_next_round()
@@ -895,6 +899,8 @@ class DominosGame(Game):
         if len(winning_team_indexes) != 1:
             self.previous_round_winner_id = None
             self.broadcast_l("dominos-round-blocked-tie", buffer="table", pips=lowest_total)
+            if self.finish_round(winner_ids=[]):
+                return
             self._schedule_next_round()
             return
 
@@ -913,6 +919,9 @@ class DominosGame(Game):
         self.previous_round_winner_id = opening_player.id if opening_player else None
         self._broadcast_blocked_round_winner(winning_team, lowest_total, points)
         self.play_sound(SOUND_WIN_ROUND)
+        if self.finish_round(winner_ids=[p.id for p in self.get_active_players()
+                                        if p.name in winning_team.members]):
+            return
         if self._check_match_winner():
             return
         self._schedule_next_round()

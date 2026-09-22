@@ -31,7 +31,7 @@ class GameResultMixin:
         destroy().
     """
 
-    def finish_game(self, show_end_screen: bool = True) -> None:
+    def finish_game(self, show_end_screen: bool = True, *, result: GameResult | None = None) -> None:
         """Mark the game as finished, persist result, and optionally show end screen.
 
         Call this instead of setting status directly to ensure proper cleanup.
@@ -40,6 +40,7 @@ class GameResultMixin:
         Args:
             show_end_screen: Whether to show the end screen (default True).
                              Set to False if you want to show it manually.
+            result: A completed round result when ending a roulette round early.
         """
         if self._last_game_result is not None:
             return
@@ -48,9 +49,15 @@ class GameResultMixin:
         self._sync_table_status()
 
         # Build and persist the game result
-        result = self.build_game_result()
+        result = result or self.build_game_result()
         self._last_game_result = result
-        self._persist_result(result)
+        if self.roulette:
+            self.event_queue.clear()
+            self.roulette.record_round(result)
+            if self.roulette.finished:
+                self._persist_result(self.roulette.build_result(result))
+        else:
+            self._persist_result(result)
 
         # Show end screen
         if show_end_screen:
@@ -60,6 +67,35 @@ class GameResultMixin:
         has_humans = any(not p.is_bot or getattr(p, "is_virtual_bot", False) for p in self.players)
         if not has_humans:
             self.destroy()
+
+    def finish_round(
+        self,
+        winner_ids: list[str] | None = None,
+        scores: dict[str, int | float] | None = None,
+    ) -> bool:
+        """Stop at a completed hand/round only when this is a roulette session.
+
+        Games call this after scoring and before resetting for their next round.
+        Explicit scores are earned points by player ID; an empty mapping denotes
+        a game without points, which receives roulette's win award instead.
+        """
+        if self.roulette is None:
+            return False
+        if self._last_game_result is not None:
+            return True
+        result = self.build_game_result()
+        if scores is not None:
+            for player in result.player_results:
+                player.score = scores.get(player.player_id)
+        if winner_ids is not None:
+            result.winner_ids = winner_ids
+        else:
+            scored_players = [p for p in result.player_results if p.score is not None]
+            if scored_players:
+                best = max(p.score for p in scored_players)
+                result.winner_ids = [p.player_id for p in scored_players if p.score == best]
+        self.finish_game(result=result)
+        return True
 
     def build_game_result(self) -> GameResult:
         """Build the game result. Override in subclasses for custom data.
@@ -146,7 +182,7 @@ class GameResultMixin:
         if not self._table or not self._table._db:
             return
 
-        RatingHelper(self._table._db, self.get_type()).update_from_result(result)
+        RatingHelper(self._table._db, result.game_type).update_from_result(result)
 
     def get_rankings_for_rating(self, result: GameResult) -> list[list[str]]:
         """Get player placement groups from the shared result contract.
@@ -163,11 +199,22 @@ class GameResultMixin:
         """Build result lines and the actions available to this table member."""
         items = [MenuItem(text=line, id="score_line")
                  for line in self.format_end_screen(result, locale)]
+        if self.roulette:
+            session = self.roulette
+            items.append(MenuItem(text=Localization.get(locale, "roulette-standings"), id="score_line"))
+            for participant in sorted(session.participants,
+                                      key=lambda p: session.scores[p.player_id], reverse=True):
+                items.append(MenuItem(text=Localization.get(
+                    locale, "roulette-score", player=participant.player_name,
+                    score=session.scores[participant.player_id]), id="score_line"))
+            if session.finished:
+                items.append(MenuItem(text=Localization.get(locale, "roulette-finished"), id="score_line"))
+            elif self._table and player.name == self.host:
+                items.append(MenuItem(text=Localization.get(locale, "roulette-next-round"), id="roulette_next"))
         if getattr(self, "_table", None) and player.name == self.host:
-            items.extend([
-                MenuItem(text=Localization.get(locale, "game-play-again"), id="play_again"),
-                MenuItem(text=Localization.get(locale, "game-change-game"), id="change_game"),
-            ])
+            if not self.roulette or self.roulette.finished:
+                items.append(MenuItem(text=Localization.get(locale, "game-play-again"), id="play_again"))
+            items.append(MenuItem(text=Localization.get(locale, "game-change-game"), id="change_game"))
         items.append(MenuItem(text=Localization.get(locale, "game-leave"), id="leave_game"))
         return items
 
@@ -195,9 +242,11 @@ class GameResultMixin:
             self.execute_action(player, "leave_game")
         elif self.status == GameStatus.FINISHED and self._table and player.name == self.host:
             if selection == "play_again":
-                self._table.prepare_next_game(player.name)
+                self._table.prepare_next_game(player.name, "roulette" if self.roulette else None)
             elif selection == "change_game":
                 self._show_change_game_menu(player)
+            elif selection == "roulette_next" and self.roulette and not self.roulette.finished:
+                self._table.start_roulette_round()
 
     def _show_change_game_menu(self, player: "Player") -> None:
         """Offer compatible games while keeping the same table and membership."""

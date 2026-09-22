@@ -1089,6 +1089,15 @@ class TwentyOneGame(ActionGuardMixin, Game):
 
         self._sync_hp_scores()
         self._clear_pending_round_resolution()
+        winner_ids = (
+            [p1.id]
+            if outcome == "p1_wins"
+            else [p2.id]
+            if outcome == "p2_wins"
+            else []
+        )
+        if self.finish_round(winner_ids=winner_ids, scores={}):
+            return
         survivors = self._alive_players()
         if len(survivors) <= 1:
             self._end_game(survivors[0] if survivors else None)

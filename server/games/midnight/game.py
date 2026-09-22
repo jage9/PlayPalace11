@@ -476,6 +476,15 @@ class MidnightGame(ActionGuardMixin, RoundBasedGameMixin, Game, DiceGameMixin):
                         names_str = Localization.format_list_and(user.locale, names)
                         user.speak_l("midnight-round-tie", players=names_str)
 
+        if self.finish_round(
+            winner_ids=[player.id for player in winners] if qualified_players else [],
+            scores={
+                player.id: (player.round_score if player.qualified else 0)
+                for player in active_players
+            },
+        ):
+            return
+
         # Check if game is over
         if self.round >= self.options.rounds:
             self._end_game()

@@ -629,6 +629,9 @@ class NinetyNineGame(Game):
         if player.tokens <= 0:
             self._eliminate_player(player)
 
+        winner_ids = [p.id for p in self.alive_players if p.id != player.id]
+        if self.finish_round(winner_ids=winner_ids, scores={}):
+            return
         self._check_game_end()
         if self.game_active:
             self._start_round()
@@ -810,6 +813,14 @@ class NinetyNineGame(Game):
         # Check milestones and handle effects
         round_ended = self._check_milestones(player, old_count, new_count, value, card.rank)
 
+        if round_ended:
+            if self.is_quentin_c and new_count == MAX_COUNT and value > 0:
+                winner_ids = [player.id]
+            else:
+                winner_ids = [p.id for p in self.alive_players if p.id != player.id]
+            if self.finish_round(winner_ids=winner_ids, scores={}):
+                return
+
         # Always check if game should end (someone may have been eliminated)
         self._check_game_end()
         if not self.game_active:
@@ -934,6 +945,9 @@ class NinetyNineGame(Game):
         if player.tokens <= 0:
             self._eliminate_player(player)
 
+        winner_ids = [p.id for p in self.alive_players if p.id != player.id]
+        if self.finish_round(winner_ids=winner_ids, scores={}):
+            return
         self._check_game_end()
         if self.game_active:
             self._start_round()

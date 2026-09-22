@@ -596,6 +596,8 @@ class PiratesGame(Game):
 
         # Check if we've completed a round
         if self.turn_index == 0:
+            if self.finish_round():
+                return
             self._start_round()
         else:
             self._announce_turn()
@@ -691,12 +693,13 @@ class PiratesGame(Game):
             final_levels[p.name] = p.level
             final_gems[p.name] = gems.format_gem_list(p.gems)
 
-        winner_name = getattr(self, "_winner_name", None)
-        winner_score = getattr(self, "_winner_score", 0)
+        winner_name = sorted_players[0].name if sorted_players else None
+        winner_score = sorted_players[0].score if sorted_players else 0
 
         return self.make_game_result(
             custom_data={
                 "winner_name": winner_name,
+                "winner_names": [p.name for p in sorted_players if p.score == winner_score],
                 "winner_score": winner_score,
                 "final_scores": final_scores,
                 "final_levels": final_levels,

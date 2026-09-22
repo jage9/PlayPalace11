@@ -61,13 +61,13 @@ class TableManager:
 
     def get_tables_by_type(self, game_type: str) -> list[Table]:
         """Get all tables of a specific game type."""
-        return [t for t in self._tables.values() if t.game_type == game_type]
+        return [t for t in self._tables.values() if t.listing_game_type == game_type]
 
     def get_waiting_tables(self, game_type: str | None = None) -> list[Table]:
         """Get all tables in waiting status."""
         tables = self._tables.values()
         if game_type:
-            tables = [t for t in tables if t.game_type == game_type]
+            tables = [t for t in tables if t.listing_game_type == game_type]
         return [t for t in tables if t.status == "waiting"]
 
     def find_user_table(self, username: str) -> Table | None:

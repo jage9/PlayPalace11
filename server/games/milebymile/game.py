@@ -1630,6 +1630,9 @@ class MileByMileGame(Game):
         # Calculate and announce scores
         self._calculate_race_scores(winning_team_idx)
 
+        if self.finish_round():
+            return
+
         # Check for game winner
         game_winner = self._check_game_winner()
         if game_winner is not None:

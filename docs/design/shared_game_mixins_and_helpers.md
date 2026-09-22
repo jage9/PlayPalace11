@@ -171,8 +171,30 @@ the host can play again or select another game at the same table. The table's
 `prepare_next_game()` creates a fresh game and player state, retains seats and
 spectator roles, and copies options only for a replay of the same game. New games
 must keep authoritative state in dataclass fields; do not add per-game replay reset
-methods. This separates table lifetime from individual games without introducing
-a tournament or mixed-game round controller.
+methods. This separates table lifetime from individual games.
+
+Game Roulette uses that same replacement path. Its lobby selects the included
+games (all by default) and either a round limit (default 7) or a score target
+(default 2000). `Game.roulette` retains the session settings, standings, and round
+number in the current game's existing save data. Table listings retain the
+Roulette identity while persistence records the concrete game being played.
+
+Games call `finish_round()` after a hand or turn cycle is scored and before
+starting another one. It is a no-op outside Roulette. Games with no shorter
+scored unit finish normally. Roulette chooses only games whose default rules
+support the current seats, avoiding immediate repeats when another choice exists.
+The host advances from the round result screen to the next random game.
+
+Rounds mode awards one point per winning player, including ties. Score mode
+uses earned game points, awards 100 per winner in games without points, and
+inverts penalty scores against the game's target. Poker and Blackjack use
+positive net chip gains rather than bankroll totals. Only the completed Roulette
+session is recorded in statistics; shortened rounds do not count as ordinary
+full matches in their individual games.
+
+Threes has no score target, so its one-round inversion uses the maximum possible
+ordinary score of 30. Nine and Ludo use the no-points award: remaining cards and
+pieces at home describe progress, rather than a points-based match score.
 
 Typical expectations on `Game`:
 - `build_game_result()`

@@ -772,6 +772,8 @@ class RollingBallsGame(ActionGuardMixin, Game):
 
     def _on_round_end(self) -> None:
         """Handle end of a round."""
+        if self.finish_round():
+            return
         if not self.pipe:
             self._announce_winner()
         else:
@@ -834,6 +836,8 @@ class RollingBallsGame(ActionGuardMixin, Game):
         return self.make_game_result(
             custom_data={
                 "winner_name": winner.name if winner else None,
+                "winner_names": [p.name for p in sorted_players
+                                 if winner and p.score == winner.score],
                 "winner_score": rb_winner.score if rb_winner else 0,
                 "final_scores": final_scores,
                 "rounds_played": self.round,

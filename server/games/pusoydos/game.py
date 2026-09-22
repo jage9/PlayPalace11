@@ -1193,6 +1193,12 @@ class PusoyDosGame(Game, TurnTimerMixin):
 
         self._sync_team_scores()
 
+        round_scores = {winner_id: total} if winner_id else {}
+        if self.finish_round(
+            winner_ids=[winner_id] if winner_id else [], scores=round_scores
+        ):
+            return
+
         # Check for winner
         if winner and winner.score >= self.options.target_score:
             self.play_sound(SOUND_WIN_GAME)
@@ -1206,6 +1212,8 @@ class PusoyDosGame(Game, TurnTimerMixin):
     def _end_round_losses(self) -> None:
         """Losses mode: last-place player takes a loss. First to target losses loses the game."""
         if not self.finishing_order:
+            if self.finish_round(winner_ids=[], scores={}):
+                return
             self.hand_wait_ticks = 5 * 20
             self.rebuild_all_menus()
             return
@@ -1216,6 +1224,16 @@ class PusoyDosGame(Game, TurnTimerMixin):
             loser.round_losses += 1
             self.play_sound(SOUND_LOSE_ROUND)
             self.broadcast_l("pusoydos-round-loser", player=loser.name, count=loser.round_losses)
+
+            round_scores = {
+                p.id: max(0, self.options.losses_to_lose - p.round_losses)
+                for p in self.players
+                if not p.is_spectator
+            }
+            if self.finish_round(
+                winner_ids=[self.finishing_order[0]], scores=round_scores
+            ):
+                return
 
             if loser.round_losses >= self.options.losses_to_lose:
                 self.broadcast_l(
@@ -1252,6 +1270,16 @@ class PusoyDosGame(Game, TurnTimerMixin):
             self.play_sound(SOUND_ELIMINATED)
             self.broadcast_l("pusoydos-points-elim-eliminated", player=p.name, score=p.score)
 
+        round_scores = {
+            p.id: max(0, self.options.target_score - p.score)
+            for p in self.players
+            if not p.is_spectator
+        }
+        if self.finish_round(
+            winner_ids=[winner_id] if winner_id else [], scores=round_scores
+        ):
+            return
+
         remaining = self._playing_players()
         if newly_eliminated:
             self.broadcast_l("pusoydos-players-remaining", count=len(remaining))
@@ -1279,6 +1307,9 @@ class PusoyDosGame(Game, TurnTimerMixin):
         for p in newly_eliminated:
             self.play_sound(SOUND_ELIMINATED)
             self.broadcast_l("pusoydos-player-eliminated", player=p.name, count=p.round_wins)
+
+        if self.finish_round(winner_ids=[self.finishing_order[0]] if self.finishing_order else [], scores={}):
+            return
 
         remaining = self._playing_players()
         if newly_eliminated:

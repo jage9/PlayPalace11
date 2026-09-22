@@ -1122,6 +1122,9 @@ class CrazyEightsGame(TurnTimerMixin, Game):
         self._announce_round_points(winner, points_from, total)
         self._play_round_end_sounds(winner, points_from, total)
 
+        if self.finish_round(winner_ids=[winner.id], scores={winner.id: total}):
+            return
+
         # Clear game state for the wait period
         self.discard_pile = []
         self.deck = Deck()

@@ -775,8 +775,21 @@ class ScopaGame(Game):
         if self.options.scopa_mechanic != "only_scopas":
             score_round(self)
 
+        scored_teams = self.team_manager.get_alive_teams() or self.team_manager.teams
+        round_scores: dict[str, int] = {}
+        for team in scored_teams:
+            for player in self.get_active_players():
+                if player.name in team.members:
+                    round_scores[player.id] = (
+                        max(0, self.options.target_score - team.round_score)
+                        if self.options.inverse_scopa else team.round_score
+                    )
+
         # Commit round scores to total
         self.team_manager.commit_round_scores()
+
+        if self.finish_round(scores=round_scores):
+            return
 
         # Check for winner
         winner = check_winner(self)

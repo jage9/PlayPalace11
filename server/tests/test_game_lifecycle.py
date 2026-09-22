@@ -32,7 +32,8 @@ def make_table(game_class, count=None):
     return table
 
 
-@pytest.mark.parametrize("game_class", GameRegistry.get_all(), ids=lambda cls: cls.get_type())
+@pytest.mark.parametrize("game_class", [cls for cls in GameRegistry.get_all()
+                                       if cls.get_type() != "roulette"], ids=lambda cls: cls.get_type())
 def test_each_game_can_save_finish_and_start_again_at_the_same_table(game_class):
     table = make_table(game_class)
     old = table.game

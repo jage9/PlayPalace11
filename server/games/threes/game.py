@@ -381,6 +381,18 @@ class ThreesGame(ActionGuardMixin, RoundBasedGameMixin, Game, DiceGameMixin):
         scores_str = ", ".join(f"{name}: {score}" for name, score in scores)
         self.broadcast_l("threes-round-scores", round=self.round, scores=scores_str)
 
+        active_players = [
+            player for player in self.get_active_players() if isinstance(player, ThreesPlayer)
+        ]
+        lowest_score = min((player.total_score for player in active_players), default=0)
+        if self.finish_round(
+            winner_ids=[
+                player.id for player in active_players if player.total_score == lowest_score
+            ],
+            scores={player.id: 30 - player.total_score for player in active_players},
+        ):
+            return
+
         # Check if game is over
         if self.round >= self.options.total_rounds:
             self._end_game()

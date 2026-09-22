@@ -117,6 +117,11 @@ class Table(DataClassJSONMixin):
         """Get the number of players (non-spectators)."""
         return len(self.get_players())
 
+    @property
+    def listing_game_type(self) -> str:
+        """Keep roulette tables listed together while their current game changes."""
+        return "roulette" if self.game and self.game.roulette else self.game_type
+
     def broadcast(self, text: str, buffer: str = "misc") -> None:
         """Send a message to all members."""
         for username, user in self._users.items():
@@ -176,6 +181,15 @@ class Table(DataClassJSONMixin):
         game = game_class()
         if game.get_type() == previous.get_type() and hasattr(previous, "options"):
             game.options = deepcopy(previous.options)
+        elif game.get_type() == "roulette" and previous.roulette:
+            for name in ("included_games", "finish_mode", "total_rounds", "target_score"):
+                setattr(game.options, name, deepcopy(getattr(previous.roulette, name)))
+        self._replace_game(game, players)
+        return True
+
+    def _replace_game(self, game: "Game", players: list) -> None:
+        """Install fresh player state while retaining this table's users and seats."""
+        previous = self.game
         game.host = previous.host
         game._table = self
         game.setup_keybinds()
@@ -205,6 +219,60 @@ class Table(DataClassJSONMixin):
         self.game = game
         game._reset_transcripts()
         game.rebuild_all_menus()
+
+    def get_roulette_games(self, included_games: list[str]) -> list[type]:
+        """Only offer games whose default rules support every seated participant."""
+        from server.games.registry import get_game_class
+
+        previous = self.game
+        members = {member.username for member in self.members}
+        players = [p for p in previous.get_result_players()
+                   if not p.replaced_human or p.name in members]
+        choices = []
+        for game_type in dict.fromkeys(included_games):
+            cls = get_game_class(game_type)
+            if cls is None or game_type == "roulette":
+                continue
+            if not cls.get_min_players() <= len(players) <= cls.get_max_players():
+                continue
+            candidate = cls()
+            candidate.players = [candidate.create_player(p.id, p.name, is_bot=p.is_bot)
+                                 for p in players]
+            if not candidate.prestart_validate():
+                choices.append(cls)
+        return choices
+
+    def start_roulette_round(self) -> bool:
+        """Draw a compatible game and start one round with fresh game state."""
+        import random
+
+        previous = self.game
+        session = previous.roulette
+        if session is None or session.finished:
+            return False
+        choices = self.get_roulette_games(session.included_games)
+        if not choices:
+            previous.broadcast_l("roulette-no-compatible-games")
+            return False
+        alternatives = [cls for cls in choices if cls.get_type() != session.previous_game]
+        game = random.choice(alternatives or choices)()
+        game.roulette = session
+        session.round_number += 1
+        session.previous_game = game.get_type()
+        members = {member.username for member in self.members}
+        players = [p for p in previous.players if not p.replaced_human or p.name in members]
+        self._replace_game(game, players)
+        for player in game.players:
+            user = game.get_user(player)
+            if user:
+                from server.messages.localization import Localization
+                game.send_table_message(player, Localization.get(
+                    user.locale, "roulette-round-start", round=session.round_number,
+                    game=Localization.get(user.locale, game.get_name_key())))
+        game.on_start()
+        game._sync_table_status()
+        game.validate_actions()
+        self.save_game_state()
         return True
 
     def destroy(self) -> None:

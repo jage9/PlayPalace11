@@ -702,8 +702,12 @@ class FiveCardDrawGame(TurnTimerMixin, Game):
     def _showdown(self) -> None:
         self.phase = "showdown"
         self.broadcast_l("poker-showdown")
-        self._resolve_pots()
+        round_scores = self._resolve_pots()
         self._announce_showdown_hands(skip_best=True)
+        if self.finish_round(
+            winner_ids=list(self.last_showdown_winner_ids), scores=round_scores
+        ):
+            return
         self._queue_new_hand()
 
     def _award_uncontested(self, active_ids: set[str]) -> None:
@@ -720,9 +724,16 @@ class FiveCardDrawGame(TurnTimerMixin, Game):
         )  # nosec B311
         self.broadcast_l("poker-player-wins-pot", player=winner.name, amount=amount)
         self._sync_team_scores()
+        contributions = self.pot_manager.contributions
+        round_scores = {
+            player_id: (amount if player_id == winner.id else 0) - contribution
+            for player_id, contribution in contributions.items()
+        }
+        if self.finish_round(winner_ids=[winner.id], scores=round_scores):
+            return
         self._queue_new_hand()
 
-    def _resolve_pots(self) -> None:
+    def _resolve_pots(self) -> dict[str, int]:
         self.last_showdown_winner_ids.clear()
         active_ids = [p.id for p in self.get_active_players()]
         button_id = self.table_state.get_button_id(active_ids)
@@ -739,8 +750,11 @@ class FiveCardDrawGame(TurnTimerMixin, Game):
             lambda p: best_hand(p.hand)[0],
             lambda winner, payout: setattr(winner, "chips", winner.chips + payout),
         )
+        payouts: dict[str, int] = {}
         for pot_result in pot_results:
             self.last_showdown_winner_ids.update(w.id for w in pot_result.winners)
+            for winner, payout in pot_result.payouts:
+                payouts[winner.id] = payouts.get(winner.id, 0) + payout
             desc = describe_hand(pot_result.best_score, "en")
             if len(pot_result.winners) == 1:
                 winner = pot_result.winners[0]
@@ -807,6 +821,10 @@ class FiveCardDrawGame(TurnTimerMixin, Game):
                         hand=desc,
                     )
         self._sync_team_scores()
+        return {
+            player_id: payouts.get(player_id, 0) - contribution
+            for player_id, contribution in self.pot_manager.contributions.items()
+        }
 
     def _announce_showdown_hands(self, skip_best: bool = False) -> None:
         active = [

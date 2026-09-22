@@ -366,6 +366,7 @@ class BlackjackGame(TurnTimerMixin, Game):
     dealer_hole_revealed: bool = False
     next_hand_wait_ticks: int = 0
     awaiting_next_bets: bool = False
+    hand_start_chips: dict[str, int] = field(default_factory=dict)
 
     @classmethod
     def get_name(cls) -> str:
@@ -830,6 +831,7 @@ class BlackjackGame(TurnTimerMixin, Game):
         self.hand_number = 0
         self.next_hand_wait_ticks = 0
         self.awaiting_next_bets = False
+        self.hand_start_chips = {}
 
         active = self.get_active_players()
         self._team_manager.team_mode = "individual"
@@ -906,6 +908,8 @@ class BlackjackGame(TurnTimerMixin, Game):
         if len(total_competitors) > 1 and len(active_players) <= 1:
             self._end_game(active_players[0] if active_players else None)
             return
+
+        self.hand_start_chips = {player.id: player.chips for player in active_players}
 
         for player in active_players:
             player.hand = []
@@ -2345,6 +2349,15 @@ class BlackjackGame(TurnTimerMixin, Game):
                 )
 
         self._sync_team_scores()
+
+        round_scores = {
+            player.id: player.chips - self.hand_start_chips.get(player.id, player.chips)
+            for player in self.get_active_players()
+            if isinstance(player, BlackjackPlayer) and player.id in self.hand_start_chips
+        }
+        winner_ids = [player_id for player_id, score in round_scores.items() if score > 0]
+        if self.finish_round(winner_ids=winner_ids, scores=round_scores):
+            return
 
         remaining = [
             p for p in self.get_active_players() if isinstance(p, BlackjackPlayer) and p.chips > 0

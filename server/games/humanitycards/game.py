@@ -1146,12 +1146,17 @@ class HumanityCardsGame(Game):
                 )
                 self.broadcast_l("hc-submission-reveal", player=sub_player.name, text=filled)
 
-    def _finish_round(self, primary_winner_id: str) -> None:
+    def _finish_round(self, primary_winner_id: str, scored: list[tuple[str, int]]) -> None:
         active = self.get_active_players()
         self.last_winner_index = next(
             (i for i, p in enumerate(active) if p.id == primary_winner_id), -1
         )
         self.play_sound(f"game_cards/draw{random.randint(1, 4)}.ogg")  # nosec B311
+        if self.finish_round(
+            winner_ids=[player_id for player_id, _points in scored],
+            scores=dict(scored),
+        ):
+            return
         # Primary winner checked first; with independent multiple scorers, pick highest
         game_winner = self.get_player_by_id(primary_winner_id)
         if not game_winner or game_winner.score < self.options.winning_score:  # type: ignore
@@ -1189,7 +1194,7 @@ class HumanityCardsGame(Game):
         )
         self._announce_and_score_winners(scored)
         self._announce_losing_submissions({pid for pid, _ in scored})
-        self._finish_round(scored[0][0])
+        self._finish_round(scored[0][0], scored)
 
     def _resolve_jury(self) -> None:
         """Majority wins. Tied winners each get 1 point."""
@@ -1205,7 +1210,7 @@ class HumanityCardsGame(Game):
         scored = [(pid, 1) for pid in tied]
         self._announce_and_score_winners(scored)
         self._announce_losing_submissions(set(tied))
-        self._finish_round(tied[0])
+        self._finish_round(tied[0], scored)
 
     def _action_view_black_card(self, player: Player, action_id: str) -> None:
         """View the current black card prompt."""

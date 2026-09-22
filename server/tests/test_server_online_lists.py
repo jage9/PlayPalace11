@@ -121,7 +121,7 @@ async def test_handle_list_online_speaks_many(server):
 async def test_handle_list_online_with_games_status_box(server):
     user = DummyUser("alice")
     game = FakeGame(user.uuid)
-    table = SimpleNamespace(game=game, game_type="mock")
+    table = SimpleNamespace(game=game, game_type="mock", listing_game_type="mock")
     server._users = {"alice": user}
     server._tables = FakeTables({"alice": table})
     client = SimpleNamespace(username="alice")
@@ -151,7 +151,7 @@ async def test_handle_list_online_with_games_menu(server):
 async def test_handle_list_online_with_games_ignored_while_transient_open(server):
     user = DummyUser("alice")
     game = FakeGame(user.uuid, transient_open=True)
-    table = SimpleNamespace(game=game, game_type="mock")
+    table = SimpleNamespace(game=game, game_type="mock", listing_game_type="mock")
     server._users = {"alice": user}
     server._tables = FakeTables({"alice": table})
     client = SimpleNamespace(username="alice")

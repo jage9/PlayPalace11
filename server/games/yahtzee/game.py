@@ -754,6 +754,9 @@ class YahtzeeGame(ActionGuardMixin, Game, DiceGameMixin):
 
         if self.turn_index >= len(self.turn_players) - 1:
             # Round complete, back to first player
+            if self.finish_round():
+                return
+
             self.turn_index = 0
             self.set_turn_players(self.get_active_players())
         else:

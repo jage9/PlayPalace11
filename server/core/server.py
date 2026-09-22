@@ -1691,11 +1691,11 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
             return False
         items: list[MenuItem] = []
         for table in tables:
-            game_class = get_game_class(table.game_type)
+            game_class = get_game_class(table.listing_game_type)
             game_name = (
                 Localization.get(user.locale, game_class.get_name_key())
                 if game_class
-                else table.game_type
+                else table.listing_game_type
             )
             member_count = len(table.members)
             member_names = [
@@ -4064,7 +4064,8 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
             return
 
         # Generate save name
-        save_name = f"{game.get_name()} - {datetime.now():%Y-%m-%d %H:%M}"
+        name = "Game Roulette" if game.roulette else game.get_name()
+        save_name = f"{name} - {datetime.now():%Y-%m-%d %H:%M}"
 
         # Get game JSON
         game_json = game.to_json()
@@ -4259,11 +4260,11 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
             else:
                 table = self._tables.find_user_table(username)
                 if table:
-                    game_class = get_game_class(table.game_type)
+                    game_class = get_game_class(table.listing_game_type)
                     status = (
                         Localization.get(user.locale, game_class.get_name_key())
                         if game_class
-                        else table.game_type
+                        else table.listing_game_type
                     )
                 else:
                     status = Localization.get(user.locale, "online-user-not-in-game")

@@ -329,6 +329,8 @@ class LeftRightCenterGame(ActionGuardMixin, Game):
             winner = players_with_chips[0]
             self.broadcast_l("lrc-winner", player=winner.name, count=winner.chips)
             self.play_sound("game_pig/win.ogg")
+            if self.finish_round(winner_ids=[winner.id], scores={}):
+                return True
             self.finish_game()
             return True
         return False

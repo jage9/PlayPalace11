@@ -1454,6 +1454,13 @@ class BackgammonGame(Game):
             points=points,
         )
 
+        if self.finish_round(
+            winner_ids=[winner.id],
+            scores={p.id: gs.score_red if p.color == "red" else gs.score_white
+                    for p in self.get_active_players()},
+        ):
+            return
+
         # Check match end
         if gs.score_red >= gs.match_length:
             self._finish_match(self._get_player_by_color("red"))

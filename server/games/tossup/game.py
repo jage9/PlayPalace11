@@ -443,6 +443,9 @@ class TossUpGame(PushYourLuckBotMixin, ActionGuardMixin, RoundBasedGameMixin, Ga
         """Handle end of a round."""
         # Check for winners (only among active players)
         active_players = self.get_active_players()
+        if self.finish_round():
+            return
+
         winners = []
         high_score = 0
 

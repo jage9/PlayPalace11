@@ -3312,6 +3312,34 @@ class AgeOfHeroesGame(Game):
         """Start a new day (round)."""
         # Set turn index to the day start player (maintains consistent turn order)
         self.turn_index = self.day_start_turn_index
+
+        # A roulette round for Age of Heroes is one complete day.  Cities are
+        # the game's territory measure; subtract the one-city starting state
+        # so roulette score mode receives earned territory only.
+        active_players = [
+            player
+            for player in self.get_active_players()
+            if isinstance(player, AgeOfHeroesPlayer)
+            and player.tribe_state
+            and not player.tribe_state.is_eliminated()
+        ]
+        territory_scores = {
+            player.id: max(0, player.tribe_state.cities - 1)
+            for player in active_players
+            if player.tribe_state
+        }
+        if territory_scores:
+            highest_score = max(territory_scores.values())
+            if self.finish_round(
+                winner_ids=[
+                    player.id
+                    for player in active_players
+                    if territory_scores[player.id] == highest_score
+                ],
+                scores=territory_scores,
+            ):
+                return
+
         # Return to prepare phase for new events
         self._start_prepare_phase()
 

@@ -819,10 +819,31 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         await asyncio.to_thread(Localization.preload_bundles)
         self._lifecycle.resolve_gate(LOCALIZATION_GATE_ID)
 
-    def _load_tables(self) -> None:
-        """Load tables from database and restore their games."""
+    def _restore_table_game(self, table, game_class, game_json: str):
+        """Restore saved game state and runtime bindings for either load path.
+
+        Human users are attached by the caller or when they reconnect.
+        """
         from .users.bot import Bot
 
+        game = game_class.from_json(game_json)
+        game.rebuild_runtime_state()
+        game.host = table.host
+        table.game = game
+        game._table = table
+        game.setup_keybinds()
+        game._reset_transcripts()
+        for player in game.players:
+            if player.is_bot:
+                game.attach_user(player.id, Bot(player.name, uuid=player.id))
+        for member in table.members:
+            player = game.get_player_by_name(member.username)
+            if player:
+                member.is_spectator = player.is_spectator
+        return game
+
+    def _load_tables(self) -> None:
+        """Load tables from database and restore their games."""
         tables = self._db.load_all_tables()
         for table in tables:
             self._tables.add_table(table)
@@ -834,22 +855,7 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
                     print(f"WARNING: Could not find game class for {table.game_type}")
                     continue
 
-                # Deserialize game and rebuild runtime state
-                game = game_class.from_json(table.game_json)
-                game.rebuild_runtime_state()
-                table.game = game
-                game._table = table
-
-                # Setup keybinds (runtime only, not serialized)
-                game.setup_keybinds()
-                if hasattr(game, "_reset_transcripts"):
-                    game._reset_transcripts()
-                # Attach bots (humans will be attached when they reconnect)
-                # Action sets are already restored from serialization
-                for player in game.players:
-                    if player.is_bot:
-                        bot_user = Bot(player.name)
-                        game.attach_user(player.id, bot_user)
+                self._restore_table_game(table, game_class, table.game_json)
 
         print(f"Loaded {len(tables)} tables from database.")
 
@@ -2913,7 +2919,6 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
             save_id: Saved table id.
         """
         import json
-        from .users.bot import Bot
 
         record = self._db.get_saved_table(save_id)
         if not record:
@@ -2953,45 +2958,28 @@ class Server(AdministrationMixin, DocumentBrowsingMixin, TranscriberRoleMixin):
         # All players available - create table and restore game
         table = self._tables.create_table(record.game_type, user.username, user)
 
-        # Load game from JSON and rebuild runtime state
-        game = game_class.from_json(record.game_json)
-        game.rebuild_runtime_state()
-        table.game = game
-        game._table = table  # Enable game to call table.destroy()
-
-        # Update host to the restorer
-        game.host = user.username
+        game = self._restore_table_game(table, game_class, record.game_json)
 
         # Attach users and transfer all human players
         # NOTE: We must attach users by player.id (UUID), not by username.
         # The deserialized game has player objects with their original IDs.
-        for member in members_data:
+        for member in human_players:
             member_username = member.get("username")
-            is_bot = member.get("is_bot", False)
 
             # Find the player object by name to get their ID
             player = game.get_player_by_name(member_username)
             if not player:
                 continue
 
-            if is_bot:
-                # Recreate bot with the player's original ID
-                bot_user = Bot(member_username, uuid=player.id)
-                game.attach_user(player.id, bot_user)
-            else:
-                # Attach human user by player ID
-                member_user = self._users.get(member_username)
-                if member_user:
-                    table.add_member(member_username, member_user, as_spectator=False)
-                    game.attach_user(player.id, member_user)
-                    self._user_states[member_username] = {
-                        "menu": "in_game",
-                        "table_id": table.table_id,
-                    }
-
-        # Setup keybinds (runtime only, not serialized)
-        # Action sets are already restored from serialization
-        game.setup_keybinds()
+            member_user = self._users.get(member_username)
+            if member_user:
+                table.add_member(member_username, member_user, as_spectator=player.is_spectator)
+                table.attach_user(member_username, member_user)
+                game.attach_user(player.id, member_user)
+                self._user_states[member_username] = {
+                    "menu": "in_game",
+                    "table_id": table.table_id,
+                }
 
         # Rebuild menus for all players
         game.rebuild_all_menus()

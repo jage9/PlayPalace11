@@ -14,7 +14,8 @@ class DummyTable:
         self.game_type = game_type
         self.game_json = game_json
         self.game = None
-
+        self.host = "host"
+        self.members = []
 
 class DummyTablesManager:
     def __init__(self):
@@ -41,6 +42,7 @@ class DummyTablesManager:
 class DummyGame:
     def __init__(self):
         self.players = [SimpleNamespace(is_bot=True, name="BotOne", id="bot-1")]
+        self.host = ""
         self.rebuilt = False
         self.keybinds_setup = False
         self.rebuilt_players = []
@@ -57,6 +59,12 @@ class DummyGame:
 
     def attach_user(self, player_id, bot_user):
         self.rebuilt_players.append(bot_user.username)
+
+    def get_player_by_name(self, name):
+        return next((player for player in self.players if player.name == name), None)
+
+    def _reset_transcripts(self):
+        pass
 
 
 @pytest.fixture

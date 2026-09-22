@@ -177,6 +177,10 @@ spectator roles, and copies options only for a replay of the same game. New game
 must keep authoritative state in dataclass fields; do not add per-game replay reset
 methods. This separates table lifetime from individual games.
 
+Startup and user-saved tables share `Server._restore_table_game()` to rebuild
+runtime state, keybindings, transcripts, bot identities, and spectator roles.
+Human users attach immediately on manual restore or when they reconnect after startup.
+
 Game Roulette uses that same replacement path. Its lobby selects the included
 games (all by default) and either a round limit (default 7) or a score target
 (default 2000). `Game.roulette` retains the session settings, standings, and round

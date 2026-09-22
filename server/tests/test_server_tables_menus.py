@@ -78,6 +78,9 @@ class DummyTable:
         self.game = game or DummyGame()
         self.host = host
 
+    def attach_user(self, username, user):
+        pass
+
     def add_member(self, username, user, as_spectator=False):
         self.members.append(SimpleNamespace(username=username, is_spectator=as_spectator))
 
@@ -122,8 +125,8 @@ class StubGameClass:
     def from_json(game_json):
         # Create game with two players: alice human, bot bot.
         players = [
-            SimpleNamespace(id="p-alice", name="alice", is_bot=False),
-            SimpleNamespace(id="p-bot", name="bot", is_bot=True),
+            SimpleNamespace(id="p-alice", name="alice", is_bot=False, is_spectator=False),
+            SimpleNamespace(id="p-bot", name="bot", is_bot=True, is_spectator=False),
         ]
         return StubGameInstance(players)
 
@@ -146,6 +149,8 @@ class StubGameInstance:
         self._users = {}
         self.broadcasts: list[tuple[str, dict]] = []
         self.host = None
+        self._table = None
+        self.reset_transcripts = False
 
     def rebuild_runtime_state(self):
         return None
@@ -161,6 +166,9 @@ class StubGameInstance:
 
     def setup_keybinds(self):
         return None
+
+    def _reset_transcripts(self):
+        self.reset_transcripts = True
 
     def rebuild_all_menus(self):
         return None

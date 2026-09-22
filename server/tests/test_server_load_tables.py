@@ -40,8 +40,8 @@ class StubGameClass:
     @staticmethod
     def from_json(game_json):
         # create game with a bot player to exercise attach bot path
-        bot_player = SimpleNamespace(id="bot-id", name="botty", is_bot=True)
-        human_player = SimpleNamespace(id="human-id", name="alice", is_bot=False)
+        bot_player = SimpleNamespace(id="bot-id", name="botty", is_bot=True, is_spectator=False)
+        human_player = SimpleNamespace(id="human-id", name="alice", is_bot=False, is_spectator=False)
         return StubGame([bot_player, human_player])
 
 
@@ -51,6 +51,7 @@ class StubGame:
         self._users = {}
         self._table = None
         self.game_type = "stub"
+        self.host = ""
 
     def rebuild_runtime_state(self):
         return None
@@ -76,8 +77,10 @@ class StubGame:
 
 def test_load_tables_handles_missing_game_class_and_restores(monkeypatch, tmp_path):
     # Unknown game type table triggers warning path; known stub restores bots
-    t_unknown = SimpleNamespace(game_json="{}", game_type="missing", game=None)
-    t_known = SimpleNamespace(game_json="{}", game_type="stub", game=None)
+    t_unknown = SimpleNamespace(
+        game_json="{}", game_type="missing", game=None, host="host", members=[]
+    )
+    t_known = SimpleNamespace(game_json="{}", game_type="stub", game=None, host="host", members=[])
     tables = [t_unknown, t_known]
 
     srv = Server(host="127.0.0.1", port=0, db_path=tmp_path / "db.sqlite", preload_locales=True)

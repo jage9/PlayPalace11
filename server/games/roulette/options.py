@@ -36,7 +36,21 @@ def get_game_name_keys() -> dict[str, str]:
     }
 
 
-_GAME_NAME_KEYS = get_game_name_keys()
+def get_game_groups() -> dict[str, list[str]]:
+    """Offer the full pool and existing game categories as selection groups."""
+    groups = {"all_games": get_game_types()}
+    for category, games in sorted(GameRegistry.get_by_category().items()):
+        game_types = sorted(game.get_type() for game in games if game.get_type() != "roulette")
+        if game_types:
+            groups[category] = game_types
+    return groups
+
+
+_CHOICE_LABELS = {
+    **get_game_name_keys(),
+    **{category: category for category in GameRegistry.get_by_category()},
+    "all_games": "roulette-all-games",
+}
 
 
 @dataclass
@@ -118,7 +132,8 @@ class RouletteOptions(GameOptions):
                 default=[],
                 choices=get_game_types,
                 min_selected=1,
-                choice_labels=_GAME_NAME_KEYS,
+                choice_labels=_CHOICE_LABELS,
+                groups=get_game_groups,
                 show_bulk_actions=True,
                 label="roulette-set-included-games",
                 change_msg="roulette-option-changed-included-games",
@@ -128,4 +143,4 @@ class RouletteOptions(GameOptions):
     )
 
 
-__all__ = ["RouletteOptions", "get_game_name_keys", "get_game_types"]
+__all__ = ["RouletteOptions", "get_game_groups", "get_game_name_keys", "get_game_types"]

@@ -44,3 +44,4 @@ roulette-joker-unavailable = Jokers can only be used during the joker window.
 roulette-no-alternative = No other compatible, unblocked game is available. Your joker was not used.
 roulette-selected-game = Selected game: { $game }
 roulette-joker-action = Use a joker ({ $count } remaining)
+roulette-all-games = All games

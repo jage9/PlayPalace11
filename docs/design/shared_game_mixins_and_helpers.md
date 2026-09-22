@@ -189,6 +189,11 @@ games (all by default) and either a round limit (default 7) or a score target
 (default 2000). `Game.roulette` retains the session settings, standings, and round
 number in the current game's existing save data. Table listings retain the
 Roulette identity while persistence records the concrete game being played.
+The included-game chooser uses shared multi-select groups for All Games and the
+registry's game categories, like CAH's card-pack groups. Group selection adds or
+removes those games; individual toggles remain available. For a category-only
+pool, clear All Games, then select all in the desired category. Only the resulting
+game IDs are saved, so presets add no session state or per-game options.
 
 Games call `finish_round()` after a hand or turn cycle is scored and before
 starting another one. It is a no-op outside Roulette. Games with no shorter

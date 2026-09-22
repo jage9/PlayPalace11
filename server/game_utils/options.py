@@ -399,7 +399,7 @@ class MultiSelectOption(OptionMeta):
         choices: Static list or no-arg callable returning available choices.
         min_selected: Minimum number of choices that must be selected.
         max_selected: Maximum number of choices that can be selected (0 = no limit).
-        choice_labels: Optional mapping of choice -> localization key for display.
+        choice_labels: Optional mapping of choice or group -> localization key for display.
         show_bulk_actions: If True, show "Select all" / "Deselect all" in the toggle list.
         groups: Optional grouping of choices. When set, the top-level multi-select
             shows group names as navigable sub-menus instead of individual choices.
@@ -428,7 +428,7 @@ class MultiSelectOption(OptionMeta):
         return dict(self.groups)
 
     def get_localized_choice(self, value: str, locale: str) -> str:
-        """Get the localized display text for a choice value."""
+        """Get the localized display text for a choice or group value."""
         if self.choice_labels and value in self.choice_labels:
             return Localization.get(locale, self.choice_labels[value])
         return value
@@ -682,7 +682,8 @@ class GameOptions(DataClassJSONMixin):
                     for group_name, group_choices in groups.items():
                         selected_count = sum(1 for choice in group_choices if choice in current_selections)
                         total_count = len(group_choices)
-                        label = f"{group_name} ({selected_count} of {total_count} selected)"
+                        display = meta.get_localized_choice(group_name, locale)
+                        label = f"{display} ({selected_count} of {total_count} selected)"
                         items.append(
                             MenuItem(
                                 text=label,
@@ -870,7 +871,8 @@ class GameOptions(DataClassJSONMixin):
                     for group_name, group_choices in groups.items():
                         selected_count = sum(1 for c in group_choices if c in current_selections)
                         total_count = len(group_choices)
-                        label = f"{group_name} ({selected_count} of {total_count} selected)"
+                        display = meta.get_localized_choice(group_name, locale)
+                        label = f"{display} ({selected_count} of {total_count} selected)"
                         action_set.add(
                             Action(
                                 id=f"msgroup_{current_level}_{group_name}",

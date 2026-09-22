@@ -11,7 +11,7 @@ from server.game_utils.game_status import GameStatus
 from server.game_utils.roulette import RouletteSession
 from server.games.registry import GameRegistry
 from server.games.roulette.game import RouletteGame
-from server.games.roulette.options import RouletteOptions
+from server.games.roulette.options import RouletteOptions, get_game_groups, get_game_types
 
 
 def make_table(count=2):
@@ -49,6 +49,38 @@ def test_options_defaults_and_exclusive_limits():
     options.finish_mode = "score"
     assert options._is_option_visible("target_score")
     assert not options._is_option_visible("total_rounds")
+
+
+def test_included_games_category_groups_and_scoped_actions():
+    groups = get_game_groups()
+    assert set(groups["all_games"]) == set(get_game_types())
+    assert all("roulette" not in choices for choices in groups.values())
+    assert {choice for name, choices in groups.items() if name != "all_games"
+            for choice in choices} == set(get_game_types())
+
+    table = make_table()
+    game = table.game
+    player = game.players[0]
+    category = "category-card-games"
+    category_choices = groups[category]
+    outside_choice = next(choice for choice in groups["all_games"] if choice not in category_choices)
+    game.options.included_games = [outside_choice]
+
+    game._options_path = {player.id: ["included_games"]}
+    action_set = game.options.create_options_action_set(game, player)
+    assert action_set.get_action("msgroup_included_games_all_games").label.startswith("All games")
+    assert action_set.get_action(f"msgroup_included_games_{category}").label.startswith("Card Games")
+
+    game._options_path[player.id].append(f"group:{category}")
+    game.player_action_sets[player.id] = [game.options.create_options_action_set(game, player)]
+    game.execute_action(player, "mselectall_included_games")
+    assert set(category_choices).issubset(game.options.included_games)
+    assert outside_choice in game.options.included_games
+    game.execute_action(player, "mdeselectall_included_games")
+    assert game.options.included_games == [outside_choice]
+
+    game.execute_action(player, f"mstoggle_included_games_{category_choices[0]}")
+    assert game.options.included_games == [outside_choice, category_choices[0]]
 
 
 def test_session_switches_games_restores_and_finishes_once():

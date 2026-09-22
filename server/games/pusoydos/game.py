@@ -431,6 +431,7 @@ class PusoyDosGame(Game, TurnTimerMixin):
 
                 self.play_sound(SOUND_INSTANT_WIN)
                 self.broadcast_l(msg_key, player=p.name)
+                self.finishing_order.append(p.id)
                 self._player_wins_round(p)
                 self._end_round()
                 return True

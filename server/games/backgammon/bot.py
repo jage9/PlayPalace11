@@ -23,7 +23,6 @@ from .state import (
     opponent_color,
     point_count,
     point_owner,
-    remaining_dice_unique,
 )
 
 if TYPE_CHECKING:
@@ -233,7 +232,7 @@ def _pick_move(game: BackgammonGame, player: BackgammonPlayer) -> str | None:
 def _pick_random_move(game: BackgammonGame, color: str) -> str | None:
     """Pick a random legal move, trying all unused die values."""
     gs = game.game_state
-    for die_val in remaining_dice_unique(gs):
+    for die_val in game._get_usable_dice():
         moves = generate_legal_moves(gs, color, die_val)
         if moves:
             move = random.choice(moves)  # nosec B311
@@ -255,7 +254,7 @@ def _pick_simple_move(game: BackgammonGame, color: str) -> str | None:
     best_move: BackgammonMove | None = None
     best_score = -9999
 
-    for die_val in remaining_dice_unique(gs):
+    for die_val in game._get_usable_dice():
         for move in generate_legal_moves(gs, color, die_val):
             score = _score_move(gs, move, color)
             if score > best_score:

@@ -15,6 +15,7 @@ from ..games.pusoydos.bot import get_all_valid_combos, bot_think, bot_choose_giv
 from server.core.users.test_user import MockUser
 from server.core.users.bot import Bot
 from ..game_utils.cards import Card
+from ..game_utils.roulette import RouletteSession
 
 
 # =============================================================================
@@ -573,6 +574,20 @@ class TestInstantWinGame:
 
         found = game._check_instant_wins(active)
         assert found is True
+
+    @pytest.mark.parametrize(("mode", "award"), [("rounds", 1), ("score", 100)])
+    def test_instant_win_records_roulette_winner(self, mode, award):
+        game, players = _make_game(4, instant_wins=True, card_passing="off")
+        game.roulette = RouletteSession(
+            ["pusoydos"], finish_mode=mode, total_rounds=1, target_score=1
+        )
+        active = game._playing_players()
+        active[0].hand = [Card(i, r, (i % 4) + 1) for i, r in enumerate(range(1, 14))]
+
+        assert game._check_instant_wins(active) is True
+        assert game.roulette.scores == {p.id: award if p is active[0] else 0 for p in players}
+        assert game._last_game_result is not None
+        assert game._last_game_result.winner_ids == [active[0].id]
 
     def test_instant_wins_disabled(self):
         game, players = _make_game(4, instant_wins=False)

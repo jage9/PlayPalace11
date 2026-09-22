@@ -33,7 +33,7 @@ from server.games.backgammon.moves import (
     must_use_both_dice,
     undo_last_move,
 )
-from server.games.backgammon.bot import _score_move, _pick_simple_move
+from server.games.backgammon.bot import _pick_move, _pick_random_move, _pick_simple_move, _score_move
 from server.games.backgammon.gnubg import (
     encode_position_id,
     parse_hint_line,
@@ -596,6 +596,30 @@ class TestHintParsing:
 
 
 class TestSimpleBot:
+    def test_forced_die_uses_legal_fallback(self):
+        from types import SimpleNamespace
+        from server.games.backgammon.game import BackgammonGame
+
+        gs = build_initial_game_state()
+        gs.board.points = [0, 3, 2, 0, 2, 0, 0, 0, -1, 0, 1, 0, 0, 0, 0, 3, 0, 0, 2, 0, 0, 0, -2, 2]
+        gs.board.off_white = 12
+        gs.dice = [2, 5]
+        gs.dice_used = [False, False]
+        gs.current_color = "white"
+        game = BackgammonGame()
+        game.game_state = gs
+        game._check_forced_dice()
+        assert game._forced_dice == [5]
+        player = SimpleNamespace(color="white")
+
+        for action in (_pick_move(game, player), _pick_random_move(game, "white")):
+            assert action is not None
+            _, source, destination = action.split("_")
+            assert any(
+                move.source == int(source) and move.destination == int(destination)
+                for move in generate_legal_moves(gs, "white", 5)
+            )
+
     def test_prefers_bear_off(self):
         gs = build_initial_game_state()
         gs.board.points = [0] * 24
